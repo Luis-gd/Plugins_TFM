@@ -36,15 +36,15 @@ public class Propiedades {
 
 	/**
 	 * Devuelve el valor de una propiedad booleana.
-	 * @param nombrePropiedad Nombre de la propiedad a leer de la BD
+	 * @param propiedad Propiedad a leer de la BD
 	 * @return Valor de la propiedad
 	 */
-	public boolean getBool(String nombrePropiedad) {
+	public boolean getBool(Propiedad propiedad) {
 		if (!inicializadas()) {
 			return false;
 		} else {
 			try (Transaction tx = db.beginTx()) {
-				try (Result res = tx.execute("MATCH (p:Properties) RETURN p." + nombrePropiedad)) {
+				try (Result res = tx.execute("MATCH (p:Properties) RETURN p." + propiedad.name())) {
 					Map<String, Object> row = res.next();
 
 					Object valor = row.get(res.columns().get(0));
@@ -61,14 +61,14 @@ public class Propiedades {
 	/**
 	 * Fija el valor de una propiedad booleana. Si existe, se sobrescribirá el valor anterior. Si no, se añadirá
 	 * una nueva propiedad con el valor indicado.
-	 * @param nombrePropiedad Nombre de la propiedad
+	 * @param propiedad Propiedad a fijar
 	 * @param valor Nuevo valor de la propiedad
 	 */
-	public void setBool(String nombrePropiedad, boolean valor) {
+	public void setBool(Propiedad propiedad, boolean valor) {
 		try (Transaction tx = db.beginTx()) {
 			tx.execute(
 				"MERGE (p:Properties) " +
-				"SET p." + nombrePropiedad + " = " + valor);
+				"SET p." + propiedad.name() + " = " + valor);
 			tx.commit();
 		}
 	}

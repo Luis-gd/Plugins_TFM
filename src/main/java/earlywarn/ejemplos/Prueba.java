@@ -1,6 +1,7 @@
 package earlywarn.ejemplos;
 
 import earlywarn.main.Consultas;
+import earlywarn.main.Propiedad;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
@@ -33,12 +34,12 @@ public class Prueba {
 	@UserFunction
 	@Description("Prueba para Propiedades.getBool()")
 	public Boolean propGetBool(@Name("nombreProp") String nombreProp) {
-		return new Propiedades(db).getBool(nombreProp);
+		return new Propiedades(db).getBool(Propiedad.valueOf(nombreProp));
 	}
 
 	@Procedure(mode = Mode.WRITE)
 	@Description("Prueba para Propiedades.setBool()")
 	public void propSetBool(@Name("nombreProp") String nombreProp, @Name("valor") boolean valor) {
-		new Propiedades(db).setBool(nombreProp, valor);
+		new Propiedades(db).setBool(Propiedad.valueOf(nombreProp), valor);
 	}
 }
