@@ -1,11 +1,9 @@
 package earlywarn.ejemplos;
 
 import earlywarn.main.Consultas;
+import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Description;
-import org.neo4j.procedure.Name;
-import org.neo4j.procedure.UserFunction;
+import org.neo4j.procedure.*;
 
 import java.time.LocalDate;
 
@@ -24,5 +22,23 @@ public class Prueba {
 	public Long vuelosSalida(@Name("idAeropuerto") String idAeropuerto, @Name("fechaInicio") LocalDate fecha) {
 		Consultas consultas = new Consultas(db);
 		return consultas.getVuelosSalidaAeropuerto(idAeropuerto, fecha);
+	}
+
+	@UserFunction
+	@Description("Prueba para Propiedades.inicializadas()")
+	public Boolean propInit() {
+		return new Propiedades(db).inicializadas();
+	}
+
+	@UserFunction
+	@Description("Prueba para Propiedades.getBool()")
+	public Boolean propGetBool(@Name("nombreProp") String nombreProp) {
+		return new Propiedades(db).getBool(nombreProp);
+	}
+
+	@Procedure(mode = Mode.WRITE)
+	@Description("Prueba para Propiedades.setBool()")
+	public void propSetBool(@Name("nombreProp") String nombreProp, @Name("valor") boolean valor) {
+		new Propiedades(db).setBool(nombreProp, valor);
 	}
 }
