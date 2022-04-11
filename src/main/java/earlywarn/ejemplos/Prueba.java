@@ -21,7 +21,7 @@ public class Prueba {
 	}
 
 	@UserFunction
-	@Description("Ejemplo de Perason Coefficient Correlation entre dos listas de numeros")
+	@Description("Perason Coefficient Correlation entre dos listas de numeros")
 	public Double pcc(@Name("var1") List<Double> var1, @Name("var2") List<Double> var2) {
 		PearsonsCorrelation pcc = new PearsonsCorrelation();
 		Double[] var1Array = var1.toArray(new Double[0]);
