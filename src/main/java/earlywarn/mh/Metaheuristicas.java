@@ -4,16 +4,16 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-
 public class Metaheuristicas {
-    @UserFunction
-    @Description("Hola mundo")
-    public void hola_mundo(){
-        System.out.println("hola_mundo");
-    }
-    @UserFunction
-    @Description("Suma dos valores")
-    public Integer suma(@Name("n1") int n1,@Name("n2") int n2){
-        return n1+n2;
-    }
+	@UserFunction
+	@Description("Suma dos numeros")
+	public Long patata(@Name("k1") Long k1,@Name("k2") Long k2){
+		return k1+k2;
+	}
+	@UserFunction
+	@Description("Hola mundo")
+	public String hola_mundo(){
+		 return "Hola Mundo";
+	}
 }
+
