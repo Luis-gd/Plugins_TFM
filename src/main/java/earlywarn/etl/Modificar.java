@@ -3,14 +3,10 @@ package earlywarn.etl;
 import earlywarn.main.Propiedad;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
-
-import java.util.Map;
 
 /**
  * En esta clase se encuentran los procedimientos encargados de modificar datos en la BD antes de empezar a trabajar
