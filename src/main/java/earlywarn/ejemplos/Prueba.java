@@ -19,10 +19,11 @@ public class Prueba {
 	}
 
 	@UserFunction
-	@Description("Devuelve el nº de vuelos que salen del aeropuerto indicado en el día indicado")
-	public Long vuelosSalida(@Name("idAeropuerto") String idAeropuerto, @Name("fechaInicio") LocalDate fecha) {
+	@Description("Devuelve el nº de vuelos que salen del aeropuerto indicado en el rango de días indicado")
+	public Long vuelosSalida(@Name("idAeropuerto") String idAeropuerto, @Name("fechaInicio") LocalDate fechaInicio,
+							 @Name("fechaFin") LocalDate fechaFin) {
 		Consultas consultas = new Consultas(db);
-		return consultas.getVuelosSalidaAeropuerto(idAeropuerto, fecha);
+		return consultas.getVuelosSalidaAeropuerto(idAeropuerto, fechaInicio, fechaFin);
 	}
 
 	@UserFunction

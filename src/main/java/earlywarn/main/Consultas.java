@@ -1,5 +1,6 @@
 package earlywarn.main;
 
+import earlywarn.definiciones.ETLOperationRequiredException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -23,21 +24,33 @@ public class Consultas {
 	}
 
 	/**
-	 * Devuelve el número de vuelos que salen del aeropuerto indicado en el día indicado
+	 * Devuelve el número de vuelos que salen del aeropuerto indicado en el rango de días indicados.
+	 * Requiere que se haya llevado a cabo la operación ETL que convierte las relaciones entre Airport y AOD.
 	 * @param idAeropuerto Código IATA del aeropuerto
-	 * @param día Día en el que buscar vuelos
+	 * @param díaInicio Primer día en el que buscar vuelos (inclusivo)
+	 * @param díaFin Último día en el que buscar vuelos (inclusivo)
 	 * @return Número de vuelos que salen del aeropuerto en el día indicado
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link earlywarn.etl.Modificar#convertirRelacionesAOD}.
 	 */
-	public long getVuelosSalidaAeropuerto(String idAeropuerto, LocalDate día) {
-		String fechaStr = día.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+	public long getVuelosSalidaAeropuerto(String idAeropuerto, LocalDate díaInicio, LocalDate díaFin) {
+		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-		try (Transaction tx = db.beginTx()) {
-			try (Result res = tx.execute(
-				"MATCH (a:Airport)-[:`" + fechaStr + "`]->(:AirportOperationDay)-[]->(f:FLIGHT) WHERE a.iata = \"" +
-					idAeropuerto + "\" RETURN count(f)")) {
-				Map<String, Object> row = res.next();
-				return (long) row.get(res.columns().get(0));
+		if (new Propiedades(db).getBool(Propiedad.ETL_RELACIONES_AOD)) {
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute(
+					"MATCH (a:Airport)-[o:OPERATES_ON]->(:AirportOperationDay)-[]->(f:FLIGHT) " +
+						"WHERE a.iata = \"" + idAeropuerto + "\" " +
+						"AND date(\"" + díaInicioStr + "\") <= o.date <= date(\"" + díaFinStr + "\") " +
+						"RETURN count(f)")) {
+					Map<String, Object> row = res.next();
+					return (long) row.get(res.columns().get(0));
+				}
 			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"de conversión de relaciones AOD antes de ejecutarla.");
 		}
 	}
 }
