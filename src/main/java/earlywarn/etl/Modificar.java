@@ -42,6 +42,21 @@ public class Modificar {
 	}
 
 	/**
+	 * Borra de la base de datos todos los vuelos que no tengan calculado su valor final de SIR
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void borrarVuelosSinSIR() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"WHERE f.flightIfinal IS NULL " +
+					"DETACH DELETE f");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_BORRAR_VUELOS_SIN_SIR, true);
+		}
+	}
+
+	/**
 	 * Añade un campo a cada vuelo que incluye su número de pasajeros. El valor se calcula el número de asientos y
 	 * el porcentaje de ocupación del vuelo.
 	 * Los valores faltantes del número de asientos y el porcentaje de ocupación se rellenarán con la media de todo
