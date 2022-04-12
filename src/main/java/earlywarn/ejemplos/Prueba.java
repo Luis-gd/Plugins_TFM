@@ -1,8 +1,10 @@
 package earlywarn.ejemplos;
 
 import java.util.List;
+
+import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
-import earlywarn.main.Propiedad;
+import earlywarn.definiciones.Propiedad;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
@@ -26,7 +28,7 @@ public class Prueba {
 		PearsonsCorrelation pcc = new PearsonsCorrelation();
 		Double[] var1Array = var1.toArray(new Double[0]);
 		Double[] var2Array = var2.toArray(new Double[0]);
-		return (Double) pcc.correlation(ArrayUtils.toPrimitive(var1Array), ArrayUtils.toPrimitive(var2Array));
+		return pcc.correlation(ArrayUtils.toPrimitive(var1Array), ArrayUtils.toPrimitive(var2Array));
 	}
 
 	@UserFunction
@@ -34,7 +36,7 @@ public class Prueba {
 	public Long vuelosSalida(@Name("idAeropuerto") String idAeropuerto, @Name("fechaInicio") LocalDate fechaInicio,
 							 @Name("fechaFin") LocalDate fechaFin) {
 		Consultas consultas = new Consultas(db);
-		return consultas.getVuelosSalidaAeropuerto(idAeropuerto, fechaInicio, fechaFin);
+		return consultas.getVuelosAeropuerto(idAeropuerto, fechaInicio, fechaFin, SentidoVuelo.SALIDA);
 	}
 
 	@UserFunction

@@ -1,4 +1,6 @@
-package earlywarn.main;
+package earlywarn.definiciones;
+
+import earlywarn.main.Propiedades;
 
 /**
  * Lista todas las propiedades que se pueden fijar en la BD.
