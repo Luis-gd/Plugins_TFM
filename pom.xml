@@ -1,38 +1,38 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>es.upm</groupId>
-  <artifactId>earlywarn</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+    <groupId>es.upm</groupId>
+    <artifactId>earlywarn</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
 
-  <packaging>jar</packaging>
-  <name>Plataforma alerta temprana</name>
-  <description></description>
+    <packaging>jar</packaging>
+    <name>Plataforma alerta temprana</name>
+    <description></description>
 
-  <properties>
-    <java.version>11</java.version>
-    <maven.compiler.release>${java.version}</maven.compiler.release>
+    <properties>
+        <java.version>11</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
 
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <neo4j.version>4.4.5</neo4j.version>
-    <neo4j-java-driver.version>4.4.5</neo4j-java-driver.version>
-    <junit-jupiter.version>5.8.2</junit-jupiter.version>
-    <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
-    <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
-    <assertj.version>3.22.0</assertj.version>
-    <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
-  </properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <neo4j.version>4.4.5</neo4j.version>
+        <neo4j-java-driver.version>4.4.5</neo4j-java-driver.version>
+        <junit-jupiter.version>5.8.2</junit-jupiter.version>
+        <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+        <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+        <assertj.version>3.22.0</assertj.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+    </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
-      <version>${neo4j.version}</version>
-      <scope>provided</scope>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j</artifactId>
+            <version>${neo4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-math3 -->
     <dependency>
@@ -55,29 +55,28 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
-      <version>${neo4j-java-driver.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>${neo4j-java-driver.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>${junit-jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <version>${assertj.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-  </dependencies>
-
+    </dependencies>
   <build>
     <plugins>
       <plugin>
