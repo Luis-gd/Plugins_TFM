@@ -11,5 +11,9 @@ public enum Propiedad {
 	@SuppressWarnings("unused")
 	TEST,
 	// True si se ha realizado la operación ETL de conversión de relaciones entre Aeropuerto y AirportOperationDay
-	ETL_RELACIONES_AOD
+	ETL_RELACIONES_AOD,
+	// True si se ha realizado la operación ETL que elimina vuelos que no tengan datos SIR
+	ETL_BORRAR_VUELOS_SIN_SIR,
+	// True si se ha calculado el número de pasajeros de cada avión
+	ETL_PASAJEROS
 }
