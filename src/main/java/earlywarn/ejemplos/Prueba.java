@@ -38,6 +38,13 @@ public class Prueba {
 		return new Propiedades(db).getBool(Propiedad.valueOf(nombreProp));
 	}
 
+	@UserFunction
+	@Description("Prueba para Consultas.getSIRPorPais(pais, diaInicio, diaFin)")
+	public Double SIRPorPais(@Name("pais")String pais,@Name("diaInicio") LocalDate diaInicio,
+							 @Name("diaFin") LocalDate diaFin) {
+		return new Consultas(db).getSIRPorPais(pais, diaInicio, diaFin);
+	}
+
 	@Procedure(mode = Mode.WRITE)
 	@Description("Prueba para Propiedades.setBool()")
 	public void propSetBool(@Name("nombreProp") String nombreProp, @Name("valor") boolean valor) {
