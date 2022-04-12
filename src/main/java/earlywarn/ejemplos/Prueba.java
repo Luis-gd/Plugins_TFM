@@ -1,12 +1,16 @@
 package earlywarn.ejemplos;
 
+import java.util.List;
+
+import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
-import earlywarn.main.Propiedad;
+import earlywarn.definiciones.Propiedad;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
-
 import java.time.LocalDate;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class Prueba {
 	@Context
@@ -19,11 +23,20 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Perason Coefficient Correlation entre dos listas de numeros")
+	public Double pcc(@Name("var1") List<Double> var1, @Name("var2") List<Double> var2) {
+		PearsonsCorrelation pcc = new PearsonsCorrelation();
+		Double[] var1Array = var1.toArray(new Double[0]);
+		Double[] var2Array = var2.toArray(new Double[0]);
+		return pcc.correlation(ArrayUtils.toPrimitive(var1Array), ArrayUtils.toPrimitive(var2Array));
+	}
+
+	@UserFunction
 	@Description("Devuelve el nº de vuelos que salen del aeropuerto indicado en el rango de días indicado")
 	public Long vuelosSalida(@Name("idAeropuerto") String idAeropuerto, @Name("fechaInicio") LocalDate fechaInicio,
 							 @Name("fechaFin") LocalDate fechaFin) {
 		Consultas consultas = new Consultas(db);
-		return consultas.getVuelosSalidaAeropuerto(idAeropuerto, fechaInicio, fechaFin);
+		return consultas.getVuelosAeropuerto(idAeropuerto, fechaInicio, fechaFin, SentidoVuelo.SALIDA);
 	}
 
 	@UserFunction

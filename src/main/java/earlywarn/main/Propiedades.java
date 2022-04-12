@@ -1,5 +1,6 @@
 package earlywarn.main;
 
+import earlywarn.definiciones.Propiedad;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;

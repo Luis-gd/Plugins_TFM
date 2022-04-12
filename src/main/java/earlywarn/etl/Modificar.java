@@ -1,12 +1,15 @@
 package earlywarn.etl;
 
-import earlywarn.main.Propiedad;
+import earlywarn.definiciones.Propiedad;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
+
+import java.util.Map;
 
 /**
  * En esta clase se encuentran los procedimientos encargados de modificar datos en la BD antes de empezar a trabajar
@@ -34,7 +37,63 @@ public class Modificar {
 				"WHERE type(r) <> \"OPERATES_ON\" " +
 				"DELETE r");
 			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_RELACIONES_AOD, true);
 		}
-		new Propiedades(db).setBool(Propiedad.ETL_RELACIONES_AOD, true);
+	}
+
+	/**
+	 * Borra de la base de datos todos los vuelos que no tengan calculado su valor final de SIR
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void borrarVuelosSinSIR() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"WHERE f.flightIfinal IS NULL " +
+					"DETACH DELETE f");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_BORRAR_VUELOS_SIN_SIR, true);
+		}
+	}
+
+	/**
+	 * Añade un campo a cada vuelo que incluye su número de pasajeros. El valor se calcula el número de asientos y
+	 * el porcentaje de ocupación del vuelo.
+	 * Los valores faltantes del número de asientos y el porcentaje de ocupación se rellenarán con la media de todo
+	 * el dataset.
+	 * Fija la propiedad {@link Propiedad#ETL_PASAJEROS} a true en la BD.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void calcularNúmeroPasajeros() {
+		try (Transaction tx = db.beginTx()) {
+			int mediaAsientos;
+			double mediaOcupación;
+			try (Result res = tx.execute("MATCH (f:FLIGHT) RETURN avg(f.seatsCapacity)")) {
+				Map<String, Object> row = res.next();
+				mediaAsientos = (int) Math.round((double) row.get(res.columns().get(0)));
+			}
+			try (Result res = tx.execute("MATCH (f:FLIGHT) RETURN avg(f.occupancyPercentage)")) {
+				Map<String, Object> row = res.next();
+				mediaOcupación = (double) row.get(res.columns().get(0));
+			}
+
+			// Rellenar valores faltantes
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+				"WHERE f.seatsCapacity IS NULL " +
+				"SET f.seatsCapacity = " + mediaAsientos);
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"WHERE f.occupancyPercentage IS NULL " +
+					"SET f.occupancyPercentage = " + mediaOcupación);
+
+			// Insertar número de pasajeros
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"SET f.passengers = toInteger(round(f.seatsCapacity * f.occupancyPercentage / 100))");
+
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_PASAJEROS, true);
+		}
 	}
 }

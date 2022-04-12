@@ -14,5 +14,6 @@ public class Main {
 	public void mainETL() {
 		Modificar modificar = new Modificar();
 		modificar.convertirRelacionesAOD();
+		modificar.calcularNúmeroPasajeros();
 	}
 }
