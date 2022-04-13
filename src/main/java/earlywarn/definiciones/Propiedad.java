@@ -15,5 +15,7 @@ public enum Propiedad {
 	// True si se ha realizado la operación ETL que elimina vuelos que no tengan datos SIR
 	ETL_BORRAR_VUELOS_SIN_SIR,
 	// True si se ha calculado el número de pasajeros de cada avión
-	ETL_PASAJEROS
+	ETL_PASAJEROS,
+	// True si se han cargado los datos de conectividad para cada aeropuerto
+	ETL_CONECTIVIDAD
 }
