@@ -30,4 +30,16 @@ public class Main {
         eWarn.checkWindows();
         return eWarn.density();
     }
+
+    @UserFunction
+    @Description("Test query2")
+    public List<Double> test2(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
+                              @Name("countries") List<String> countries, @Name("windowSize") long windowSize,
+                              @Name("correlation") String correlation, @Name("cumulativeData") boolean cumulativeData,
+                              @Name("squareRootData") boolean squareRootData, @Name("threshold") double threshold) throws Exception {
+        EWarningSpecific eWarn = new EWarningSpecific(this.db, startDay, endDay, countries, (int)windowSize, correlation,
+                                                        cumulativeData, squareRootData, threshold);
+        eWarn.checkWindows();
+        return eWarn.density();
+    }
 }

@@ -6,12 +6,11 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * Class used to declare the queries needed for generating early warning signals and markers
+ * Class used to declare the queries needed for generating early warning signals and markers.
  */
 public class Queries {
 	/*
@@ -20,6 +19,11 @@ public class Queries {
 	 */
 	private final GraphDatabaseService db;
 
+	/**
+	 * Basic class constructor that receive the context of the Neo4j instance.
+	 * @param db Neo4j database instance annotated with the @Context from the main procedure function.
+	 * @author Angel Fragua
+	 */
 	public Queries(GraphDatabaseService db) {
 		this.db = db;
 	}
@@ -60,11 +64,11 @@ public class Queries {
 	}
 
 	/**
-	 * Gets the list of confirmed reported cases of a specific country between two dates
-	 * @param countryIso2 ISO-3166 Alpha2 of the country to search for
-	 * @param startDate First date of the range of days of interest
-	 * @param endDate Last date of the range of days of interest
-	 * @return int[] List of the confirmed cases between the specified dates in a specific country
+	 * Gets the list of confirmed reported cases of a specific country between two dates from the database.
+	 * @param countryIso2 ISO-3166 Alpha2 of the country to search for.
+	 * @param startDate First date of the range of days of interest.
+	 * @param endDate Last date of the range of days of interest.
+	 * @return int[] List of the confirmed cases between the specified dates in a specific country.
 	 */
 	public long[] getReportConfirmed(String countryIso2, LocalDate startDate, LocalDate endDate) {
 		try (Transaction tx = db.beginTx()) {
@@ -79,10 +83,32 @@ public class Queries {
 				List<Long> confirmed = new ArrayList<>();
 				while (res.hasNext()) {
 					Map<String, Object> row = res.next();
-					confirmed.add(((Long)row.get("confirmed")).longValue());
+					confirmed.add((Long) row.get("confirmed"));
 				}
-				long [] x = ArrayUtils.toPrimitive(confirmed.toArray(new Long[0]));
-				return x;
+				return ArrayUtils.toPrimitive(confirmed.toArray(new Long[0]));
+			}
+		}
+	}
+
+	/**
+	 * Gets a set of the ISO-3166-Alpha2 referencing the countries that are both present in the list passed as argument
+	 * and the database.
+	 * @param countries List of countries references in the ISO-3166-Alpha2 format to be checked.
+	 * @return Set<String> Set of the ISO-3166-Alpha2 referencing the countries matched.
+	 * @author Angel Fragua
+	 */
+	public Set<String> getConfirmedCountries(List<String> countries) {
+		try (Transaction tx = db.beginTx()) {
+			try (Result res = tx.execute(
+					"MATCH (c:Country)\n" +
+						"WHERE c.iso2 IN " + countries.stream().collect(Collectors.joining("','", "['", "']")) + "\n" +
+						"RETURN c.iso2 AS country")) {
+				Set<String> confirmedCountries = new HashSet<>();
+				while (res.hasNext()) {
+					Map<String, Object> row = res.next();
+					confirmedCountries.add((String)row.get("country"));
+				}
+				return confirmedCountries;
 			}
 		}
 	}
