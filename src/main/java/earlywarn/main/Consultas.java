@@ -71,7 +71,7 @@ public class Consultas {
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Modificar#borrarVuelosSinSIR()}.
 	 */
-	public Double getSIRPorPais(String pais, LocalDate diaInicio, LocalDate diaFin) {
+	public Double getRiesgoPorPais(String pais, LocalDate diaInicio, LocalDate diaFin) {
 		// Las formas de escribir las fechas en neo4j son como entrada: date("2019-06-01") y date({year: 2019, month: 7}
 		String diaInicioStr = diaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String diaFinStr = diaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -83,8 +83,7 @@ public class Consultas {
 						"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
 						"WHERE c.countryName=\"" + pais + "\" " +
 						"AND date(\"" + diaInicioStr + "\") <= date(f.dateOfDeparture) <= date(\"" + diaFinStr + "\")" +
-						"RETURN SUM( f.flightIfinal * " +
-						"(duration.inSeconds(datetime(f.instantOfDeparture), datetime(f.instantOfArrival)).seconds/60))")) {
+						"RETURN SUM(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();
 					return (Double) row.get(res.columns().get(0));
 				}
