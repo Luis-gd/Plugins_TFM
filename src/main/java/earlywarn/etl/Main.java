@@ -20,6 +20,8 @@ public class Main {
 						@Name("rutaFicheroTurismo") String rutaFicheroTurismo) {
 		Modificar modificar = new Modificar();
 		modificar.convertirRelacionesAOD();
+		modificar.borrarVuelosSinSIR();
+		modificar.convertirFechasVuelos();
 		modificar.calcularNúmeroPasajeros();
 
 		Añadir añadir = new Añadir();

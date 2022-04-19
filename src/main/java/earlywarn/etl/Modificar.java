@@ -42,17 +42,33 @@ public class Modificar {
 	}
 
 	/**
-	 * Borra de la base de datos todos los vuelos que no tengan calculado su valor final de SIR
+	 * Borra de la base de datos todos los vuelos que no tengan calculado su valor final de SIR.
+	 * Fija la propiedad {@link Propiedad#ETL_BORRAR_VUELOS_SIN_SIR} a true en la BD.
 	 */
 	@Procedure(mode = Mode.WRITE)
 	public void borrarVuelosSinSIR() {
 		try (Transaction tx = db.beginTx()) {
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
-					"WHERE f.flightIfinal IS NULL " +
-					"DETACH DELETE f");
+				"WHERE f.flightIfinal IS NULL " +
+				"DETACH DELETE f");
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_BORRAR_VUELOS_SIN_SIR, true);
+		}
+	}
+
+	/**
+	 * Convierte las fechas de llegada y salida de los vuelos a tipo date.
+	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_VUELOS} a true en la BD.
+	 */
+	public void convertirFechasVuelos() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+				"SET f.dateOfDeparture = date(f.dateOfDeparture) " +
+				"SET f.dateOfArrival = date(f.dateOfArrival)");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS, true);
 		}
 	}
 
@@ -63,6 +79,7 @@ public class Modificar {
 	 * el dataset.
 	 * Fija la propiedad {@link Propiedad#ETL_PASAJEROS} a true en la BD.
 	 */
+	// TODO: Mover a etl.Añadir
 	@Procedure(mode = Mode.WRITE)
 	public void calcularNúmeroPasajeros() {
 		try (Transaction tx = db.beginTx()) {

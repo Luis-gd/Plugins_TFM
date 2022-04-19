@@ -14,6 +14,8 @@ public enum Propiedad {
 	ETL_RELACIONES_AOD,
 	// True si se ha realizado la operación ETL que elimina vuelos que no tengan datos SIR
 	ETL_BORRAR_VUELOS_SIN_SIR,
+	// True si se han convertido las fechas de vuelos a tipo date
+	ETL_CONVERTIR_FECHAS_VUELOS,
 	// True si se ha calculado el número de pasajeros de cada avión
 	ETL_PASAJEROS,
 	// True si se han cargado los datos de conectividad para cada aeropuerto
