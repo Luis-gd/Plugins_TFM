@@ -68,7 +68,7 @@ public class Queries {
 	 * @param countryIso2 ISO-3166 Alpha2 of the country to search for.
 	 * @param startDate First date of the range of days of interest.
 	 * @param endDate Last date of the range of days of interest.
-	 * @return int[] List of the confirmed cases between the specified dates in a specific country.
+	 * @return long[] List of the confirmed cases between the specified dates in a specific country.
 	 */
 	public long[] getReportConfirmed(String countryIso2, LocalDate startDate, LocalDate endDate) {
 		try (Transaction tx = db.beginTx()) {
