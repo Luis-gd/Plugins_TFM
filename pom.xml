@@ -27,6 +27,13 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.debacharya</groupId>
+            <artifactId>nsgaii</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>

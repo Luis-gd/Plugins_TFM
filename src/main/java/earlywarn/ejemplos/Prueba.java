@@ -52,7 +52,7 @@ public class Prueba {
 	}
 
 	@UserFunction
-	@Description("Prueba para Consultas.getSIRPorPais(pais, diaInicio, diaFin)")
+	@Description("Prueba para Consultas.getRiesgoPorPais(pais, diaInicio, diaFin)")
 	public Double SIRPorPais(@Name("pais")String pais, @Name("diaInicio") LocalDate diaInicio,
 							 @Name("diaFin") LocalDate diaFin) {
 		return new Consultas(db).getRiesgoPorPais(pais, diaInicio, diaFin);
