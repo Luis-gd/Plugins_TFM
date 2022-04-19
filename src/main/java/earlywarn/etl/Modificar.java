@@ -61,6 +61,7 @@ public class Modificar {
 	 * Convierte las fechas de llegada y salida de los vuelos a tipo date.
 	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_VUELOS} a true en la BD.
 	 */
+	@Procedure(mode = Mode.WRITE)
 	public void convertirFechasVuelos() {
 		try (Transaction tx = db.beginTx()) {
 			tx.execute(

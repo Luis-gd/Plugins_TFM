@@ -23,6 +23,7 @@ public class Añadir {
 	 * con Country.
 	 * Fija la propiedad {@link Propiedad#ETL_AEROPUERTO_PAÍS} a true en la BD.
 	 */
+	@Procedure(mode = Mode.WRITE)
 	public void añadirConexionesAeropuertoPaís() {
 		try (Transaction tx = db.beginTx()) {
 			tx.execute(
