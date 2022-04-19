@@ -23,5 +23,7 @@ public enum Propiedad {
 	// True si se han cargado los datos de conectividad para cada aeropuerto
 	ETL_CONECTIVIDAD,
 	// True si se han cargado los datos del ratio de turistas para los diferentes países y regiones
-	ETL_RATIO_TURISTAS
+	ETL_RATIO_TURISTAS,
+	// True si se ha añadido el número estimado de turistas a los vuelos de llegada
+	ETL_TURISTAS_VUELO
 }

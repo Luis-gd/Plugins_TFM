@@ -102,13 +102,13 @@ public class Modificar {
 				"SET f.seatsCapacity = " + mediaAsientos);
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
-					"WHERE f.occupancyPercentage IS NULL " +
-					"SET f.occupancyPercentage = " + mediaOcupación);
+				"WHERE f.occupancyPercentage IS NULL " +
+				"SET f.occupancyPercentage = " + mediaOcupación);
 
 			// Insertar número de pasajeros
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
-					"SET f.passengers = toInteger(round(f.seatsCapacity * f.occupancyPercentage / 100))");
+				"SET f.passengers = toInteger(round(f.seatsCapacity * f.occupancyPercentage / 100))");
 
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_PASAJEROS, true);
