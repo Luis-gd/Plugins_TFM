@@ -5,11 +5,14 @@ import earlywarn.definiciones.Propiedad;
 import earlywarn.main.Consultas;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+
+import java.util.Map;
 
 /**
  * En esta clase se encuentran los procedimientos encargados de añadir datos a la BD antes de empezar a trabajar
@@ -54,6 +57,47 @@ public class Añadir {
 				"SET a.connectivity = toInteger(line[1])");
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_CONECTIVIDAD, true);
+		}
+	}
+
+	/**
+	 * Añade un campo a cada vuelo que incluye su número de pasajeros. El valor se calcula el número de asientos y
+	 * el porcentaje de ocupación del vuelo.
+	 * Los valores faltantes del número de asientos y el porcentaje de ocupación se rellenarán con la media de todo
+	 * el dataset.
+	 * Fija la propiedad {@link Propiedad#ETL_PASAJEROS} a true en la BD.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void calcularNúmeroPasajeros() {
+		try (Transaction tx = db.beginTx()) {
+			int mediaAsientos;
+			double mediaOcupación;
+			try (Result res = tx.execute("MATCH (f:FLIGHT) RETURN avg(f.seatsCapacity)")) {
+				Map<String, Object> row = res.next();
+				mediaAsientos = (int) Math.round((double) row.get(res.columns().get(0)));
+			}
+			try (Result res = tx.execute("MATCH (f:FLIGHT) RETURN avg(f.occupancyPercentage)")) {
+				Map<String, Object> row = res.next();
+				mediaOcupación = (double) row.get(res.columns().get(0));
+			}
+
+			// Rellenar valores faltantes
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"WHERE f.seatsCapacity IS NULL " +
+					"SET f.seatsCapacity = " + mediaAsientos);
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"WHERE f.occupancyPercentage IS NULL " +
+					"SET f.occupancyPercentage = " + mediaOcupación);
+
+			// Insertar número de pasajeros
+			tx.execute(
+				"MATCH (f:FLIGHT) " +
+					"SET f.passengers = toInteger(round(f.seatsCapacity * f.occupancyPercentage / 100))");
+
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_PASAJEROS, true);
 		}
 	}
 
@@ -107,7 +151,7 @@ public class Añadir {
 	 *                           de turismo del año más reciente de su mes de llegada. Útil si se trabaja con vuelos
 	 *                           futuros y se sabe que no se dispone de datos de turismo para los mismos.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado alguna de las siguientes operaciones ETL:
-	 * {@link Modificar#convertirRelacionesAOD()}, {@link Modificar#calcularNúmeroPasajeros()},
+	 * {@link Modificar#convertirRelacionesAOD()}, {@link Añadir#calcularNúmeroPasajeros()},
 	 * {@link Modificar#convertirFechasVuelos()} o {@link Añadir#añadirConexionesAeropuertoPaís()}.
 	 * @throws IllegalArgumentException Si mismaFecha y aproximarFaltantes son ambos false.
 	 */

@@ -31,11 +31,11 @@ public class Main {
 		modificar.convertirRelacionesAOD();
 		modificar.borrarVuelosSinSIR();
 		modificar.convertirFechasVuelos();
-		modificar.calcularNúmeroPasajeros();
 
 		Añadir añadir = new Añadir();
 		añadir.añadirConexionesAeropuertoPaís();
 		añadir.añadirConectividad(rutaFicheroConectividad);
+		añadir.calcularNúmeroPasajeros();
 		añadir.añadirRatioTuristas(rutaFicheroTurismo);
 		añadir.añadirTuristasVuelo(mismaFechaTurismo, aproximarFaltantesTurismo);
 	}
