@@ -25,6 +25,7 @@ public class Main {
 		modificar.calcularNúmeroPasajeros();
 
 		Añadir añadir = new Añadir();
+		añadir.añadirConexionesAeropuertoPaís();
 		añadir.añadirConectividad(rutaFicheroConectividad);
 		añadir.añadirRatioTuristas(rutaFicheroTurismo);
 	}

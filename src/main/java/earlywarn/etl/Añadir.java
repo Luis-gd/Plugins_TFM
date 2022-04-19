@@ -18,6 +18,22 @@ public class Añadir {
 	public GraphDatabaseService db;
 
 	/**
+	 * Añade las conexiones entre aeropuertos y países que faltan en la BD.
+	 * Estas conexiones se obtienen buscando aeropuertos situados en un ProvinceState pero que no están relacionados
+	 * con Country.
+	 * Fija la propiedad {@link Propiedad#ETL_AEROPUERTO_PAÍS} a true en la BD.
+	 */
+	public void añadirConexionesAeropuertoPaís() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (a:Airport)-[]-(ps:ProvinceState)-[]-(c:Country) " +
+				"MERGE (a)<-[:INFLUENCE_ZONE]-(c)");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_AEROPUERTO_PAÍS, true);
+		}
+	}
+
+	/**
 	 * Añade el valor de conectividad a los diferentes aeropuertos.
 	 * Los datos se obtienen de un CSV importado con el nombre indicado. El formato esperado para el CSV es
 	 * "códigoIATAAeropuerto,conectividad". El CSV no debe contener una cabecera. El valor de conectividad es un entero

@@ -18,6 +18,8 @@ public enum Propiedad {
 	ETL_CONVERTIR_FECHAS_VUELOS,
 	// True si se ha calculado el número de pasajeros de cada avión
 	ETL_PASAJEROS,
+	// True si se han insertado las relaciones faltantes entre aeropuertos y países
+	ETL_AEROPUERTO_PAÍS,
 	// True si se han cargado los datos de conectividad para cada aeropuerto
 	ETL_CONECTIVIDAD,
 	// True si se han cargado los datos del ratio de turistas para los diferentes países y regiones
