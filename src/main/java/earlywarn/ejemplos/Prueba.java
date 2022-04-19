@@ -62,7 +62,7 @@ public class Prueba {
 	@Description("Prueba para Consultas.getSIRPorPais(pais, diaInicio, diaFin)")
 	public Double SIRPorPais(@Name("pais")String pais, @Name("diaInicio") LocalDate diaInicio,
 							 @Name("diaFin") LocalDate diaFin) {
-		return new Consultas(db).getSIRPorPais(pais, diaInicio, diaFin);
+		return new Consultas(db).getRiesgoPorPais(pais, diaInicio, diaFin);
 	}
 
 	@Procedure(mode = Mode.WRITE)
