@@ -26,11 +26,17 @@ public class Consultas {
 	private Integer primerAñoDatosTurismo;
 	// Último año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
 	private Integer últimoAñoDatosTurismo;
+	// Primer año del que se tienen datos de gasto turístico. Null si aún no se ha consultado la BD para obtener el valor.
+	private Integer primerAñoDatosGastoTurístico;
+	// Último año del que se tienen datos de gasto turístico. Null si aún no se ha consultado la BD para obtener el valor.
+	private Integer últimoAñoDatosGastoTurístico;
 
 	public Consultas(GraphDatabaseService db) {
 		this.db = db;
 		primerAñoDatosTurismo = null;
 		últimoAñoDatosTurismo = null;
+		primerAñoDatosGastoTurístico = null;
+		últimoAñoDatosGastoTurístico = null;
 	}
 
 	/**
@@ -100,6 +106,42 @@ public class Consultas {
 			}
 		}
 		return últimoAñoDatosTurismo;
+	}
+
+	/**
+	 * Devuelve el año más antiguo del que se tienen datos acerca del gasto turístico por persona y país de origen.
+	 * El valor está cacheado, por lo que una instancia de esta clase siempre devolverá el mismo. La instancia actual
+	 * solo consultará la base de datos la primera vez que se llame a este método.
+	 * @return Año más antiguo del que hay registros en la BD acerca del gasto turístico
+	 */
+	public int getPrimerAñoDatosGastoTurístico() {
+		if (primerAñoDatosGastoTurístico == null) {
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute("MATCH (te:TuristExpense) RETURN min(te.year)")) {
+					Map<String, Object> row = res.next();
+					primerAñoDatosGastoTurístico = Math.toIntExact((Long) row.get(res.columns().get(0)));
+				}
+			}
+		}
+		return primerAñoDatosGastoTurístico;
+	}
+
+	/**
+	 * Devuelve el año más reciente del que se tienen datos acerca del gasto turístico por persona y país de origen.
+	 * El valor está cacheado, por lo que una instancia de esta clase siempre devolverá el mismo. La instancia actual
+	 * solo consultará la base de datos la primera vez que se llame a este método.
+	 * @return Año más reciente del que hay registros en la BD acerca del gasto turístico
+	 */
+	public int getÚltimoAñoDatosGastoTurístico() {
+		if (últimoAñoDatosGastoTurístico == null) {
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute("MATCH (te:TuristExpense) RETURN max(te.year)")) {
+					Map<String, Object> row = res.next();
+					últimoAñoDatosGastoTurístico = Math.toIntExact((Long) row.get(res.columns().get(0)));
+				}
+			}
+		}
+		return últimoAñoDatosGastoTurístico;
 	}
 
 	/**

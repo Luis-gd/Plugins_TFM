@@ -84,17 +84,17 @@ public class Añadir {
 			// Rellenar valores faltantes
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
-					"WHERE f.seatsCapacity IS NULL " +
-					"SET f.seatsCapacity = " + mediaAsientos);
+				"WHERE f.seatsCapacity IS NULL " +
+				"SET f.seatsCapacity = " + mediaAsientos);
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
-					"WHERE f.occupancyPercentage IS NULL " +
-					"SET f.occupancyPercentage = " + mediaOcupación);
+				"WHERE f.occupancyPercentage IS NULL " +
+				"SET f.occupancyPercentage = " + mediaOcupación);
 
 			// Insertar número de pasajeros
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
-					"SET f.passengers = toInteger(round(f.seatsCapacity * f.occupancyPercentage / 100))");
+				"SET f.passengers = toInteger(round(f.seatsCapacity * f.occupancyPercentage / 100))");
 
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_PASAJEROS, true);
@@ -138,6 +138,50 @@ public class Añadir {
 	}
 
 	/**
+	 * Añade el gasto medio por persona en materia de turismo por país de origen, país de destino y fecha (año y mes).
+	 * Los datos se obtienen de un CSV importado con el nombre indicado. El formato esperado para el CSV es
+	 * "countryID1,countryID2,año,mes,gasto", donde:
+	 * 		- countryID1 es el identificador del país del que provienen los turistas, igual que está almacenado en la BD.
+	 * 		Si está vacío, se considera que este es el dato por defecto para este mes para el país de destino (se usará
+	 * 		para los vuelos que provengan de países que no tienen datos concretos).
+	 * 		- countryID2 es el identificador del país al que van los turistas, igual que está almacenado en la BD
+	 * 		- año es el año del dato
+	 * 		- mes es el mes del dato
+	 * 		- gasto es el gasto por persona para los turistas que viajan del primer país al segundo en el mes indicado.
+	 * 		El separador de decimales debe ser un punto.
+	 * El CSV no debe contener una cabecera.
+	 * Fija la propiedad {@link Propiedad#ETL_GASTO_TURÍSTICO} a true en la BD.
+	 * @param rutaFichero Ruta al fichero CSV, relativa a la carpeta de import definida en la configuración de Neo4J.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void añadirGastoTurístico(@Name("rutaFichero") String rutaFichero) {
+		try (Transaction tx = db.beginTx()) {
+			// Insertar un nodo para representar los datos genéricos para otros países que no están en el CSV
+			tx.execute("MERGE (:DefaultCountry)");
+
+			tx.execute(
+				"LOAD CSV FROM 'file:///" + rutaFichero + "' AS line " +
+				"CALL apoc.do.when(line[0] IS NULL, \"" +
+					"MATCH (c1:DefaultCountry) " +
+					"MATCH (c2:Country {countryId: line[1]}) " +
+					"MERGE (c1)-[:TURIST_EXPENSE]->" +
+					"(te:TuristExpense {year: toInteger(line[2]), month: toInteger(line[3])})" +
+					"-[:TURIST_EXPENSE]->(c2) " +
+					"SET te.expense = toInteger(line[4])" +
+				"\", \"" +
+					"MATCH (c1:Country {countryId: line[0]}) " +
+					"MATCH (c2:Country {countryId: line[1]}) " +
+					"MERGE (c1)-[:TURIST_EXPENSE]->" +
+					"(te:TuristExpense {year: toInteger(line[2]), month: toInteger(line[3])})" +
+					"-[:TURIST_EXPENSE]->(c2) " +
+					"SET te.expense = toInteger(line[4])" +
+				"\", {line:line}) YIELD value RETURN value");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_GASTO_TURÍSTICO, true);
+		}
+	}
+
+	/**
 	 * Añade una estimación del número de turistas a bordo de cada vuelo de llegada usando los datos de turismo.
 	 * Requiere que se hayan ejecutado las operaciones ETL que añaden el ratio de turistas por región y el número
 	 * de pasajeros por vuelo, así como la operación ETL que convierte las fechas de los vuelos a tipo date y la
@@ -159,8 +203,8 @@ public class Añadir {
 	public void añadirTuristasVuelo(@Name("mismaFecha") Boolean mismaFecha,
 									@Name("aproximarFaltantes") Boolean aproximarFaltantes) {
 		if (!mismaFecha && !aproximarFaltantes) {
-			throw new IllegalArgumentException("No tiene sentido llamar a añadirTuristasVuelo() si no se quiere usar " +
-				"ni los datos de turismo presentes ni aproximar los futuros, ya que entonces el método no hace nada.");
+			throw new IllegalArgumentException("No tiene sentido llamar a añadirTuristasVuelo() si no se quiere ni " +
+				"usar los datos de turismo presentes ni aproximar los futuros, ya que entonces el método no hace nada.");
 		}
 
 		Propiedades p = new Propiedades(db);
@@ -263,6 +307,141 @@ public class Añadir {
 				"que añade los datos de turismo, la operación ETL que calcula los pasajeros de cada vuelo, la " +
 				"operación ETL que convierte las fechas de vuelos a tipo date y la operación ETL que añade conexiones " +
 				"faltantes entre aeropuertos y países antes de ejecutarla.");
+		}
+	}
+
+	/**
+	 * Añade una estimación de los ingresos derivados del turismo que generan los pasajeros de cada vuelo de llegada
+	 * usando los datos de gasto turístico.
+	 * Requiere que se haya ejecutado la operación ETL que añade el número de turistas a cada vuelo.
+	 * Fija la propiedad {@link Propiedad#ETL_INGRESOS_VUELO} a true en la BD.
+	 * @param mismaFecha Si es true, para cada vuelo se intentará buscar datos de gasto turístico en su fecha de llegada.
+	 *                   Útil si se está trabajando con vuelos pasados y se sabe que se dispone de datos de gasto
+	 *                   turístico para los mismos.
+	 * @param aproximarFaltantes Si es true, los vuelos que no tengan datos asignados (porque no había datos en su
+	 *                           fecha o porque mismaFecha es false) calcularán sus ingresos usando los datos de gasto
+	 *                           turístico del año más reciente de su mes de llegada. Útil si se trabaja con vuelos
+	 *                           futuros y se sabe que no se dispone de datos de gasto turístico para los mismos.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirTuristasVuelo}.
+	 * @throws IllegalArgumentException Si mismaFecha y aproximarFaltantes son ambos false.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void añadirIngresosVuelo(@Name("mismaFecha") Boolean mismaFecha,
+									@Name("aproximarFaltantes") Boolean aproximarFaltantes) {
+		if (!mismaFecha && !aproximarFaltantes) {
+			throw new IllegalArgumentException("No tiene sentido llamar a añadirIngresosVuelo() si no se quiere ni " +
+				"usar los datos de gasto presentes ni aproximar los futuros, ya que entonces el método no hace nada.");
+		}
+
+		Propiedades p = new Propiedades(db);
+		if (p.getBool(Propiedad.ETL_TURISTAS_VUELO)) {
+			try (Transaction tx = db.beginTx()) {
+				/*
+				 * Antes de nada, limpiar los datos de ingresos que pudiera haber de antes, ya que este
+				 * código necesita saber qué vuelos han recibido datos y qué vuelos no durante la ejecución
+				 */
+				tx.execute("MATCH (f:FLIGHT) SET f.incomeFromTurism = null");
+
+				if (mismaFecha) {
+					/*
+					 * Primero buscamos vuelos para los que existan datos de gasto entre su país de origen y de destino
+					 */
+					tx.execute(
+						"MATCH (f:FLIGHT) " +
+						"CALL { " +
+							"WITH f " +
+							"MATCH (f)<-[]-(:AirportOperationDay)<-[]-(:Airport)<-[]-(c1:Country) " +
+							"WITH f, c1 " +
+							"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
+							"WITH f, c1, c2 " +
+							"MATCH (c1)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
+							"WHERE c1 <> c2 AND te.year = f.dateOfArrival.year AND te.month = f.dateOfArrival.month " +
+							"RETURN te.expense as expense " +
+						"} " +
+						"SET f.incomeFromTurism = f.turists * expense");
+
+					/*
+					 * Habrá vuelos que se habrán quedado sin asignar porque no hay datos entre su país de origen y de
+					 * destino. Para esos vuelos, probamos a usar los datos genéricos del país de destino, si existen.
+					 */
+					tx.execute(
+						"MATCH (f:FLIGHT) " +
+						"WHERE f.incomeFromTurism IS NULL " +
+						"CALL { " +
+							"WITH f " +
+							"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
+							"WITH f, c2 " +
+							"MATCH (:DefaultCountry)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
+							"WHERE te.year = f.dateOfArrival.year AND te.month = f.dateOfArrival.month " +
+							"RETURN te.expense as expense " +
+						"} " +
+						"SET f.incomeFromTurism = f.turists * expense");
+				}
+
+				/*
+				 * Ahora tenemos que ver qué hacemos con los vuelos que aún no tienen datos, que serán aquellos para
+				 * los que no hay datos de gasto turístico para su país de destino en su fecha de destino (o todos si
+				 * mismaFecha era false).
+				 */
+				if (aproximarFaltantes) {
+					/*
+					 * Para cada vuelo, tenemos que buscar los datos de gasto turístico del mismo mes más recientes
+					 * que tengamos.
+					 */
+					Consultas consultas = new Consultas(db);
+					int primerAño = consultas.getPrimerAñoDatosGastoTurístico();
+					int últimoAño = consultas.getÚltimoAñoDatosGastoTurístico();
+
+					for (int añoActual = últimoAño; añoActual >= primerAño; añoActual--) {
+						// Probar primero con los datos entre el país de origen y el de destino
+						tx.execute(
+							"MATCH (f:FLIGHT) " +
+							"WHERE f.incomeFromTurism IS NULL " +
+							"CALL { " +
+								"WITH f " +
+								"MATCH (f)<-[]-(:AirportOperationDay)<-[]-(:Airport)<-[]-(c1:Country) " +
+								"WITH f, c1 " +
+								"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
+								"WITH f, c1, c2 " +
+								"MATCH (c1)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
+								"WHERE c1 <> c2 AND te.year = " + añoActual + " AND te.month = f.dateOfArrival.month " +
+								"RETURN te.expense as expense " +
+							"} " +
+							"SET f.incomeFromTurism = f.turists * expense");
+
+						// Si no hay datos, usar el país genérico como origen
+						tx.execute(
+							"MATCH (f:FLIGHT) " +
+							"WHERE f.incomeFromTurism IS NULL " +
+							"CALL { " +
+								"WITH f " +
+								"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
+								"WITH f, c2 " +
+								"MATCH (:DefaultCountry)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
+								"WHERE te.year = " + añoActual + " AND te.month = f.dateOfArrival.month " +
+								"RETURN te.expense as expense " +
+							"} " +
+							"SET f.incomeFromTurism = f.turists * expense");
+					}
+				}
+
+				/*
+				 * Llegados a este punto, no hay nada más que hacer. Los vuelos que aún no tengan un valor de ingresos
+				 * no tienen datos disponibles que puedan usar.
+				 * Fijamos sus ingresos a 0.
+				 */
+				tx.execute(
+					"MATCH (f:FLIGHT) " +
+					"WHERE f.incomeFromTurism IS NULL " +
+					"SET f.incomeFromTurism = 0");
+
+				tx.commit();
+				new Propiedades(db).setBool(Propiedad.ETL_INGRESOS_VUELO, true);
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que añade el número de turistas a cada vuelo antes de ejecutarla.");
 		}
 	}
 }
