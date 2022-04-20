@@ -24,6 +24,10 @@ public enum Propiedad {
 	ETL_CONECTIVIDAD,
 	// True si se han cargado los datos del ratio de turistas para los diferentes países y regiones
 	ETL_RATIO_TURISTAS,
+	// True si se han cargado los datos del gasto medio por turista
+	ETL_GASTO_TURÍSTICO,
 	// True si se ha añadido el número estimado de turistas a los vuelos de llegada
-	ETL_TURISTAS_VUELO
+	ETL_TURISTAS_VUELO,
+	// Trie si se ha añadido la estimación de ingresos por turismo a cada vuelo
+	ETL_INGRESOS_VUELO
 }
