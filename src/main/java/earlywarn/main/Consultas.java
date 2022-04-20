@@ -73,11 +73,11 @@ public class Consultas {
 	 * @return Año más antiguo del que hay registros en la BD acerca del porcentaje de turistas
 	 */
 	public int getPrimerAñoDatosTurismo() {
-		if (últimoAñoDatosTurismo == null) {
+		if (primerAñoDatosTurismo == null) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute("MATCH (tr:TuristRatio) RETURN min(tr.year)")) {
 					Map<String, Object> row = res.next();
-					últimoAñoDatosTurismo = Math.toIntExact((Long) row.get(res.columns().get(0)));
+					primerAñoDatosTurismo = Math.toIntExact((Long) row.get(res.columns().get(0)));
 				}
 			}
 		}
