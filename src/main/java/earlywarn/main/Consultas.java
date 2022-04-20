@@ -22,8 +22,15 @@ public class Consultas {
 	 */
 	private final GraphDatabaseService db;
 
+	// Primer año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
+	private Integer primerAñoDatosTurismo;
+	// Último año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
+	private Integer últimoAñoDatosTurismo;
+
 	public Consultas(GraphDatabaseService db) {
 		this.db = db;
+		primerAñoDatosTurismo = null;
+		últimoAñoDatosTurismo = null;
 	}
 
 	/**
@@ -57,6 +64,42 @@ public class Consultas {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
 				"de conversión de relaciones AOD antes de ejecutarla.");
 		}
+	}
+
+	/**
+	 * Devuelve el año más antiguo del que se tienen datos acerca del porcentaje de visitantes por motivos turísticos.
+	 * El valor está cacheado, por lo que una instancia de esta clase siempre devolverá el mismo. La instancia actual
+	 * solo consultará la base de datos la primera vez que se llame a este método.
+	 * @return Año más antiguo del que hay registros en la BD acerca del porcentaje de turistas
+	 */
+	public int getPrimerAñoDatosTurismo() {
+		if (últimoAñoDatosTurismo == null) {
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute("MATCH (tr:TuristRatio) RETURN min(tr.year)")) {
+					Map<String, Object> row = res.next();
+					últimoAñoDatosTurismo = Math.toIntExact((Long) row.get(res.columns().get(0)));
+				}
+			}
+		}
+		return primerAñoDatosTurismo;
+	}
+
+	/**
+	 * Devuelve el año más reciente del que se tienen datos acerca del porcentaje de visitantes por motivos turísticos.
+	 * El valor está cacheado, por lo que una instancia de esta clase siempre devolverá el mismo. La instancia actual
+	 * solo consultará la base de datos la primera vez que se llame a este método.
+	 * @return Año más reciente del que hay registros en la BD acerca del porcentaje de turistas
+	 */
+	public int getÚltimoAñoDatosTurismo() {
+		if (últimoAñoDatosTurismo == null) {
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute("MATCH (tr:TuristRatio) RETURN max(tr.year)")) {
+					Map<String, Object> row = res.next();
+					últimoAñoDatosTurismo = Math.toIntExact((Long) row.get(res.columns().get(0)));
+				}
+			}
+		}
+		return últimoAñoDatosTurismo;
 	}
 
 	/**
