@@ -87,6 +87,17 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Obtiene el número de pasajeros que viajan desde y hacia cada aeropuerto entre todos los vuelos de " +
+		"llegada al país indicado en el rango de fechas indicado. Solo se incluyen aeropuertos del país indicado. " +
+		"Si el país se deja en blanco, se tienen en cuenta todos los vuelos y aeropuertos.")
+	public Map<String, Integer> getPasajerosPorAeropuerto(@Name("idPaís") String idPaís,
+														 @Name("fechaInicio") LocalDate fechaInicio,
+														 @Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getPasajerosPorAeropuerto(fechaInicio, fechaFin, idPaís);
+	}
+
+	@UserFunction
 	@Description("Prueba para Propiedades.inicializadas()")
 	public Boolean propInit() {
 		return new Propiedades(db).inicializadas();

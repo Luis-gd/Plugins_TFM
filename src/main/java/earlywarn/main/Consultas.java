@@ -402,4 +402,84 @@ public class Consultas {
 	public TreeMap<String, Integer> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin) {
 		return getPasajerosPorAerolínea(díaInicio, díaFin, "");
 	}
+
+	/**
+	 * Obtiene el número de pasajeros que viajan desde y hasta cada aeropuerto en un rango de fechas,
+	 * opcionalmente filtrando por país de destino.
+	 * Requiere que se haya ejecutado la operación ETL que calcula el número de pasajeros a bordo de cada vuelo, la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto y la operación ETL que convierte las
+	 * fechas de los vuelos a tipo date.
+	 * @param díaInicio Primer día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino y solo se devolverán
+	 *               aeropuertos de este país. Si se deja en blanco, la restricción no se aplica.
+	 * @return Mapa que relaciona códigos IATA de aeropuertos con el número de pasajeros que viajan desde y hasta cada
+	 * uno en el rango de fechas indicado.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 */
+	public TreeMap<String, Integer> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+		TreeMap<String, Integer> ret = new TreeMap<>();
+
+		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)
+		&& propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
+			String consulta;
+			if (idPaís.isEmpty()) {
+				// Esta consulta cuenta a los pasajeros tanto a la llegada como a la salida
+				consulta = "MATCH (f:FLIGHT)-[]-(:AirportOperationDay)-[]-(a:Airport) " +
+					"WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= " +
+					"date(\"" + díaFinStr + "\") RETURN distinct(a.iata), sum(f.passengers)";
+			} else {
+				/*
+				 * Esta consulta cuenta primero los pasajeros del aeropuerto de destino (que es un aeropuerto del país
+				 * indicado) y después los del aeropuerto de origen solo si éste es del país indicado.
+				 */
+				consulta = "MATCH (c1:Country)-[]-(a1:Airport)-[]-(aod1:AirportOperationDay)-[]->(f:FLIGHT)" +
+					"-[]->(aod2:AirportOperationDay)-[]-(a2:Airport)-[]-(c2:Country) " +
+					"WHERE c2.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+					"f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
+					"CALL { " +
+						"WITH f, a2 " +
+						"RETURN distinct(a2.iata) AS iata, sum(f.passengers) AS p " +
+						"UNION " +
+						"WITH c1, a1, f " +
+						"MATCH (c1) " +
+						"WHERE c1.countryId = \"" + idPaís + "\" " +
+						"RETURN distinct(a1.iata) AS iata, sum(f.passengers) AS p " +
+					"} " +
+					"RETURN distinct(iata), sum(p)";
+			}
+
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute(consulta)) {
+					List<String> columnas = res.columns();
+					while (res.hasNext()) {
+						Map<String, Object> row = res.next();
+						String aeropuerto = (String) row.get(columnas.get(0));
+						// Parece que algunos resultados vienen sin aeropuerto
+						if (!aeropuerto.isEmpty()) {
+							ret.put(aeropuerto, Math.toIntExact((Long) row.get(columnas.get(1))));
+						}
+					}
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que calcula el número de pasajeros de cada vuelo, la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país y la operación ETL que convierte las fechas de vuelos a tipo date " +
+				"antes de ejecutarla.");
+		}
+
+		return ret;
+	}
+	/**
+	 * @see #getPasajerosPorAeropuerto(LocalDate, LocalDate, String)
+	 */
+	public TreeMap<String, Integer> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin) {
+		return getPasajerosPorAeropuerto(díaInicio, díaFin, "");
+	}
 }
