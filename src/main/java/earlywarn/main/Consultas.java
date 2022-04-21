@@ -279,4 +279,47 @@ public class Consultas {
 	public double getIngresosTurísticosTotales(LocalDate díaInicio, LocalDate díaFin) {
 		return getIngresosTurísticosTotales(díaInicio, díaFin, "");
 	}
+
+	/**
+	 * Obtiene el valor total de conectividad entre todos los aeropuertos, opcionalmente filtrando por país.
+	 * Requiere que se haya ejecutado la operación ETL que carga los datos de la conectividad de cada aeropuerto y la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto.
+	 * @param idPaís Solo se tendrán en cuenta los aeropuertos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
+	 * @return Conectividad total entre todos los aeropuertos
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirConectividad(String)} o la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 */
+	public int getConectividadTotal(String idPaís) {
+		Propiedades propiedades = new Propiedades(db);
+
+		if (propiedades.getBool(Propiedad.ETL_CONECTIVIDAD) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
+			try (Transaction tx = db.beginTx()) {
+				if (idPaís.isEmpty()) {
+					try (Result res = tx.execute(
+						"MATCH (a:Airport) RETURN sum(a.connectivity)")) {
+						Map<String, Object> row = res.next();
+						return Math.toIntExact((Long) row.get(res.columns().get(0)));
+					}
+				} else {
+					try (Result res = tx.execute(
+						"MATCH (a:Airport)-[]-(c:Country) " +
+						"WHERE c.countryId = \"" + idPaís + "\" RETURN sum(a.connectivity)")) {
+						Map<String, Object> row = res.next();
+						return Math.toIntExact((Long) row.get(res.columns().get(0)));
+					}
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que carga los datos de la conectividad de cada aeropuerto y la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país antes de ejecutarla.");
+		}
+	}
+	/**
+	 * @see #getConectividadTotal(String)
+	 */
+	public int getConectividadTotal() {
+		return getConectividadTotal("");
+	}
 }

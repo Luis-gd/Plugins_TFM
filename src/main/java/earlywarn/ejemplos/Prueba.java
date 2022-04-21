@@ -65,6 +65,14 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Devuelve el valor de conectividad total entre todos los aeropuertos del país indicado. " +
+		"Si el país se deja en blanco, se tienen en cuenta todos los aeropuertos.")
+	public Long getConectividadTotal(@Name("idPaís") String idPaís) {
+		Consultas consultas = new Consultas(db);
+		return (long) consultas.getConectividadTotal(idPaís);
+	}
+
+	@UserFunction
 	@Description("Prueba para Propiedades.inicializadas()")
 	public Boolean propInit() {
 		return new Propiedades(db).inicializadas();
