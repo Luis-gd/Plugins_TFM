@@ -229,4 +229,54 @@ public class Consultas {
 	public int getPasajerosTotales(LocalDate díaInicio, LocalDate díaFin) {
 		return getPasajerosTotales(díaInicio, díaFin, "");
 	}
+
+	/**
+	 * Obtiene los ingresos turísticos totales en un rango de fechas, opcionalmente filtrando por país de destino.
+	 * Requiere que se haya ejecutado la operación ETL que calcula los ingresos por turismo de cada vuelo y la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto.
+	 * @param díaInicio Primer día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
+	 * @return Ingresos totales (en euros) entre todos los vuelos en el periodo indicado
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirIngresosVuelo(Boolean, Boolean)} o la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 */
+	public double getIngresosTurísticosTotales(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+
+		if (propiedades.getBool(Propiedad.ETL_INGRESOS_VUELO) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
+			try (Transaction tx = db.beginTx()) {
+				if (idPaís.isEmpty()) {
+					try (Result res = tx.execute(
+						"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= date(f.dateOfDeparture) <= " +
+						"date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
+						Map<String, Object> row = res.next();
+						return (double) row.get(res.columns().get(0));
+					}
+				} else {
+					try (Result res = tx.execute(
+						"MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
+						"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+						"date(f.dateOfDeparture) <= date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
+						Map<String, Object> row = res.next();
+						return (double) row.get(res.columns().get(0));
+					}
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que calcula los ingresos por turismo de cada vuelo y la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país antes de ejecutarla.");
+		}
+	}
+	/**
+	 * @see #getIngresosTurísticosTotales(LocalDate, LocalDate, String)
+	 */
+	public double getIngresosTurísticosTotales(LocalDate díaInicio, LocalDate díaFin) {
+		return getIngresosTurísticosTotales(díaInicio, díaFin, "");
+	}
 }

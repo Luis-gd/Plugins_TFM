@@ -56,6 +56,15 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Devuelve los ingresos turísticos totales entre todos los vuelos de llegada al país indicado en el " +
+		"rango de fechas indicado. Si el país se deja en blanco, se tienen en cuenta todos los vuelos.")
+	public Double getIngresosTurísticosTotales(@Name("idPaís") String idPaís, @Name("fechaInicio") LocalDate fechaInicio,
+									@Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getIngresosTurísticosTotales(fechaInicio, fechaFin, idPaís);
+	}
+
+	@UserFunction
 	@Description("Prueba para Propiedades.inicializadas()")
 	public Boolean propInit() {
 		return new Propiedades(db).inicializadas();
