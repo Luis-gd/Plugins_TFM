@@ -9,6 +9,9 @@ import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -70,6 +73,17 @@ public class Prueba {
 	public Long getConectividadTotal(@Name("idPaís") String idPaís) {
 		Consultas consultas = new Consultas(db);
 		return (long) consultas.getConectividadTotal(idPaís);
+	}
+
+	@UserFunction
+	@Description("Obtiene el número de pasajeros que viajan con cada aerolínea entre todos los vuelos de llegada " +
+		"al país indicado en el rango de fechas indicado. Si el país se deja en blanco, se tienen en cuenta " +
+		"todos los vuelos.")
+	public Map<String, Integer> getPasajerosPorAerolínea(@Name("idPaís") String idPaís,
+														 @Name("fechaInicio") LocalDate fechaInicio,
+														 @Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getPasajerosPorAerolínea(fechaInicio, fechaFin, idPaís);
 	}
 
 	@UserFunction

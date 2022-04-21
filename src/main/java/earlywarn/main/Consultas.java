@@ -11,12 +11,17 @@ import org.neo4j.graphdb.Transaction;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Clase usada para realizar consultas sencillas a la base de datos
  */
 public class Consultas {
+	// Aerolínea que tienen asignada los vuelos de la BD para los que no se conoce quién opera el vuelo
+	private static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
+
 	/*
 	 * La instancia de la base de datos.
 	 * Debe ser obtenida usando la anotación @Context en un procedimiento o función
@@ -321,5 +326,69 @@ public class Consultas {
 	 */
 	public int getConectividadTotal() {
 		return getConectividadTotal("");
+	}
+
+	/**
+	 * Obtiene el número de pasajeros que viajan con cada aerolínea en un rango de fechas,
+	 * opcionalmente filtrando por país de destino.
+	 * Se excluyen los pasajeros de vuelos cuya aerolínea se desconoce.
+	 * Requiere que se haya ejecutado la operación ETL que calcula el número de pasajeros a bordo de cada vuelo, la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto y la operación ETL que convierte las
+	 * fechas de los vuelos a tipo date.
+	 * @param díaInicio Primer día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
+	 * @return Mapa que relaciona códigos de aerolíneas con el número de pasajeros que viajan con cada una
+	 * en el rango de fechas indicado.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 */
+	public TreeMap<String, Integer> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+		TreeMap<String, Integer> ret = new TreeMap<>();
+
+		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)
+		&& propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
+			String consulta;
+			if (idPaís.isEmpty()) {
+				consulta = "MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= " +
+					"date(\"" + díaFinStr + "\") RETURN distinct(f.operator), sum(f.passengers)";
+			} else {
+				consulta = "MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
+					"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+					"f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
+					"RETURN distinct(f.operator), sum(f.passengers)";
+			}
+
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute(consulta)) {
+					List<String> columnas = res.columns();
+					while (res.hasNext()) {
+						Map<String, Object> row = res.next();
+						String aerolínea = (String) row.get(columnas.get(0));
+						if (!aerolínea.equals(AEROLÍNEA_DESCONOCIDA)) {
+							ret.put(aerolínea, Math.toIntExact((Long) row.get(columnas.get(1))));
+						}
+					}
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que calcula el número de pasajeros de cada vuelo, la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país y la operación ETL que convierte las fechas de vuelos a tipo date " +
+				"antes de ejecutarla.");
+		}
+
+		return ret;
+	}
+	/**
+	 * @see #getPasajerosPorAerolínea(LocalDate, LocalDate, String)
+	 */
+	public TreeMap<String, Integer> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin) {
+		return getPasajerosPorAerolínea(díaInicio, díaFin, "");
 	}
 }
