@@ -152,7 +152,8 @@ public class Consultas {
 
 	/**
 	 * Dado una fecha de inicio, una fecha de fin y un país devuelve el valor de riesgo importado para el país.
-	 * Requiere que se haya llevado a cabo la operación ETL que elimina vuelos sin datos SIR.
+	 * Requiere que se haya llevado a cabo la operación ETL que elimina vuelos sin datos SIR y la operación ETL que
+	 * convierte las fechas de vuelos a tipo date.
 	 * Ejemplo: earlywarn.main.SIR_por_pais(date("2019-06-01"), date({year: 2019, month: 7, day: 1}), "Spain")
 	 * @param pais Nombre del país tal y como aparece en la base de datos
 	 * @param diaInicio Primer día a tener en cuenta
@@ -160,20 +161,22 @@ public class Consultas {
 	 * @return Valor del riesgo importado (SIR total) para el país indicado teniendo en cuenta todos los vuelos entrantes
 	 * en el periodo especificado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 * {@link Modificar#borrarVuelosSinSIR()}.
+	 * {@link Modificar#borrarVuelosSinSIR()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public Double getRiesgoPorPais(String pais, LocalDate diaInicio, LocalDate diaFin) {
 		// Las formas de escribir las fechas en neo4j son como entrada: date("2019-06-01") y date({year: 2019, month: 7}
 		String diaInicioStr = diaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String diaFinStr = diaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
 
-		if (new Propiedades(db).getBool(Propiedad.ETL_BORRAR_VUELOS_SIN_SIR)) {
+		if (propiedades.getBool(Propiedad.ETL_BORRAR_VUELOS_SIN_SIR) &&
+		propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 					"MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(:Airport)" +
 					"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
 					"WHERE c.countryName=\"" + pais + "\" " +
-					"AND date(\"" + diaInicioStr + "\") <= date(f.dateOfDeparture) <= date(\"" + diaFinStr + "\")" +
+					"AND date(\"" + diaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + diaFinStr + "\")" +
 					"RETURN SUM(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();
 					return (Double) row.get(res.columns().get(0));
@@ -181,33 +184,37 @@ public class Consultas {
 			}
 		} else {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-				"que elimina los vuelos sin datos SIR antes de ejecutarla.");
+				"que elimina los vuelos sin datos SIR y la operación ETL que convierte las fechas de vuelos a tipo " +
+				"date antes de ejecutarla.");
 		}
 	}
 
 	/**
 	 * Obtiene el número total de pasajeros que viajan en un rango de fechas,
 	 * opcionalmente filtrando por país de destino.
-	 * Requiere que se haya ejecutado la operación ETL que calcula el número de pasajeros a bordo de cada vuelo y la
-	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto.
+	 * Requiere que se haya ejecutado la operación ETL que calcula el número de pasajeros a bordo de cada vuelo, la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto y la operación ETL que
+	 * convierte las fechas de vuelos a tipo date.
 	 * @param díaInicio Primer día a tener en cuenta
 	 * @param díaFin Último día a tener en cuenta
 	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
 	 *               si se deja en blanco.
 	 * @return Número total de pasajeros en el rango de fechas indicado.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 * {@link Añadir#calcularNúmeroPasajeros()} o la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public int getPasajerosTotales(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
 
-		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
+		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS) &&
+		propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
 			try (Transaction tx = db.beginTx()) {
 				if (idPaís.isEmpty()) {
 					try (Result res = tx.execute(
-						"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= date(f.dateOfDeparture) <= " +
+						"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= " +
 						"date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
 						Map<String, Object> row = res.next();
 						return Math.toIntExact((Long) row.get(res.columns().get(0)));
@@ -216,7 +223,7 @@ public class Consultas {
 					try (Result res = tx.execute(
 						"MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
 						"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
-						"date(f.dateOfDeparture) <= date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
+						"f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
 						Map<String, Object> row = res.next();
 						return Math.toIntExact((Long) row.get(res.columns().get(0)));
 					}
@@ -224,8 +231,9 @@ public class Consultas {
 			}
 		} else {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-				"que calcula el número de pasajeros de cada vuelo y la operación ETL que añade las relaciones " +
-				"faltantes entre aeropuerto y país antes de ejecutarla.");
+				"que calcula el número de pasajeros de cada vuelo, la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país y la operación ETL que convierte las fechas de vuelos a tipo " +
+				"date antes de ejecutarla.");
 		}
 	}
 	/**
@@ -237,27 +245,29 @@ public class Consultas {
 
 	/**
 	 * Obtiene los ingresos turísticos totales en un rango de fechas, opcionalmente filtrando por país de destino.
-	 * Requiere que se haya ejecutado la operación ETL que calcula los ingresos por turismo de cada vuelo y la
-	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto.
+	 * Requiere que se haya ejecutado la operación ETL que calcula los ingresos por turismo de cada vuelo, la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto y la operación ETL que
+	 * 	 * convierte las fechas de vuelos a tipo date.
 	 * @param díaInicio Primer día a tener en cuenta
 	 * @param díaFin Último día a tener en cuenta
 	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
 	 *               si se deja en blanco.
 	 * @return Ingresos totales (en euros) entre todos los vuelos en el periodo indicado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 * {@link Añadir#añadirIngresosVuelo(Boolean, Boolean)} o la operación ETL
-	 * {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 * {@link Añadir#añadirIngresosVuelo(Boolean, Boolean)}, la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public double getIngresosTurísticosTotales(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
 
-		if (propiedades.getBool(Propiedad.ETL_INGRESOS_VUELO) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
+		if (propiedades.getBool(Propiedad.ETL_INGRESOS_VUELO) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS) &&
+		propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
 			try (Transaction tx = db.beginTx()) {
 				if (idPaís.isEmpty()) {
 					try (Result res = tx.execute(
-						"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= date(f.dateOfDeparture) <= " +
+						"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= " +
 						"date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
 						Map<String, Object> row = res.next();
 						return (double) row.get(res.columns().get(0));
@@ -266,7 +276,7 @@ public class Consultas {
 					try (Result res = tx.execute(
 						"MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
 						"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
-						"date(f.dateOfDeparture) <= date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
+						"f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
 						Map<String, Object> row = res.next();
 						return (double) row.get(res.columns().get(0));
 					}
@@ -274,8 +284,9 @@ public class Consultas {
 			}
 		} else {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-				"que calcula los ingresos por turismo de cada vuelo y la operación ETL que añade las relaciones " +
-				"faltantes entre aeropuerto y país antes de ejecutarla.");
+				"que calcula los ingresos por turismo de cada vuelo, la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país y la operación ETL que convierte las fechas de vuelos a tipo " +
+				"date antes de ejecutarla.");
 		}
 	}
 	/**
