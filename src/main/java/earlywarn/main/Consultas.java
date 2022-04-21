@@ -3,6 +3,7 @@ package earlywarn.main;
 import earlywarn.definiciones.ETLOperationRequiredException;
 import earlywarn.definiciones.Propiedad;
 import earlywarn.definiciones.SentidoVuelo;
+import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
@@ -58,10 +59,10 @@ public class Consultas {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 					"MATCH (a:Airport)-[o:OPERATES_ON]->(:AirportOperationDay)" +
-						sentido.operadorAODVuelo("") + "(f:FLIGHT) " +
-						"WHERE a.iata = \"" + idAeropuerto + "\" " +
-						"AND date(\"" + díaInicioStr + "\") <= o.date <= date(\"" + díaFinStr + "\") " +
-						"RETURN count(f)")) {
+					sentido.operadorAODVuelo("") + "(f:FLIGHT) " +
+					"WHERE a.iata = \"" + idAeropuerto + "\" " +
+					"AND date(\"" + díaInicioStr + "\") <= o.date <= date(\"" + díaFinStr + "\") " +
+					"RETURN count(f)")) {
 					Map<String, Object> row = res.next();
 					return (long) row.get(res.columns().get(0));
 				}
@@ -165,10 +166,10 @@ public class Consultas {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 					"MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(:Airport)" +
-						"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
-						"WHERE c.countryName=\"" + pais + "\" " +
-						"AND date(\"" + diaInicioStr + "\") <= date(f.dateOfDeparture) <= date(\"" + diaFinStr + "\")" +
-						"RETURN SUM(f.flightIfinal)")) {
+					"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
+					"WHERE c.countryName=\"" + pais + "\" " +
+					"AND date(\"" + diaInicioStr + "\") <= date(f.dateOfDeparture) <= date(\"" + diaFinStr + "\")" +
+					"RETURN SUM(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();
 					return (Double) row.get(res.columns().get(0));
 				}
@@ -177,5 +178,55 @@ public class Consultas {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
 				"que elimina los vuelos sin datos SIR antes de ejecutarla.");
 		}
+	}
+
+	/**
+	 * Obtiene el número total de pasajeros que viajan en un rango de fechas,
+	 * opcionalmente filtrando por país de destino.
+	 * Requiere que se haya ejecutado la operación ETL que calcula el número de pasajeros a bordo de cada vuelo y la
+	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto.
+	 * @param díaInicio Primer día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
+	 * @return Número total de pasajeros en el rango de fechas indicado.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#calcularNúmeroPasajeros()} o la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 */
+	public int getPasajerosTotales(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+
+		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
+			try (Transaction tx = db.beginTx()) {
+				if (idPaís.isEmpty()) {
+					try (Result res = tx.execute(
+						"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= date(f.dateOfDeparture) <= " +
+						"date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
+						Map<String, Object> row = res.next();
+						return Math.toIntExact((Long) row.get(res.columns().get(0)));
+					}
+				} else {
+					try (Result res = tx.execute(
+						"MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
+						"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+						"date(f.dateOfDeparture) <= date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
+						Map<String, Object> row = res.next();
+						return Math.toIntExact((Long) row.get(res.columns().get(0)));
+					}
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que calcula el número de pasajeros de cada vuelo y la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país antes de ejecutarla.");
+		}
+	}
+	/**
+	 * @see #getPasajerosTotales(LocalDate, LocalDate, String)
+	 */
+	public int getPasajerosTotales(LocalDate díaInicio, LocalDate díaFin) {
+		return getPasajerosTotales(díaInicio, díaFin, "");
 	}
 }
