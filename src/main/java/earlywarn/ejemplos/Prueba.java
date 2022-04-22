@@ -98,6 +98,16 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Obtiene todas las líneas existentes en el periodo indicado que terminan en un aeropuerto del país " +
+		"indicado. Si el país se deja en blanco, se obtienen todas las líneas.")
+	public List<String> getLíneas(@Name("idPaís") String idPaís,
+								  @Name("fechaInicio") LocalDate fechaInicio,
+								  @Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getLíneas(fechaInicio, fechaFin, idPaís);
+	}
+
+	@UserFunction
 	@Description("Prueba para Propiedades.inicializadas()")
 	public Boolean propInit() {
 		return new Propiedades(db).inicializadas();

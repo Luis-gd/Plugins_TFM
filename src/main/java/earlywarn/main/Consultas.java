@@ -11,6 +11,7 @@ import org.neo4j.graphdb.Transaction;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -481,5 +482,62 @@ public class Consultas {
 	 */
 	public TreeMap<String, Integer> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin) {
 		return getPasajerosPorAeropuerto(díaInicio, díaFin, "");
+	}
+
+	/**
+	 * Devuelve todas las líneas (conexioens entre dos aeropuertos por los que circula al menos un vuelo) que existen
+	 * en el periodo indicado, opcionalmente filtrando por país de destino.
+	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
+	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * @param díaInicio Primer día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino. Si se deja en blanco,
+	 *               la restricción no se aplica.
+	 * @return Lista con los identificadores de todas las líneas (formados por el código IATA del aeropuerto de
+	 * origen, un guión y el código IATA del aeropuerto de destino)
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 */
+	public List<String> getLíneas(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+		List<String> ret = new ArrayList<>();
+
+		if (propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS) &&
+		propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
+			String consulta;
+			if (idPaís.isEmpty()) {
+				consulta = "MATCH (c1:Country)-[]-(a1:Airport)-[]-(aod1:AirportOperationDay)-[]->(f:FLIGHT)" +
+					"-[]->(aod2:AirportOperationDay)-[]-(a2:Airport)-[]-(c2:Country) " +
+					"WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
+					"RETURN distinct([a1.iata, a2.iata])";
+			} else {
+				consulta = "MATCH (c1:Country)-[]-(a1:Airport)-[]-(aod1:AirportOperationDay)-[]->(f:FLIGHT)" +
+					"-[]->(aod2:AirportOperationDay)-[]-(a2:Airport)-[]-(c2:Country) " +
+					"WHERE c2.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+					"f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
+					"RETURN distinct([a1.iata, a2.iata])";
+			}
+
+			try (Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute(consulta)) {
+					List<String> columnas = res.columns();
+					while (res.hasNext()) {
+						@SuppressWarnings("unchecked")
+						List<String> row = (List<String>) res.next().get(columnas.get(0));
+						if (!(row.get(0).isEmpty() || row.get(1).isEmpty())) {
+							ret.add(row.get(0) + "-" + row.get(1));
+						}
+					}
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+				"que añade las relaciones faltantes entre aeropuerto y país y la operación ETL que convierte las " +
+				"fechas de vuelos a tipo date antes de ejecutarla.");
+		}
+
+		return ret;
 	}
 }
