@@ -485,7 +485,7 @@ public class Consultas {
 	}
 
 	/**
-	 * Devuelve todas las líneas (conexioens entre dos aeropuertos por los que circula al menos un vuelo) que existen
+	 * Devuelve todas las líneas (conexiones entre dos aeropuertos por los que circula al menos un vuelo) que existen
 	 * en el periodo indicado, opcionalmente filtrando por país de destino.
 	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
