@@ -9,6 +9,9 @@ import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -44,6 +47,54 @@ public class Prueba {
 	public Long últimoAñoDatosTurismo() {
 		Consultas consultas = new Consultas(db);
 		return (long) consultas.getÚltimoAñoDatosTurismo();
+	}
+
+	@UserFunction
+	@Description("Devuelve el número de pasajeros totales entre todos los vuelos de llegada al país indicado en el " +
+		"rango de fechas indicado. Si el país se deja en blanco, se tienen en cuenta todos los vuelos.")
+	public Long getPasajerosTotales(@Name("idPaís") String idPaís, @Name("fechaInicio") LocalDate fechaInicio,
+									@Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return (long) consultas.getPasajerosTotales(fechaInicio, fechaFin, idPaís);
+	}
+
+	@UserFunction
+	@Description("Devuelve los ingresos turísticos totales entre todos los vuelos de llegada al país indicado en el " +
+		"rango de fechas indicado. Si el país se deja en blanco, se tienen en cuenta todos los vuelos.")
+	public Double getIngresosTurísticosTotales(@Name("idPaís") String idPaís, @Name("fechaInicio") LocalDate fechaInicio,
+									@Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getIngresosTurísticosTotales(fechaInicio, fechaFin, idPaís);
+	}
+
+	@UserFunction
+	@Description("Devuelve el valor de conectividad total entre todos los aeropuertos del país indicado. " +
+		"Si el país se deja en blanco, se tienen en cuenta todos los aeropuertos.")
+	public Long getConectividadTotal(@Name("idPaís") String idPaís) {
+		Consultas consultas = new Consultas(db);
+		return (long) consultas.getConectividadTotal(idPaís);
+	}
+
+	@UserFunction
+	@Description("Obtiene el número de pasajeros que viajan con cada aerolínea entre todos los vuelos de llegada " +
+		"al país indicado en el rango de fechas indicado. Si el país se deja en blanco, se tienen en cuenta " +
+		"todos los vuelos.")
+	public Map<String, Integer> getPasajerosPorAerolínea(@Name("idPaís") String idPaís,
+														 @Name("fechaInicio") LocalDate fechaInicio,
+														 @Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getPasajerosPorAerolínea(fechaInicio, fechaFin, idPaís);
+	}
+
+	@UserFunction
+	@Description("Obtiene el número de pasajeros que viajan desde y hacia cada aeropuerto entre todos los vuelos de " +
+		"llegada al país indicado en el rango de fechas indicado. Solo se incluyen aeropuertos del país indicado. " +
+		"Si el país se deja en blanco, se tienen en cuenta todos los vuelos y aeropuertos.")
+	public Map<String, Integer> getPasajerosPorAeropuerto(@Name("idPaís") String idPaís,
+														 @Name("fechaInicio") LocalDate fechaInicio,
+														 @Name("fechaFin") LocalDate fechaFin) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getPasajerosPorAeropuerto(fechaInicio, fechaFin, idPaís);
 	}
 
 	@UserFunction
