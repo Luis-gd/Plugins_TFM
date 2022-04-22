@@ -178,9 +178,9 @@ public class Consultas {
 					"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
 					"WHERE c.countryName=\"" + pais + "\" " +
 					"AND date(\"" + diaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + diaFinStr + "\")" +
-					"RETURN SUM(f.flightIfinal)")) {
+					"RETURN sum(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();
-					return (Double) row.get(res.columns().get(0));
+					return Utils.resultadoADouble(row.get(res.columns().get(0)));
 				}
 			}
 		} else {
@@ -279,7 +279,7 @@ public class Consultas {
 						"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
 						"f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
 						Map<String, Object> row = res.next();
-						return (double) row.get(res.columns().get(0));
+						return Utils.resultadoADouble(row.get(res.columns().get(0)));
 					}
 				}
 			}

@@ -112,7 +112,7 @@ public class Línea {
 						"RETURN sum(f.incomeFromTurism)")) {
 
 						Map<String, Object> row = res.next();
-						ingresosTurísticos = (Double) row.get(res.columns().get(0));
+						ingresosTurísticos = Utils.resultadoADouble(row.get(res.columns().get(0)));
 					}
 				}
 			} else {
@@ -173,7 +173,7 @@ public class Línea {
 						"RETURN sum(f.flightIfinal)")) {
 
 						Map<String, Object> row = res.next();
-						riesgoImportado = (Double) row.get(res.columns().get(0));
+						riesgoImportado = Utils.resultadoADouble(row.get(res.columns().get(0)));
 					}
 				}
 			} else {
