@@ -21,7 +21,7 @@ import java.util.TreeMap;
  */
 public class Consultas {
 	// Aerolínea que tienen asignada los vuelos de la BD para los que no se conoce quién opera el vuelo
-	private static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
+	public static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
 
 	/*
 	 * La instancia de la base de datos.

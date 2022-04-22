@@ -5,6 +5,7 @@ import java.util.List;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
 import earlywarn.definiciones.Propiedad;
+import earlywarn.main.Línea;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
@@ -18,6 +19,8 @@ import org.apache.commons.lang3.ArrayUtils;
 public class Prueba {
 	@Context
 	public GraphDatabaseService db;
+
+	// -- Ejemplos genéricos --
 
 	@UserFunction
 	@Description("Ejemplo que suma 2 valores")
@@ -34,6 +37,8 @@ public class Prueba {
 		return pcc.correlation(ArrayUtils.toPrimitive(var1Array), ArrayUtils.toPrimitive(var2Array));
 	}
 
+	// -- Consultas --
+
 	@UserFunction
 	@Description("Devuelve el nº de vuelos que salen del aeropuerto indicado en el rango de días indicado")
 	public Long vuelosSalida(@Name("idAeropuerto") String idAeropuerto, @Name("fechaInicio") LocalDate fechaInicio,
@@ -47,6 +52,13 @@ public class Prueba {
 	public Long últimoAñoDatosTurismo() {
 		Consultas consultas = new Consultas(db);
 		return (long) consultas.getÚltimoAñoDatosTurismo();
+	}
+
+	@UserFunction
+	@Description("Prueba para Consultas.getSIRPorPais(pais, diaInicio, diaFin)")
+	public Double SIRPorPais(@Name("pais")String pais, @Name("diaInicio") LocalDate diaInicio,
+							 @Name("diaFin") LocalDate diaFin) {
+		return new Consultas(db).getRiesgoPorPais(pais, diaInicio, diaFin);
 	}
 
 	@UserFunction
@@ -97,6 +109,8 @@ public class Prueba {
 		return consultas.getPasajerosPorAeropuerto(fechaInicio, fechaFin, idPaís);
 	}
 
+	// -- Líneas --
+
 	@UserFunction
 	@Description("Obtiene todas las líneas existentes en el periodo indicado que terminan en un aeropuerto del país " +
 		"indicado. Si el país se deja en blanco, se obtienen todas las líneas.")
@@ -108,6 +122,49 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Devuelve los pasajeros que circulan por la línea indicada en el periodo indicado")
+	public Long getPasajerosLínea(@Name("idLínea") String idLínea, @Name("díaInicio") LocalDate díaInicio,
+								  @Name("díaFin") LocalDate díaFin) {
+		Línea línea = new Línea(idLínea, díaInicio, díaFin, db);
+		return línea.getPasajeros();
+	}
+
+	@UserFunction
+	@Description("Devuelve los ingresos turísticos totales de la línea indicada en el periodo indicado")
+	public Double getIngresosTurísticosLínea(@Name("idLínea") String idLínea, @Name("díaInicio") LocalDate díaInicio,
+										   @Name("díaFin") LocalDate díaFin) {
+		Línea línea = new Línea(idLínea, díaInicio, díaFin, db);
+		return línea.getIngresosTurísticos();
+	}
+
+	@UserFunction
+	@Description("Devuelve el número de vuelos que circulan por la línea indicada en el periodo indicado")
+	public Long getNumVuelosLínea(@Name("idLínea") String idLínea, @Name("díaInicio") LocalDate díaInicio,
+								  @Name("díaFin") LocalDate díaFin) {
+		Línea línea = new Línea(idLínea, díaInicio, díaFin, db);
+		return línea.getNumVuelos();
+	}
+
+	@UserFunction
+	@Description("Devuelve el riesgo importado total de la línea indicada en el periodo indicado")
+	public Double getRiesgoImportadoLínea(@Name("idLínea") String idLínea, @Name("díaInicio") LocalDate díaInicio,
+										@Name("díaFin") LocalDate díaFin) {
+		Línea línea = new Línea(idLínea, díaInicio, díaFin, db);
+		return línea.getRiesgoImportado();
+	}
+
+	@UserFunction
+	@Description("Devuelve los pasajeros por aerolínea que circulan por la línea indicada en el periodo indicado")
+	public Map<String, Long> getPasajerosPorAerolíneaLínea(@Name("idLínea") String idLínea,
+														   @Name("díaInicio") LocalDate díaInicio,
+														   @Name("díaFin") LocalDate díaFin) {
+		Línea línea = new Línea(idLínea, díaInicio, díaFin, db);
+		return línea.getPasajerosPorAerolínea();
+	}
+
+	// -- Propiedades --
+
+	@UserFunction
 	@Description("Prueba para Propiedades.inicializadas()")
 	public Boolean propInit() {
 		return new Propiedades(db).inicializadas();
@@ -117,13 +174,6 @@ public class Prueba {
 	@Description("Prueba para Propiedades.getBool()")
 	public Boolean propGetBool(@Name("nombreProp") String nombreProp) {
 		return new Propiedades(db).getBool(Propiedad.valueOf(nombreProp));
-	}
-
-	@UserFunction
-	@Description("Prueba para Consultas.getSIRPorPais(pais, diaInicio, diaFin)")
-	public Double SIRPorPais(@Name("pais")String pais, @Name("diaInicio") LocalDate diaInicio,
-							 @Name("diaFin") LocalDate diaFin) {
-		return new Consultas(db).getRiesgoPorPais(pais, diaInicio, diaFin);
 	}
 
 	@Procedure(mode = Mode.WRITE)
