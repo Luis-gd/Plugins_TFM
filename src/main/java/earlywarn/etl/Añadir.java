@@ -313,7 +313,9 @@ public class Añadir {
 	/**
 	 * Añade una estimación de los ingresos derivados del turismo que generan los pasajeros de cada vuelo de llegada
 	 * usando los datos de gasto turístico.
-	 * Requiere que se haya ejecutado la operación ETL que añade el número de turistas a cada vuelo.
+	 * Requiere que se haya ejecutado la operación ETL que añade el número de turistas a cada vuelo, la operación
+	 * ETL que añade los datos de gasto turístico a la BD y la operación ETL que añade las relaciones faltantes entre
+	 * aeropuerto y país.
 	 * Fija la propiedad {@link Propiedad#ETL_INGRESOS_VUELO} a true en la BD.
 	 * @param mismaFecha Si es true, para cada vuelo se intentará buscar datos de gasto turístico en su fecha de llegada.
 	 *                   Útil si se está trabajando con vuelos pasados y se sabe que se dispone de datos de gasto
@@ -323,7 +325,8 @@ public class Añadir {
 	 *                           turístico del año más reciente de su mes de llegada. Útil si se trabaja con vuelos
 	 *                           futuros y se sabe que no se dispone de datos de gasto turístico para los mismos.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 * {@link Añadir#añadirTuristasVuelo}.
+	 * {@link Añadir#añadirTuristasVuelo}, la operación ETL {@link Añadir#añadirGastoTurístico(String)} o la operación
+	 * ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
 	 * @throws IllegalArgumentException Si mismaFecha y aproximarFaltantes son ambos false.
 	 */
 	@Procedure(mode = Mode.WRITE)
@@ -335,7 +338,8 @@ public class Añadir {
 		}
 
 		Propiedades p = new Propiedades(db);
-		if (p.getBool(Propiedad.ETL_TURISTAS_VUELO)) {
+		if (p.getBool(Propiedad.ETL_TURISTAS_VUELO) && p.getBool(Propiedad.ETL_GASTO_TURÍSTICO) &&
+		p.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
 			try (Transaction tx = db.beginTx()) {
 				/*
 				 * Antes de nada, limpiar los datos de ingresos que pudiera haber de antes, ya que este
@@ -348,15 +352,13 @@ public class Añadir {
 					 * Primero buscamos vuelos para los que existan datos de gasto entre su país de origen y de destino
 					 */
 					tx.execute(
-						"MATCH (f:FLIGHT) " +
+						"MATCH (c1:Country)-[]-(:Airport)-[]-(:AirportOperationDay)-[]->(f:FLIGHT)" +
+						"-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c2:Country) " +
+						"WHERE c1 <> c2 " +
 						"CALL { " +
-							"WITH f " +
-							"MATCH (f)<-[]-(:AirportOperationDay)<-[]-(:Airport)<-[]-(c1:Country) " +
-							"WITH f, c1 " +
-							"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
 							"WITH f, c1, c2 " +
 							"MATCH (c1)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
-							"WHERE c1 <> c2 AND te.year = f.dateOfArrival.year AND te.month = f.dateOfArrival.month " +
+							"WHERE te.year = f.dateOfArrival.year AND te.month = f.dateOfArrival.month " +
 							"RETURN te.expense as expense " +
 						"} " +
 						"SET f.incomeFromTurism = f.turists * expense");
@@ -366,11 +368,10 @@ public class Añadir {
 					 * destino. Para esos vuelos, probamos a usar los datos genéricos del país de destino, si existen.
 					 */
 					tx.execute(
-						"MATCH (f:FLIGHT) " +
-						"WHERE f.incomeFromTurism IS NULL " +
+						"MATCH (c1:Country)-[]-(:Airport)-[]-(:AirportOperationDay)-[]->(f:FLIGHT)" +
+						"-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c2:Country) " +
+						"WHERE c1 <> c2 AND f.incomeFromTurism IS NULL " +
 						"CALL { " +
-							"WITH f " +
-							"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
 							"WITH f, c2 " +
 							"MATCH (:DefaultCountry)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
 							"WHERE te.year = f.dateOfArrival.year AND te.month = f.dateOfArrival.month " +
@@ -396,27 +397,23 @@ public class Añadir {
 					for (int añoActual = últimoAño; añoActual >= primerAño; añoActual--) {
 						// Probar primero con los datos entre el país de origen y el de destino
 						tx.execute(
-							"MATCH (f:FLIGHT) " +
-							"WHERE f.incomeFromTurism IS NULL " +
+							"MATCH (c1:Country)-[]-(:Airport)-[]-(:AirportOperationDay)-[]->(f:FLIGHT)" +
+							"-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c2:Country) " +
+							"WHERE c1 <> c2 AND f.incomeFromTurism IS NULL " +
 							"CALL { " +
-								"WITH f " +
-								"MATCH (f)<-[]-(:AirportOperationDay)<-[]-(:Airport)<-[]-(c1:Country) " +
-								"WITH f, c1 " +
-								"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
 								"WITH f, c1, c2 " +
 								"MATCH (c1)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
-								"WHERE c1 <> c2 AND te.year = " + añoActual + " AND te.month = f.dateOfArrival.month " +
+								"WHERE te.year = " + añoActual + " AND te.month = f.dateOfArrival.month " +
 								"RETURN te.expense as expense " +
 							"} " +
 							"SET f.incomeFromTurism = f.turists * expense");
 
 						// Si no hay datos, usar el país genérico como origen
 						tx.execute(
-							"MATCH (f:FLIGHT) " +
-							"WHERE f.incomeFromTurism IS NULL " +
+							"MATCH (c1:Country)-[]-(:Airport)-[]-(:AirportOperationDay)-[]->(f:FLIGHT)" +
+							"-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c2:Country) " +
+							"WHERE c1 <> c2 AND f.incomeFromTurism IS NULL " +
 							"CALL { " +
-								"WITH f " +
-								"MATCH (f)-[]->(:AirportOperationDay)<-[]-(:Airport)<-[]-(c2:Country) " +
 								"WITH f, c2 " +
 								"MATCH (:DefaultCountry)-[:TURIST_EXPENSE]->(te:TuristExpense)-[:TURIST_EXPENSE]->(c2) " +
 								"WHERE te.year = " + añoActual + " AND te.month = f.dateOfArrival.month " +
@@ -441,7 +438,9 @@ public class Añadir {
 			}
 		} else {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-				"que añade el número de turistas a cada vuelo antes de ejecutarla.");
+				"que añade el número de turistas a cada vuelo, la operación ETL que carga los datos de gasto " +
+				"turístico y la operación ETL que añade conexiones faltantes entre aeropuertos y países antes " +
+				"de ejecutarla.");
 		}
 	}
 }
