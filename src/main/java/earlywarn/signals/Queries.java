@@ -37,7 +37,7 @@ public class Queries {
 	public LocalDate minReportDate() {
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
-				"MATCH (n:Country) - [:REPORTS] - (r:Report)\n" +
+					"MATCH (n:Country) - [:REPORTS] - (r:Report)\n" +
 					"RETURN min(date(r.releaseDate)) AS minDate")) {
 				Map<String, Object> row = res.next();
 				// Doesn't need formatter because is already ISO_LOCAL_DATE
@@ -55,7 +55,7 @@ public class Queries {
 	public LocalDate maxReportDate() {
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
-				"MATCH (n:Country) - [:REPORTS] - (r:Report)\n" +
+					"MATCH (n:Country) - [:REPORTS] - (r:Report)\n" +
 					"RETURN max(date(r.releaseDate)) AS maxDate")) {
 				Map<String, Object> row = res.next();
 				return (LocalDate) row.get("maxDate");
@@ -69,17 +69,18 @@ public class Queries {
 	 * @param startDate First date of the range of days of interest.
 	 * @param endDate Last date of the range of days of interest.
 	 * @return long[] List of the confirmed cases between the specified dates in a specific country.
+	 * @author Angel Fragua
 	 */
 	public long[] getReportConfirmed(String countryIso2, LocalDate startDate, LocalDate endDate) {
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
-				"MATCH (c:Country{iso2: '" + countryIso2 + "'}) - [:REPORTS] - (r:Report) \n" +
-					"WHERE \n" +
-						"date(r.lastUpdate) >= date({year:" + startDate.getYear() + ", month:" +
-							startDate.getMonthValue() + ", day:" + startDate.getDayOfMonth() + "}) AND\n" +
-						"date(r.lastUpdate) <= date({year:" + endDate.getYear() + ", month:" +
-							endDate.getMonthValue() + ", day:" + endDate.getDayOfMonth() + "})\n" +
-					"RETURN r.confirmed AS confirmed ORDER BY date(r.lastUpdate)")) {
+					"MATCH (c:Country{iso2: '" + countryIso2 + "'}) - [:REPORTS] - (r:Report) \n" +
+						"WHERE \n" +
+							"date(r.releaseDate) >= date({year:" + startDate.getYear() + ", month:" +
+								startDate.getMonthValue() + ", day:" + startDate.getDayOfMonth() + "}) AND\n" +
+							"date(r.releaseDate) <= date({year:" + endDate.getYear() + ", month:" +
+								endDate.getMonthValue() + ", day:" + endDate.getDayOfMonth() + "})\n" +
+					"RETURN r.confirmed AS confirmed ORDER BY date(r.releaseDate)")) {
 				List<Long> confirmed = new ArrayList<>();
 				while (res.hasNext()) {
 					Map<String, Object> row = res.next();
@@ -101,8 +102,9 @@ public class Queries {
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
 					"MATCH (c:Country)\n" +
-						"WHERE c.iso2 IN " + countries.stream().collect(Collectors.joining("','", "['", "']")) + "\n" +
-						"RETURN c.iso2 AS country")) {
+						"WHERE c.iso2 IN " + countries.stream().collect(
+												Collectors.joining("','", "['", "']")) + "\n" +
+					"RETURN c.iso2 AS country")) {
 				Set<String> confirmedCountries = new HashSet<>();
 				while (res.hasNext()) {
 					Map<String, Object> row = res.next();
@@ -111,5 +113,38 @@ public class Queries {
 				return confirmedCountries;
 			}
 		}
+	}
+
+	/**
+	 * Gets the population of a specific country in ISO-3166-Alpha2 format in the database.
+	 * Assumes that all countries have a property for the population.
+	 * @param countryIso2 ISO-3166-Alpha2 of the desired country.
+	 * @return long Population of the desired country in the database.
+	 * @author Angel Fragua
+	 */
+	public long getPopulation(String countryIso2) {
+		try (Transaction tx = db.beginTx()) {
+			try (Result res = tx.execute(
+					"MATCH (c:Country{iso2:'" + countryIso2 + "'})\n" +
+					"RETURN c.population AS population")) {
+				Map<String, Object> row = res.next();
+				return (long) row.get("population");
+			}
+		}
+	}
+
+	/**
+	 * Gets the population of a list of countries with ISO-3166-Alpha2 format in the database.
+	 * Assumes that all countries have a property for the population.
+	 * @param countriesIso2 List of countries in the ISO-3166-Alpha2 format.
+	 * @return long[] Array with the population of the desired countries in the database, in the same orther.
+	 * @author Angel Fragua
+	 */
+	public long[] getPopulation(List<String> countriesIso2) {
+		long[] populations = new long[countriesIso2.size()];
+		for (int i = 0; i < countriesIso2.size(); i++) {
+			populations[i] = getPopulation(countriesIso2.get(i));
+		}
+		return populations;
 	}
 }

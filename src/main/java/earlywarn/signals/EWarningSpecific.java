@@ -1,11 +1,20 @@
 package earlywarn.signals;
 
+import org.jgrapht.graph.builder.GraphTypeBuilder;
+import org.jgrapht.util.SupplierUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 
+import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.lang.Math;
+import java.util.Set;
+
+import org.jgrapht.*;
+import org.jgrapht.graph.*;
+import org.jgrapht.nio.csv.*;
+import org.jgrapht.alg.scoring.ClusteringCoefficient;
 
 /**
  * Specialization fo the EWarningGeneral general class for the generation of early warning signals and markers
@@ -34,7 +43,7 @@ public class EWarningSpecific extends EWarningGeneral{
      * in the database.
      * @author Angel Fragua
      */
-    public EWarningSpecific(GraphDatabaseService db) throws Exception {
+    public EWarningSpecific(GraphDatabaseService db) throws RuntimeException {
         this(db, EWarningGeneral.startDateDefault, EWarningGeneral.endDateDefault, EWarningGeneral.countriesDefault,
              EWarningGeneral.windowSizeDefault, EWarningGeneral.correlationDefault, cumulativeDataDefault,
              squareRootDataDefault, thresholdDefault);
@@ -50,7 +59,7 @@ public class EWarningSpecific extends EWarningGeneral{
      * in the database.
      * @author Angel Fragua
      */
-    public EWarningSpecific(GraphDatabaseService db, LocalDate startDate, LocalDate endDate) throws Exception {
+    public EWarningSpecific(GraphDatabaseService db, LocalDate startDate, LocalDate endDate) throws RuntimeException {
         this(db, startDate, endDate, EWarningGeneral.countriesDefault, EWarningGeneral.windowSizeDefault,
              EWarningGeneral.correlationDefault, cumulativeDataDefault, squareRootDataDefault, thresholdDefault);
     }
@@ -72,7 +81,7 @@ public class EWarningSpecific extends EWarningGeneral{
      * @author Angel Fragua
      */
     public EWarningSpecific(GraphDatabaseService db, LocalDate startDate, LocalDate endDate, boolean cumulativeData,
-                            boolean squareRootData, double threshold) throws Exception {
+                            boolean squareRootData, double threshold) throws RuntimeException {
         this(db, startDate, endDate, EWarningGeneral.countriesDefault, EWarningGeneral.windowSizeDefault,
                 EWarningGeneral.correlationDefault, cumulativeData, squareRootData, threshold);
     }
@@ -86,6 +95,7 @@ public class EWarningSpecific extends EWarningGeneral{
      * @param windowSize Size of the window to shift between startDate and endDate.
      * @param correlation Type of correlation to use for each window between each pair of countries.
      * List of possible correlation values:
+     *      - "pearson": Pearson Correlation
      *      - "spearman": Spearman Correlation
      *      - "kendall":Kendall Correlation
      *      - any other value: Pearson Correlation
@@ -102,7 +112,7 @@ public class EWarningSpecific extends EWarningGeneral{
      */
     public EWarningSpecific(GraphDatabaseService db, LocalDate startDate, LocalDate endDate, List<String> countries,
                             int windowSize, String correlation, boolean cumulativeData, boolean squareRootData,
-                            double threshold) throws Exception {
+                            double threshold) throws RuntimeException {
         super(db, startDate, endDate, countries, windowSize, correlation);
         this.cumulativeData = cumulativeData;
         this.squareRootData = squareRootData;
@@ -258,5 +268,110 @@ public class EWarningSpecific extends EWarningGeneral{
                             (double) calculateConnections(this.adjacencies[i], "unweighted"));
         }
         return densities;
+    }
+
+    private String networkToString(int[][] network) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0, j = 0; i < network.length; i++, j = 0) {
+            for (; j < network.length - 1; j++) {
+                result.append(network[i][j] + ",");
+            }
+            result.append(network[i][j] + System.lineSeparator());
+        }
+        return result.toString();
+    }
+
+    /**
+     * Calculates the early warning signals based on the clustering coefficient of the network.
+     * @return List<Double> List of all the values of the clustering coefficients of each network between
+     * the established dates.
+     * @author Angel Fragua
+     */
+    public List<Double> clusteringCoefficient() {
+        List<Double> clusteringCoefficients = new ArrayList<>();
+        for (int i = 0; i < this.unweighted.length; i++) {
+            /* Graph Type builder */
+            Graph<String, DefaultEdge> g = GraphTypeBuilder
+                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
+                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
+                    .buildGraph();
+            /* Specification of the importation of the graph */
+            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
+            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
+            /* Creation of graph by adjacency matrix and calculation of its Clustering Coefficient */
+            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+            ClusteringCoefficient clusteringCoefficient = new ClusteringCoefficient(g);
+            /* The average is divided by 2 because in undirected graphs the local clustering coefficient should be
+            multiplied by 2 something that the ClusteringCoefficient Class doesn't apply by default
+            (https://en.wikipedia.org/wiki/Clustering_coefficient#Local_clustering_coefficient)*/
+            clusteringCoefficients.add(clusteringCoefficient.getAverageClusteringCoefficient() / 2);
+        }
+        return clusteringCoefficients;
+    }
+
+    /**
+     * Calculates the early warning signals based on the degree assortativity coefficient of the network.
+     * @return List<Double> List of all the values of the degree assortativity coefficients of each network between
+     * the established dates.
+     * @author Angel Fragua
+     */
+    public List<Double> assortativityCoefficient() {
+        List<Double> assortativityCoefficients = new ArrayList<>();
+        for (int i = 0; i < this.unweighted.length; i++) {
+            /* Graph Type builder */
+            Graph<String, DefaultEdge> g = GraphTypeBuilder
+                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
+                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
+                    .buildGraph();
+            /* Specification of the importation of the graph */
+            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
+            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
+            /* Creation of graph by adjacency matrix and calculation of its Degree Assortativity Coefficient */
+            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+
+            Set<DefaultEdge> edges = g.edgeSet();
+            double XAverage = 0, YAverage = 0;
+
+            for (DefaultEdge edge: edges) {
+                XAverage += g.degreeOf(g.getEdgeSource(edge));
+                YAverage += g.degreeOf(g.getEdgeTarget(edge));
+            }
+            XAverage /= edges.size();
+            YAverage /= edges.size();
+
+            double r = 0, XStd = 0, YStd = 0;
+            for (DefaultEdge edge: edges) {
+                r += (g.degreeOf(g.getEdgeSource(edge)) - XAverage) * (g.degreeOf(g.getEdgeTarget(edge)) - YAverage);
+                XStd += Math.pow(g.degreeOf(g.getEdgeSource(edge)) - XAverage, 2);
+                YStd += Math.pow(g.degreeOf(g.getEdgeTarget(edge)) - YAverage, 2);
+            }
+
+            assortativityCoefficients.add(r / (Math.sqrt(XStd) * Math.sqrt(YStd)));
+        }
+        return assortativityCoefficients;
+    }
+
+    /**
+     * Calculates the early warning signals based on the number of edges inside the network.
+     * @return List<Double> List of all the values of the number of edges inside each network between
+     * the established dates.
+     * @author Angel Fragua
+     */
+    public List<Long> numberEdges() {
+        List<Long> numberEdges = new ArrayList<>();
+        for (int i = 0; i < this.unweighted.length; i++) {
+            /* Graph Type builder */
+            Graph<String, DefaultEdge> g = GraphTypeBuilder
+                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
+                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
+                    .buildGraph();
+            /* Specification of the importation of the graph */
+            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
+            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
+            /* Creation of graph by adjacency matrix and calculation of the number of edges */
+            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+            numberEdges.add((long) g.edgeSet().size());
+        }
+        return numberEdges;
     }
 }

@@ -40,12 +40,12 @@ public class EWarningGeneral {
     /**
      * Secondary constructor for the Class that receive fewer parameters than the main one.
      * @param db Neo4j database instance annotated with the @Context from the main procedure function.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
      */
-    public EWarningGeneral(GraphDatabaseService db) throws Exception {
+    public EWarningGeneral(GraphDatabaseService db) throws RuntimeException {
         this(db, startDateDefault, endDateDefault, countriesDefault, windowSizeDefault, correlationDefault);
     }
 
@@ -54,12 +54,12 @@ public class EWarningGeneral {
      * @param db Neo4j database instance annotated with the @Context from the main procedure function.
      * @param startDate First date of the range of days of interest.
      * @param endDate Last date of the range of days of interest.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
      */
-    public EWarningGeneral(GraphDatabaseService db, LocalDate startDate, LocalDate endDate) throws Exception {
+    public EWarningGeneral(GraphDatabaseService db, LocalDate startDate, LocalDate endDate) throws RuntimeException {
         this(db, startDate, endDate, countriesDefault, windowSizeDefault, correlationDefault);
     }
 
@@ -72,16 +72,17 @@ public class EWarningGeneral {
      * @param windowSize Size of the window to shift between startDate and endDate.
      * @param correlation Type of correlation to use for each window between each pair of countries.
      * List of possible correlation values:
+     *      - "pearson": Pearson Correlation
      *      - "spearman": Spearman Correlation
      *      - "kendall":Kendall Correlation
      *      - any other value: Pearson Correlation
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
      */
     public EWarningGeneral(GraphDatabaseService db, LocalDate startDate, LocalDate endDate, List<String> countries,
-                           int windowSize, String correlation) throws Exception {
+                           int windowSize, String correlation) throws RuntimeException {
         this.db = db;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -98,35 +99,33 @@ public class EWarningGeneral {
      * Assures that the user establish a start date of study previous to the end date. Also, it assures that the
      * database contains reports of covid confirmed cases for both dates, which means that it also will contain reports
      * for all the dates in the interval between the selected dates of study.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws DateOutRangeException If startDate is greater than endDate or the database doesn't contain it.
      * @author Angel Fragua
      */
-    protected void checkDates() throws Exception {
+    protected void checkDates() throws DateOutRangeException {
         if (this.startDate.isAfter(this.endDate)) {
-            /* TODO: Generate a specific Exception */
-            throw new Exception("<startDate> must be older than <endDate>");
+            throw new DateOutRangeException("<startDate> must be older than <endDate>");
         }
         Queries queries = new Queries(this.db);
         LocalDate maxDate = queries.maxReportDate();
         LocalDate minDate = queries.minReportDate();
         if (this.startDate.isBefore(minDate) || this.endDate.isAfter(maxDate)) {
-            throw new Exception("Dates out of range. [" + minDate +
-                                " , " + maxDate + "] (year-month-day)");
+            throw new DateOutRangeException("Dates out of range. [" + minDate + " , " + maxDate + "] (year-month-day)");
         }
     }
 
     /**
      * Assures that there are at least two selected countries. And also assures, that all the selected countries
      * are contained in the database.
-     * @throws Exception If there are less than two selected countries. If any country inside the countries list
-     * isn't contain in the database.
+     * @throws CountryUndefinedException If there are less than two selected countries. If any country inside
+     * the countries list isn't contain in the database.
      * @author Angel Fragua
      */
-    private void checkCountries() throws Exception {
+    private void checkCountries() throws CountryUndefinedException {
         Set<String> countriesSelected = new HashSet<>(this.countries);
         if (countriesSelected.size() < 2) {
-            throw new Exception("There must be at least two ISO-3166-Alpha2 country references in <countries> and" +
-                                "must be contained in the database.");
+            throw new CountryUndefinedException("There must be at least two different ISO-3166-Alpha2 country " +
+                                                "references in <countries> and must be contained in the database.");
         }
 
         Queries queries = new Queries(this.db);
@@ -134,8 +133,8 @@ public class EWarningGeneral {
 
         if (!countriesDb.containsAll(countriesSelected)) {
             countriesSelected.removeAll(countriesDb);
-            throw new Exception("All ISO-3166-Alpha2 country references in <countries> must exist and be contained " +
-                                "in the database. Errors: " + countriesSelected);
+            throw new CountryUndefinedException("All ISO-3166-Alpha2 country references in <countries> must exist " +
+                                                "and be contained in the database. Errors: " + countriesSelected);
         }
     }
 
@@ -196,7 +195,8 @@ public class EWarningGeneral {
      * @author Angel Fragua
      */
     protected double[][] transformData(LocalDate startDateWindow) {
-        Object[] arrayOfUntyped = Arrays.stream(this.dataOriginal).map(longArray -> Arrays.stream(longArray).asDoubleStream().toArray()).toArray();
+        Object[] arrayOfUntyped = Arrays.stream(this.dataOriginal)
+                                    .map(longArray -> Arrays.stream(longArray).asDoubleStream().toArray()).toArray();
         return Arrays.copyOf(arrayOfUntyped, arrayOfUntyped.length, double[][].class);
     }
 
@@ -287,6 +287,7 @@ public class EWarningGeneral {
     /**
      * Computes the correlation coefficient between two arrays. Depending on the value established on the class property
      * correlation different types of correlation will be used. List of possible correlation values:
+     *      - "pearson": Pearson Correlation
      *      - "spearman": Spearman Correlation
      *      - "kendall":Kendall Correlation
      *      - any other value: Pearson Correlation
@@ -298,7 +299,11 @@ public class EWarningGeneral {
      */
     protected double calculateCorrelation(double[] x, double[] y) {
         double cc;
-        if (this.correlation.equals("spearman")) {
+        if (this.correlation.equals("pearson")) {
+            PearsonsCorrelation c = new PearsonsCorrelation();
+            cc = c.correlation(x, y);
+        }
+        else if (this.correlation.equals("spearman")) {
             SpearmansCorrelation c = new SpearmansCorrelation();
             cc = c.correlation(x, y);
         }
@@ -326,7 +331,8 @@ public class EWarningGeneral {
                 ", countries=" + countries +
                 ", windowSize=" + windowSize +
                 ", correlation=" + correlation +
-                ", adjacencies=(" + adjacencies.length + "," + adjacencies[0].length + "," + adjacencies[0][0].length + ")" +
+                ", adjacencies=(" + adjacencies.length + "," + adjacencies[0].length + "," +
+                                    adjacencies[0][0].length + ")" +
                 ", networks=(" + networks.length + "," + networks[0].length + "," + networks[0][0].length + ")" +
                 '}';
     }
