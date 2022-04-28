@@ -35,6 +35,7 @@ public class QueriesTest {
      * Report Nodes. Furthermore, it creates an instance of the Queries Class to be tested.
      * Thanks to the @BeforeAll annotation is the first method of the test to be executed, so it works as a constructor.
      * @throws IOException If there is a problem reading any resource file.
+     * @author Angel Fragua
      */
     @BeforeAll
     void initializeNeo4j() throws IOException {
@@ -72,6 +73,7 @@ public class QueriesTest {
     /**
      * This method is the last executed by the class thanks to the @AfterAll annotation, which can be used to close all
      * connections to the Database.
+     * @author Angel Fragua
      */
     @AfterAll
     void closeNeo4j() {
@@ -80,6 +82,7 @@ public class QueriesTest {
 
     /**
      * Tests that the minReportDate() actually returns the first Report date of the Database.
+     * @author Angel Fragua
      */
     @Test
     void minDateTest() {
@@ -88,6 +91,7 @@ public class QueriesTest {
 
     /**
      * Tests that the maxReportDate() actually returns the last Report date of the Database.
+     * @author Angel Fragua
      */
     @Test
     void maxDateTest() {
@@ -97,6 +101,7 @@ public class QueriesTest {
     /**
      * Tests that getReportConfirmed() gets the list of confirmed covid cases between two random dates for three
      * random countries Spain (ES), France (FR) and United Kingdom (GB).
+     * @author Angel Fragua
      */
     @Test
     void getReportConfirmedTest() {
@@ -115,6 +120,7 @@ public class QueriesTest {
     /**
      * Tests that getConfirmedCountries() returns only the Set of ISO-3166-Alpha2 references of the countries asked for
      * and contained in the Database. The first test only pass a group of real country references.
+     * @author Angel Fragua
      */
     @Test
     void countryTest1() {
@@ -129,6 +135,7 @@ public class QueriesTest {
      * Tests that getConfirmedCountries() returns only the Set of ISO-3166-Alpha2 references of the countries asked for
      * and contained in the Database. The second test pass both a group of real country references, and a fake reference
      * which will not be returned.
+     * @author Angel Fragua
      */
     @Test
     void countryTest2() {
@@ -146,6 +153,7 @@ public class QueriesTest {
 
     /**
      * Tests that getPopulation() returns the population of a random country of the Database.
+     * @author Angel Fragua
      */
     @Test
     void getPopulation() {
@@ -154,6 +162,7 @@ public class QueriesTest {
 
     /**
      * Tests that getPopulation() returns the population of each country passed as argument of the Database.
+     * @author Angel Fragua
      */
     @Test
     void getPopulations() {

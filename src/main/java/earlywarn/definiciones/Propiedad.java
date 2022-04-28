@@ -28,6 +28,8 @@ public enum Propiedad {
 	ETL_GASTO_TURÍSTICO,
 	// True si se ha añadido el número estimado de turistas a los vuelos de llegada
 	ETL_TURISTAS_VUELO,
-	// Trie si se ha añadido la estimación de ingresos por turismo a cada vuelo
-	ETL_INGRESOS_VUELO
+	// True si se ha añadido la estimación de ingresos por turismo a cada vuelo
+	ETL_INGRESOS_VUELO,
+	// True si todos los países tienen una relación directa con Reportes y no solo sus Estados, Provincias o Regiones
+	ETL_REPORTE_PAÍS
 }

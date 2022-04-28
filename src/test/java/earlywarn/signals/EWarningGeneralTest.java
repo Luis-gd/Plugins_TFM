@@ -37,6 +37,7 @@ public class EWarningGeneralTest {
      * Report Nodes. Furthermore, it saves a reference to the Database Service used to run queries in the Database.
      * Thanks to the @BeforeAll annotation is the first method of the test to be executed, so it works as a constructor.
      * @throws IOException If there is a problem reading any resource file.
+     * @author Angel Fragua
      */
     @BeforeAll
     void initializeNeo4j() throws IOException {
@@ -74,6 +75,7 @@ public class EWarningGeneralTest {
     /**
      * This method is the last executed by the class thanks to the @AfterAll annotation, which can be used to close all
      * connections to the Database.
+     * @author Angel Fragua
      */
     @AfterAll
     void closeNeo4j() {
@@ -83,6 +85,7 @@ public class EWarningGeneralTest {
     /**
      * Tests that the method checkDates() from the EWarningGeneral Class properly throws Exception when the dates are
      * wrong. The first test will check that the startDate is not grater than the endDate.
+     * @author Angel Fragua
      */
     @Test
     void checkDatesTest1() {
@@ -97,6 +100,7 @@ public class EWarningGeneralTest {
     /**
      * Tests that the method checkDates() from the EWarningGeneral Class properly throws Exception when the dates are
      * wrong. This test will check that the startDate has Reports for each Country Node in the database.
+     * @author Angel Fragua
      */
     @Test
     void checkDatesTest2() {
@@ -112,6 +116,7 @@ public class EWarningGeneralTest {
     /**
      * Tests that the method checkDates() from the EWarningGeneral Class properly throws Exception when the dates are
      * wrong. This test will check that the endDate has Reports for each Country Node in the database.
+     * @author Angel Fragua
      */
     @Test
     void checkDatesTest3() {
@@ -126,6 +131,7 @@ public class EWarningGeneralTest {
 
     /**
      * Tests that the method checkDates() from the EWarningGeneral Class is properly executed with no errors.
+     * @author Angel Fragua
      */
     @Test
     void checkDatesTest4() {
@@ -142,6 +148,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkCountries() from the EWarningGeneral Class properly throws Exception when the list of
      * country's references in the ISO-3166-Alpha2 format is incorrect. This test check that there are at least two
      * different countries in the countries list.
+     * @author Angel Fragua
      */
     @Test
     void checkCountriesTest1() {
@@ -160,6 +167,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkCountries() from the EWarningGeneral Class properly throws Exception when the list of
      * country's references in the ISO-3166-Alpha2 format is incorrect. This test check that there are more than two
      * countries in the countries list.
+     * @author Angel Fragua
      */
     @Test
     void checkCountriesTest2() {
@@ -178,6 +186,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkCountries() from the EWarningGeneral Class properly throws Exception when the list of
      * country's references in the ISO-3166-Alpha2 format is incorrect. This test check that incorrect country
      * references in the ISO-3166-Alpha2 format not contained in the database are detected.
+     * @author Angel Fragua
      */
     @Test
     void checkCountriesTest3() {
@@ -195,6 +204,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkWindows() from the EWarningGeneral Class properly changes the startDate based on the
      * dates with Report Node in the database. It assures that there are enough previous Reports to the startDate based
      * on the windows size. First test will use the first date with Report.
+     * @author Angel Fragua
      */
     @Test
     void checkWindowTest1() {
@@ -209,6 +219,7 @@ public class EWarningGeneralTest {
      * dates with Report Node in the database. It assures that there are enough previous Reports to the startDate based
      * on the windows size. First test will use a date between the first possible date and as many days passed as the
      * windowSize.
+     * @author Angel Fragua
      */
     @Test
     void checkWindowTest2() {
@@ -222,6 +233,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkWindows() from the EWarningGeneral Class properly changes the startDate based on the
      * dates with Report Node in the database. It assures that there are enough previous Reports to the startDate based
      * on the windows size. Last test will use a date that doesn't need any changes.
+     * @author Angel Fragua
      */
     @Test
     void checkWindowTest3() {
@@ -235,6 +247,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkWindows() from the EWarningGeneral Class properly changes the startDate based on the
      * dates with Report Node in the database. It assures that there are enough previous Reports to the startDate based
      * on the windows size. Same to checkWindowTest1() with different windowSize.
+     * @author Angel Fragua
      */
     @Test
     void checkWindowTest4() {
@@ -249,6 +262,7 @@ public class EWarningGeneralTest {
      * Tests that the method checkWindows() from the EWarningGeneral Class properly changes the startDate based on the
      * dates with Report Node in the database. It assures that there are enough previous Reports to the startDate based
      * on the windows size. Same to checkWindowTest2() with different windowSize.
+     * @author Angel Fragua
      */
     @Test
     void checkWindowTest5() {
@@ -262,6 +276,7 @@ public class EWarningGeneralTest {
     /**
      * Tests that the method checkWindows() from the EWarningGeneral Class properly changes the startDate based on the
      * dates with Report Node in the database. Same to checkWindowTest3() with different windowSize.
+     * @author Angel Fragua
      */
     @Test
     void checkWindowTest6() {

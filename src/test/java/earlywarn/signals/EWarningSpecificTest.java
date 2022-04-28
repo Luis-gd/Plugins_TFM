@@ -36,6 +36,7 @@ public class EWarningSpecificTest {
      * Report Nodes. Furthermore, it saves a reference to the Database Service used to run queries in the Database.
      * Thanks to the @BeforeAll annotation is the first method of the test to be executed, so it works as a constructor.
      * @throws IOException If there is a problem reading any resource file.
+     * @author Angel Fragua
      */
     @BeforeAll
     void initializeNeo4j() throws IOException {
@@ -73,6 +74,7 @@ public class EWarningSpecificTest {
     /**
      * This method is the last executed by the class thanks to the @AfterAll annotation, which can be used to close all
      * connections to the Database.
+     * @author Angel Fragua
      */
     @AfterAll
     void closeNeo4j() {
@@ -84,6 +86,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void density1() {
@@ -107,6 +110,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void density2() {
@@ -129,6 +133,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void density3() {
@@ -152,6 +157,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void density4() {
@@ -177,6 +183,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void clusteringCoefficient1() {
@@ -199,6 +206,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void clusteringCoefficient2() {
@@ -219,6 +227,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void clusteringCoefficient3() {
@@ -240,6 +249,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void clusteringCoefficient4() {
@@ -264,6 +274,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void assortativityCoefficient1() {
@@ -286,6 +297,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void assortativityCoefficient2() {
@@ -308,6 +320,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void assortativityCoefficient3() {
@@ -332,6 +345,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void assortativityCoefficient4() {
@@ -355,6 +369,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void numberEdges1() {
@@ -374,6 +389,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void numberEdges2() {
@@ -393,6 +409,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void numberEdges3() {
@@ -412,6 +429,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void numberEdges4() {
@@ -432,6 +450,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void PRS1() {
@@ -454,6 +473,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void PRS2() {
@@ -474,6 +494,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
      * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void PRS3() {
@@ -496,6 +517,7 @@ public class EWarningSpecificTest {
      * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
      * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
      * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
      */
     @Test
     void PRS4() {

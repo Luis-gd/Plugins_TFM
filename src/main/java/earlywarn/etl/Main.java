@@ -42,5 +42,6 @@ public class Main {
 		añadir.añadirGastoTurístico(rutaFicheroGasto);
 		añadir.añadirTuristasVuelo(mismaFechaTurismo, aproximarFaltantesTurismo);
 		añadir.añadirIngresosVuelo(mismaFechaTurismo, aproximarFaltantesTurismo);
+		añadir.añadirReportesPaís();
 	}
 }
