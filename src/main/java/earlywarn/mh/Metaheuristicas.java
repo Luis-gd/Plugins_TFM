@@ -15,5 +15,8 @@ public class Metaheuristicas {
 	public String hola_mundo(){
 		 return "Hola Mundo";
 	}
+
+	/*TODO: Empezar a programar o buscar la metaheurística multiobjetivo que nos sirva para hasta tres objetivos
+	   y que también permita cambiar esos objetivos a restricciones. */
 }
 
