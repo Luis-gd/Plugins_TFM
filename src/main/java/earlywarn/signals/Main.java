@@ -22,7 +22,7 @@ public class Main {
     }
 
     @UserFunction
-    @Description("Short Density Function")
+    @Description("Abbreviation Density Function")
     public List<Double> density1(@Name("startDay") LocalDate startDay, @Name("endDay")LocalDate endDay,
                                  @Name("cumulativeData") boolean cumulativeData,
                                  @Name("squareRootData") boolean squareRootData, @Name("threshold") double threshold) {
@@ -33,7 +33,7 @@ public class Main {
     }
 
     @UserFunction
-    @Description("Long Density Function")
+    @Description("Complete Density Function")
     public List<Double> density(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
                                 @Name("countries") List<String> countries, @Name("windowSize") long windowSize,
                                 @Name("correlation") String correlation, @Name("cumulativeData") boolean cumulativeData,
@@ -45,7 +45,7 @@ public class Main {
     }
 
     @UserFunction
-    @Description("Short Clustering Coefficient Function")
+    @Description("Abbreviation Clustering Coefficient Function")
     public List<Double> clusteringCoefficient1(@Name("startDay") LocalDate startDay, @Name("endDay")LocalDate endDay,
                                                @Name("cumulativeData") boolean cumulativeData,
                                                @Name("squareRootData") boolean squareRootData,
@@ -57,7 +57,7 @@ public class Main {
     }
 
     @UserFunction
-    @Description("Long Clustering Coefficient Function")
+    @Description("Complete Clustering Coefficient Function")
     public List<Double> clusteringCoefficient(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
                                               @Name("countries") List<String> countries,
                                               @Name("windowSize") long windowSize,
@@ -72,7 +72,7 @@ public class Main {
     }
 
     @UserFunction
-    @Description("Short Degree Assortativity Coefficient Function")
+    @Description("Abbreviation Degree Assortativity Coefficient Function")
     public List<Double> assortativityCoefficient1(@Name("startDay") LocalDate startDay, @Name("endDay")LocalDate endDay,
                                                   @Name("cumulativeData") boolean cumulativeData,
                                                   @Name("squareRootData") boolean squareRootData,
@@ -84,7 +84,7 @@ public class Main {
     }
 
     @UserFunction
-    @Description("Long Degree Assortativity Coefficient Function")
+    @Description("Complete Degree Assortativity Coefficient Function")
     public List<Double> assortativityCoefficient(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
                                                  @Name("countries") List<String> countries,
                                                  @Name("windowSize") long windowSize,
@@ -96,5 +96,54 @@ public class Main {
                 correlation, cumulativeData, squareRootData, threshold);
         eWarn.checkWindows();
         return eWarn.assortativityCoefficient();
+    }
+
+    @UserFunction
+    @Description("Abbreviation Number of Edges Function")
+    public List<Long> numberEdges1(@Name("startDay") LocalDate startDay, @Name("endDay")LocalDate endDay,
+                                     @Name("cumulativeData") boolean cumulativeData,
+                                     @Name("squareRootData") boolean squareRootData,
+                                     @Name("threshold") double threshold) {
+        EWarningSpecific eWarn = new EWarningSpecific(this.db, startDay, endDay, cumulativeData, squareRootData,
+                threshold);
+        eWarn.checkWindows();
+        return eWarn.numberEdges();
+    }
+
+    @UserFunction
+    @Description("Complete Number of Edges Function")
+    public List<Long> numberEdges(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
+                                    @Name("countries") List<String> countries, @Name("windowSize") long windowSize,
+                                    @Name("correlation") String correlation,
+                                    @Name("cumulativeData") boolean cumulativeData,
+                                    @Name("squareRootData") boolean squareRootData,
+                                    @Name("threshold") double threshold) {
+        EWarningSpecific eWarn = new EWarningSpecific(this.db, startDay, endDay, countries, (int)windowSize,
+                correlation, cumulativeData, squareRootData, threshold);
+        eWarn.checkWindows();
+        return eWarn.numberEdges();
+    }
+
+    @UserFunction
+    @Description("Abbreviation Preparedness Risk Score (PRS) Function")
+    public List<Long> PRS1(@Name("startDay") LocalDate startDay, @Name("endDay")LocalDate endDay,
+                           @Name("cumulativeData") boolean cumulativeData,
+                           @Name("squareRootData") boolean squareRootData, @Name("threshold") double threshold) {
+        EWarningSpecific eWarn = new EWarningSpecific(this.db, startDay, endDay, cumulativeData, squareRootData,
+                threshold);
+        eWarn.checkWindows();
+        return eWarn.PRS();
+    }
+
+    @UserFunction
+    @Description("Complete Preparedness Risk Score (PRS) Function")
+    public List<Long> PRS(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
+                          @Name("countries") List<String> countries, @Name("windowSize") long windowSize,
+                          @Name("correlation") String correlation, @Name("cumulativeData") boolean cumulativeData,
+                          @Name("squareRootData") boolean squareRootData, @Name("threshold") double threshold) {
+        EWarningSpecific eWarn = new EWarningSpecific(this.db, startDay, endDay, countries, (int)windowSize,
+                correlation, cumulativeData, squareRootData, threshold);
+        eWarn.checkWindows();
+        return eWarn.PRS();
     }
 }

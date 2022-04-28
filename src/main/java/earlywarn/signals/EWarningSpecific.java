@@ -2,14 +2,14 @@ package earlywarn.signals;
 
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.util.SupplierUtil;
+import org.neo4j.cypher.internal.expressions.In;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.io.StringReader;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.lang.Math;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
@@ -311,11 +311,13 @@ public class EWarningSpecific extends EWarningGeneral{
 
     /**
      * Calculates the early warning signals based on the degree assortativity coefficient of the network.
+     * This method is the generic one. Is maintained for historical reasons, the used one is assortativityCoefficient().
+     * https://www.youtube.com/watch?v=gzWlSPxpHZE
      * @return List<Double> List of all the values of the degree assortativity coefficients of each network between
      * the established dates.
      * @author Angel Fragua
      */
-    public List<Double> assortativityCoefficient() {
+    public List<Double> assortativityCoefficientGeneric() {
         List<Double> assortativityCoefficients = new ArrayList<>();
         for (int i = 0; i < this.unweighted.length; i++) {
             /* Graph Type builder */
@@ -352,6 +354,87 @@ public class EWarningSpecific extends EWarningGeneral{
     }
 
     /**
+     * Calculates the early warning signals based on the degree assortativity coefficient of the network.
+     * This method implements the equation of Newman 2002.
+     * @return List<Double> List of all the values of the degree assortativity coefficients of each network between
+     * the established dates.
+     * @author Angel Fragua
+     */
+    public List<Double> assortativityCoefficient() {
+        List<Double> assortativityCoefficients = new ArrayList<>();
+        for (int i = 0; i < this.unweighted.length; i++) {
+            /* Graph Type builder */
+            Graph<String, DefaultEdge> g = GraphTypeBuilder
+                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
+                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
+                    .buildGraph();
+            /* Specification of the importation of the graph */
+            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
+            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
+            /* Creation of graph by adjacency matrix and calculation of its Degree Assortativity Coefficient */
+            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+
+            /* Get all possible values for the nodes Degree */
+            Set<Integer> degreesSet = new TreeSet();
+            for (String vertex: g.vertexSet()) {
+                degreesSet.add(g.degreeOf(vertex));
+            }
+
+            /* Map for each degree and its respective index, and the other way around */
+            Map<Integer, Integer> degreeIdx = degreesSet.stream().collect(
+                    Collectors.toMap(x -> x, x -> new ArrayList<>(degreesSet).indexOf(x)));
+            Map<Integer, Integer> idxDegree = degreesSet.stream().collect(
+                    Collectors.toMap(x -> new ArrayList<>(degreesSet).indexOf(x), x -> x));
+            /* Get the Joint Probability Distribution of degrees */
+            double[][] degreeMatrix = new double[degreesSet.size()][degreesSet.size()];
+            for (DefaultEdge edge: g.edgeSet()) {
+                degreeMatrix[degreeIdx.get(g.degreeOf(g.getEdgeSource(edge)))]
+                            [degreeIdx.get(g.degreeOf(g.getEdgeTarget(edge)))] += 1;
+                degreeMatrix[degreeIdx.get(g.degreeOf(g.getEdgeTarget(edge)))]
+                            [degreeIdx.get(g.degreeOf(g.getEdgeSource(edge)))] += 1;
+            }
+            /* Normalize the matrix */
+            for (int j = 0; j < degreeMatrix.length; j++) {
+                for (int k = 0; k < degreeMatrix.length; k++) {
+                    degreeMatrix[j][k] = degreeMatrix[j][k] / (g.edgeSet().size() * 2);
+                }
+            }
+            /* Calculate the probability of rows and columns */
+            double[] a = new double[degreesSet.size()];
+            double[] b = new double[degreesSet.size()];
+            for (int j = 0; j < degreeMatrix.length; j++) {
+                for (int k = 0; k < degreeMatrix.length; k++) {
+                    a[k] += degreeMatrix[j][k];
+                    b[j] += degreeMatrix[j][k];
+                }
+            }
+            /* Calculate the variance to normalize the index between -1 and 1 */
+            double aVar = 0;
+            double aTmp = 0;
+            double bVar = 0;
+            double bTmp = 0;
+            for (int j = 0; j < a.length; j++) {
+                aVar += a[j] * Math.pow(idxDegree.get(j), 2);
+                aTmp += a[j] * idxDegree.get(j);
+                bVar += b[j] * Math.pow(idxDegree.get(j), 2);
+                bTmp += b[j] * idxDegree.get(j);
+            }
+            aVar -= Math.pow(aTmp, 2);
+            bVar -= Math.pow(bTmp, 2);
+            /* Calculate the final index */
+            double r = 0;
+            for (int j = 0; j < degreeMatrix.length; j++) {
+                for (int k = 0; k < degreeMatrix.length; k++) {
+                    r += idxDegree.get(j) * idxDegree.get(k) * (degreeMatrix[j][k] - a[j] * b[k]);
+                }
+            }
+            assortativityCoefficients.add(r / Math.sqrt(aVar * bVar));
+        }
+
+        return assortativityCoefficients;
+    }
+
+    /**
      * Calculates the early warning signals based on the number of edges inside the network.
      * @return List<Double> List of all the values of the number of edges inside each network between
      * the established dates.
@@ -373,5 +456,40 @@ public class EWarningSpecific extends EWarningGeneral{
             numberEdges.add((long) g.edgeSet().size());
         }
         return numberEdges;
+    }
+
+    /**
+     * Calculates the early warning signals based on the Preparedness Risk Score (PRS) inside the network.
+     * @return List<Double> List of all the values of the Preparedness Risk Score (PRS) of each network between
+     * the established dates.
+     * @author Angel Fragua
+     */
+    public List<Long> PRS() {
+        List<Long> PRSs = new ArrayList<>();
+
+        Queries queries = new Queries(this.db);
+        long[] population = queries.getPopulation(this.countries);
+        long[] susceptibles = new long[population.length];
+        long[] confirmed = new long[population.length];
+
+        long s;
+        for (int i = 0; i < this.unweighted.length; i++) {
+            /* Calculate susceptible population in each time t */
+            for (int j = 0; j < this.countries.size(); j++) {
+                confirmed[j] = this.dataOriginal[j][this.windowSize - 1 + i];
+                susceptibles[j] = population[j] - confirmed[j];
+            }
+
+            s = 0;
+            for (int j = 0; j < this.unweighted[i].length; j++) {
+                for (int k = 0; k < this.unweighted[i].length; k++) {
+                    s += susceptibles[j] * this.unweighted[i][j][k] * susceptibles[k];
+                }
+            }
+
+            PRSs.add(s);
+        }
+
+        return PRSs;
     }
 }
