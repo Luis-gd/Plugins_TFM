@@ -145,6 +145,24 @@ public class EWarningGeneralTest {
     }
 
     /**
+     * Tests that the method checkDates() from the EWarningGeneral Class is properly throws Exception when the dates are
+     * wrong. This test will check that the interval of dates between the start date and the end date are equal or
+     * greater than the window size.
+     * @author Angel Fragua
+     */
+    @Test
+    void checkDatesTest5() {
+
+        Exception thrown = Assertions.assertThrows(
+                DateOutRangeException.class,
+                () -> new EWarningGeneral(this.db, LocalDate.of(2020, 1, 22), LocalDate.of(2020, 2, 3))
+        );
+
+        Assertions.assertTrue(thrown.getMessage().equals("The interval between <startDate> and <endDate> must be " +
+                "equal or greater than <windowSize>"));
+    }
+
+    /**
      * Tests that the method checkCountries() from the EWarningGeneral Class properly throws Exception when the list of
      * country's references in the ISO-3166-Alpha2 format is incorrect. This test check that there are at least two
      * different countries in the countries list.

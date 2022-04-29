@@ -1,11 +1,7 @@
 package earlywarn.signals;
 
-import org.jgrapht.graph.builder.GraphTypeBuilder;
-import org.jgrapht.util.SupplierUtil;
-import org.neo4j.cypher.internal.expressions.In;
 import org.neo4j.graphdb.GraphDatabaseService;
 
-import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.*;
 import java.lang.Math;
@@ -13,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
-import org.jgrapht.nio.csv.*;
 import org.jgrapht.alg.scoring.ClusteringCoefficient;
 
 /**
@@ -38,7 +33,8 @@ public class EWarningSpecific extends EWarningGeneral{
     /**
      * Secondary constructor for the Class that receive fewer parameters than the main one.
      * @param db Neo4j database instance annotated with the @Context from the main procedure function.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -54,7 +50,8 @@ public class EWarningSpecific extends EWarningGeneral{
      * @param db Neo4j database instance annotated with the @Context from the main procedure function.
      * @param startDate First date of the range of days of interest.
      * @param endDate Last date of the range of days of interest.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -75,7 +72,8 @@ public class EWarningSpecific extends EWarningGeneral{
      * to smooth the results.
      * @param threshold Value from which it is determined that the correlation between two countries is high enough
      * establishing a connection.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -105,7 +103,8 @@ public class EWarningSpecific extends EWarningGeneral{
      * to smooth the results.
      * @param threshold Value from which it is determined that the correlation between two countries is high enough
      * establishing a connection.
-     * @throws Exception If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -163,7 +162,7 @@ public class EWarningSpecific extends EWarningGeneral{
                     tmpData[i][j+1] = x;
                 }
             }
-            return diffData(tmpData);
+            return super.diffData(tmpData);
         }
         else if (this.squareRootData) {
             double[][] data = new double[numCountries][this.dataOriginal[0].length];
@@ -177,26 +176,6 @@ public class EWarningSpecific extends EWarningGeneral{
         else {
             return super.transformData(startDateWindow);
         }
-    }
-
-    /**
-     * Calculates the discrete difference of the received data, which means that each column with index i will be
-     * column[i] = column[i+1] - column[i].
-     * @param data Data to be transformed.
-     * @return double[][] The discrete difference of the data, where its first column will be lost.
-     * @author Angel Fragua
-     */
-    private double[][] diffData(double[][] data) {
-        int numCols = data[0].length;
-        int numRows = data.length;
-        double[][] diffData = new double[numRows][numCols - 1];
-
-        for (int i = 0; i < numRows; i++) {
-            for (int j = 0; j < numCols - 1; j++) {
-                diffData[i][j] = data[i][j+1] - data[i][j];
-            }
-        }
-        return diffData;
     }
 
     /**
@@ -270,17 +249,6 @@ public class EWarningSpecific extends EWarningGeneral{
         return densities;
     }
 
-    private String networkToString(int[][] network) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0, j = 0; i < network.length; i++, j = 0) {
-            for (; j < network.length - 1; j++) {
-                result.append(network[i][j] + ",");
-            }
-            result.append(network[i][j] + System.lineSeparator());
-        }
-        return result.toString();
-    }
-
     /**
      * Calculates the early warning signals based on the clustering coefficient of the network.
      * @return List<Double> List of all the values of the clustering coefficients of each network between
@@ -290,16 +258,8 @@ public class EWarningSpecific extends EWarningGeneral{
     public List<Double> clusteringCoefficient() {
         List<Double> clusteringCoefficients = new ArrayList<>();
         for (int i = 0; i < this.unweighted.length; i++) {
-            /* Graph Type builder */
-            Graph<String, DefaultEdge> g = GraphTypeBuilder
-                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
-                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
-                    .buildGraph();
-            /* Specification of the importation of the graph */
-            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
-            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
-            /* Creation of graph by adjacency matrix and calculation of its Clustering Coefficient */
-            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+            Graph<String, DefaultEdge> g = super.networkToGraph(this.unweighted[i]);
+
             ClusteringCoefficient clusteringCoefficient = new ClusteringCoefficient(g);
             /* The average is divided by 2 because in undirected graphs the local clustering coefficient should be
             multiplied by 2 something that the ClusteringCoefficient Class doesn't apply by default
@@ -320,16 +280,7 @@ public class EWarningSpecific extends EWarningGeneral{
     public List<Double> assortativityCoefficientGeneric() {
         List<Double> assortativityCoefficients = new ArrayList<>();
         for (int i = 0; i < this.unweighted.length; i++) {
-            /* Graph Type builder */
-            Graph<String, DefaultEdge> g = GraphTypeBuilder
-                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
-                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
-                    .buildGraph();
-            /* Specification of the importation of the graph */
-            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
-            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
-            /* Creation of graph by adjacency matrix and calculation of its Degree Assortativity Coefficient */
-            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+            Graph<String, DefaultEdge> g = super.networkToGraph(this.unweighted[i]);
 
             Set<DefaultEdge> edges = g.edgeSet();
             double XAverage = 0, YAverage = 0;
@@ -363,16 +314,7 @@ public class EWarningSpecific extends EWarningGeneral{
     public List<Double> assortativityCoefficient() {
         List<Double> assortativityCoefficients = new ArrayList<>();
         for (int i = 0; i < this.unweighted.length; i++) {
-            /* Graph Type builder */
-            Graph<String, DefaultEdge> g = GraphTypeBuilder
-                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
-                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
-                    .buildGraph();
-            /* Specification of the importation of the graph */
-            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
-            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
-            /* Creation of graph by adjacency matrix and calculation of its Degree Assortativity Coefficient */
-            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+            Graph<String, DefaultEdge> g = super.networkToGraph(this.unweighted[i]);
 
             /* Get all possible values for the nodes Degree */
             Set<Integer> degreesSet = new TreeSet();
@@ -442,17 +384,9 @@ public class EWarningSpecific extends EWarningGeneral{
      */
     public List<Long> numberEdges() {
         List<Long> numberEdges = new ArrayList<>();
-        for (int i = 0; i < this.unweighted.length; i++) {
-            /* Graph Type builder */
-            Graph<String, DefaultEdge> g = GraphTypeBuilder
-                    .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
-                    .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
-                    .buildGraph();
-            /* Specification of the importation of the graph */
-            CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
-            gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
-            /* Creation of graph by adjacency matrix and calculation of the number of edges */
-            gImporter.importGraph(g, new StringReader(networkToString(this.unweighted[i])));
+        for (int[][] unweightedNet : this.unweighted) {
+            Graph<String, DefaultEdge> g = super.networkToGraph(unweightedNet);
+
             numberEdges.add((long) g.edgeSet().size());
         }
         return numberEdges;
@@ -491,5 +425,18 @@ public class EWarningSpecific extends EWarningGeneral{
         }
 
         return PRSs;
+    }
+
+    /**
+     * Calculates the early warning signals based on the average of the Forman Ricci Curvature of all network's edges.
+     * @return List<Double> List of all the values of the average Forman Ricci Curvature of all network's edges between
+     * the established dates.
+     * TODO: Falta por implementar. Muy complicada.
+     * @author Angel Fragua
+     */
+    public List<Double> formanRicciCurvature() {
+        List<Double> formanRicciCurvatures = new ArrayList<>();
+
+        return formanRicciCurvatures;
     }
 }

@@ -15,8 +15,9 @@ public class Main {
 
     @UserFunction
     @Description("Test query")
-    public String test(@Name("startDay") LocalDate startDay, @Name("endDay")LocalDate endDay) {
-        EWarningGeneral eWarn = new EWarningGeneral(this.db, startDay, endDay);
+    public String test(@Name("startDay") LocalDate startDay, @Name("endDay") LocalDate endDay,
+                       @Name("windowSize") long windowSize, @Name("cumulativeData") boolean cumulativeData) {
+        EWarningGeneral eWarn = new EWarningDNM(this.db, startDay, endDay, (int) windowSize, cumulativeData);
         eWarn.checkWindows();
         return eWarn.toString();
     }

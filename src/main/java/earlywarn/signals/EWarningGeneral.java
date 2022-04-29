@@ -1,8 +1,15 @@
 package earlywarn.signals;
 
 import org.apache.commons.math3.stat.correlation.*;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.builder.GraphTypeBuilder;
+import org.jgrapht.nio.csv.CSVFormat;
+import org.jgrapht.nio.csv.CSVImporter;
+import org.jgrapht.util.SupplierUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 
+import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -40,7 +47,8 @@ public class EWarningGeneral {
     /**
      * Secondary constructor for the Class that receive fewer parameters than the main one.
      * @param db Neo4j database instance annotated with the @Context from the main procedure function.
-     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -54,7 +62,8 @@ public class EWarningGeneral {
      * @param db Neo4j database instance annotated with the @Context from the main procedure function.
      * @param startDate First date of the range of days of interest.
      * @param endDate Last date of the range of days of interest.
-     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -76,7 +85,8 @@ public class EWarningGeneral {
      *      - "spearman": Spearman Correlation
      *      - "kendall":Kendall Correlation
      *      - any other value: Pearson Correlation
-     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it.
+     * @throws RuntimeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * If there are less than two selected countries. If any country inside the countries list isn't contain
      * in the database.
      * @author Angel Fragua
@@ -98,8 +108,10 @@ public class EWarningGeneral {
     /**
      * Assures that the user establish a start date of study previous to the end date. Also, it assures that the
      * database contains reports of covid confirmed cases for both dates, which means that it also will contain reports
-     * for all the dates in the interval between the selected dates of study.
-     * @throws DateOutRangeException If startDate is greater than endDate or the database doesn't contain it.
+     * for all the dates in the interval between the selected dates of study. Finally, it checks that the interval
+     * between the start date and the end date is equal or greater than the windows size.
+     * @throws DateOutRangeException If startDate is greater than endDate or the database doesn't contain it. If there
+     * aren't enough dates for the window size.
      * @author Angel Fragua
      */
     protected void checkDates() throws DateOutRangeException {
@@ -111,6 +123,10 @@ public class EWarningGeneral {
         LocalDate minDate = queries.minReportDate();
         if (this.startDate.isBefore(minDate) || this.endDate.isAfter(maxDate)) {
             throw new DateOutRangeException("Dates out of range. [" + minDate + " , " + maxDate + "] (year-month-day)");
+        }
+        if (this.windowSize > 0 && ChronoUnit.DAYS.between(this.startDate, this.endDate) < this.windowSize - 1) {
+            throw new DateOutRangeException("The interval between <startDate> and <endDate> must be equal or greater " +
+                                            "than <windowSize>");
         }
     }
 
@@ -186,6 +202,26 @@ public class EWarningGeneral {
     }
 
     /**
+     * Calculates the discrete difference of the received data, which means that each column with index i will be
+     * column[i] = column[i+1] - column[i]. Can be used to transform the original data.
+     * @param data Data to be transformed.
+     * @return double[][] The discrete difference of the data, where its first column will be lost.
+     * @author Angel Fragua
+     */
+    protected double[][] diffData(double[][] data) {
+        int numCols = data[0].length;
+        int numRows = data.length;
+        double[][] diffData = new double[numRows][numCols - 1];
+
+        for (int i = 0; i < numRows; i++) {
+            for (int j = 0; j < numCols - 1; j++) {
+                diffData[i][j] = data[i][j+1] - data[i][j];
+            }
+        }
+        return diffData;
+    }
+
+    /**
      * Transform the original data of cumulative confirmed covid cases to its desired form. In this general case, it
      * returns a copy of the same data matrix.
      * @param startDateWindow Start date corresponding to the first window's date, which will be as many days prior to
@@ -231,7 +267,7 @@ public class EWarningGeneral {
     /**
      * Generates a correlation matrix for each instant of study between the start date and the end date. This means
      * that for every pair of windows containing the confirmed covid cases for each possible pair of countries,
-     * are used to calculate its correlation coefficient which will determinate the wight of the edge that
+     * are used to calculate its correlation coefficient which will determinate the weight of the edge that
      * connects them both in the graph.
      * @param startDateWindow Start date corresponding to the first window's date, which will be as many days prior to
      * the real start date of study as the size of the windows minus one.
@@ -264,7 +300,7 @@ public class EWarningGeneral {
      * country.
      * @param window Data of the confirmed covid cases in a fixed period of time, where the Rows represent each country
      * and the columns represent each date from the latest to the new ones.
-     * @return double[][] The network's matrix adjacency created with the data of a fixed time window.
+     * @return double[][] The network's matrix created with the data of a fixed time window.
      * @author Angel Fragua
      */
     protected double[][] windowToNetwork(double[][] window) {
@@ -285,6 +321,42 @@ public class EWarningGeneral {
     }
 
     /**
+     * Transforms a 2d int array representing a network into a String of its corresponding matrix.
+     * @param network 2d int array of the network to be transformed.
+     * @return String Representation of the network, where each row represent a row of the matrix and the same
+     * happens with the columns. Values are separated by comas.
+     */
+    protected String networkToString(int[][] network) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0, j = 0; i < network.length; i++, j = 0) {
+            for (; j < network.length - 1; j++) {
+                result.append(network[i][j] + ",");
+            }
+            result.append(network[i][j] + System.lineSeparator());
+        }
+        return result.toString();
+    }
+
+    /**
+     * Transforms a 2d int array representing a network into a Graph of the JGraphT library.
+     * @param network 2d int array of the network to be transformed.
+     * @return Graph The corresponding Graph of the JGraphT library.
+     */
+    protected Graph<String, DefaultEdge> networkToGraph(int[][] network) {
+        /* Graph Type builder */
+        Graph<String, DefaultEdge> g = GraphTypeBuilder
+                .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(false)
+                .edgeClass(DefaultEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
+                .buildGraph();
+        /* Specification of the importation of the graph */
+        CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
+        gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
+        /* Creation of graph by adjacency matrix */
+        gImporter.importGraph(g, new StringReader(networkToString(network)));
+        return g;
+    }
+
+    /**
      * Computes the correlation coefficient between two arrays. Depending on the value established on the class property
      * correlation different types of correlation will be used. List of possible correlation values:
      *      - "pearson": Pearson Correlation
@@ -299,21 +371,27 @@ public class EWarningGeneral {
      */
     protected double calculateCorrelation(double[] x, double[] y) {
         double cc;
-        if (this.correlation.equals("pearson")) {
-            PearsonsCorrelation c = new PearsonsCorrelation();
-            cc = c.correlation(x, y);
-        }
-        else if (this.correlation.equals("spearman")) {
-            SpearmansCorrelation c = new SpearmansCorrelation();
-            cc = c.correlation(x, y);
-        }
-        else if (this.correlation.equals("kendall")) {
-            KendallsCorrelation c = new KendallsCorrelation();
-            cc = c.correlation(x, y);
-        }
-        else {
-            PearsonsCorrelation c = new PearsonsCorrelation();
-            cc = c.correlation(x, y);
+        switch (this.correlation) {
+            case "pearson": {
+                PearsonsCorrelation c = new PearsonsCorrelation();
+                cc = c.correlation(x, y);
+                break;
+            }
+            case "spearman": {
+                SpearmansCorrelation c = new SpearmansCorrelation();
+                cc = c.correlation(x, y);
+                break;
+            }
+            case "kendall": {
+                KendallsCorrelation c = new KendallsCorrelation();
+                cc = c.correlation(x, y);
+                break;
+            }
+            default: {
+                PearsonsCorrelation c = new PearsonsCorrelation();
+                cc = c.correlation(x, y);
+                break;
+            }
         }
         return Double.isNaN(cc) ? 0 : cc;
     }
