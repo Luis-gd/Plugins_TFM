@@ -30,6 +30,8 @@ public enum Propiedad {
 	ETL_TURISTAS_VUELO,
 	// True si se ha añadido la estimación de ingresos por turismo a cada vuelo
 	ETL_INGRESOS_VUELO,
+	// True si todas las Provincias o Estados tienen su respectiva relación con su correspondiente País
+	ETL_PAÍS_PROVINCIA_ESTADO,
 	// True si todos los países tienen una relación directa con Reportes y no solo sus Estados, Provincias o Regiones
 	ETL_REPORTE_PAÍS
 }

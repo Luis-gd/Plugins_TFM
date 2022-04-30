@@ -445,67 +445,88 @@ public class Añadir {
 	}
 
 	/**
+	 * Añade una relación a aquellos nodos Provincia o Estado que no tienen ninguna relación con un País, pero teniendo
+	 * en cuenta la propiedad <provinceStateId> sí que debería de tenerla.
+	 * Fija la propiedad {@link Propiedad#ETL_PAÍS_PROVINCIA_ESTADO} a true en la BD.
+	 * @author Ángel Fragua
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void añadirRelaciónProvinciaEstadoPaís() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (p:ProvinceState)\n" +
+					"WHERE NOT EXISTS{(:Country) <- [:BELONGS_TO] - (p:ProvinceState)}\n" +
+				"WITH last(split(p.provinceStateId, ', ')) AS countries, p\n" +
+				"MATCH (c:Country) WHERE c.countryName = countries\n" +
+				"MERGE (c) <- [:BELONGS_TO] - (p)");
+
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_PAÍS_PROVINCIA_ESTADO, true);
+		}
+	}
+	/**
 	 * Añade nodos Reporte a cada país que tan solo tiene los reportes de casos de covid a nivel de Provincia, Estado
-	 * o Región. Los países en conflicto son Canada (CA), China (CN) y Australia (AU). El caso de Canada es el más
-	 * peculiar, ya que a pesar de que el nodo País tiene relaciones con Reportes estas no concuerdan con la acumulación
-	 * de los Reportes de sus Estados. Además Canada cuanta con una relación a un Estado que no contiene información
-	 * alguna con el nombre de 'Recovered, Canada' el cual será eliminado junto con la relación en cuestión. Por último,
-	 * tanto para China como para Austra se generaran los nodos Reporte necesarios en base a la acumulación de los
-	 * Reportes de sus Estados. También se ha observado que estos dos países cuentan con un día más de Reportes, que por
-	 * desgracia es erróneo, ya que los valores se encuentran a 0 y se tratan de valores acumulativos, por lo que se
-	 * procederá a su eliminación.
+	 * o Región. Los países detectados en conflicto son Canada (CA), China (CN) y Australia (AU), aunque se ha hecho
+	 * genérico por si surgen problemas futuros. Se consideran dos problemas distintos, el primero donde el nodo País
+	 * tiene relaciones con Reporte, pero estas no concuerdan con la acumulación de los Reportes de sus Estados.
+	 * El segundo problema es que hay nodos País que no cuentan con Reportes, y por ello se generarán dichos reportes
+	 * para el País como la acumulación de Reportes de sus Provincias o Estados.
+	 * Además se ha observado que hay ciertos Reportes de Provincias o Estados incompletos, ya que solo cuentan con la
+	 * propiedad de casos confirmados y es por ello que se eliminaran para evitar problemas futuros.
 	 * Fija la propiedad {@link Propiedad#ETL_REPORTE_PAÍS} a true en la BD.
 	 * @author Ángel Fragua
 	 */
 	@Procedure(mode = Mode.WRITE)
 	public void añadirReportesPaís() {
+		Propiedades p = new Propiedades(db);
+		if (!p.getBool(Propiedad.ETL_PAÍS_PROVINCIA_ESTADO)) {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+					"(añadirRelaciónProvinciaEstadoPaís()) que añade a cada Provincia o Estado desvinculado " +
+					"de su país su correspondiente relación de pertenencia.");
+		}
 		try (Transaction tx = db.beginTx()) {
-			/* Arreglar los problemas de discordancia entre los Reportes a nivel de País y a nivel de Estado o
-			Provincia para Canada */
+			/* Primero se eliminan aquellos Reportes con datos incompletos */
 			tx.execute(
-				"MATCH (c:Country{iso2:'CA'}) <- [:BELONGS_TO] - (p:ProvinceState) - [:REPORTS] -> (r:Report)\n" +
-				"MATCH (c) - [:REPORTS] -> (gr:Report{releaseDate:r.releaseDate})\n" +
-					"WITH collect(r) AS ProvinceStateReports, collect(gr) AS CountryReports \n" +
-					"FOREACH (dayReport IN CountryReports |\n" +
-						"SET dayReport.confirmed = apoc.coll.sumLongs(" +
-								"[x in ProvinceStateReports WHERE dayReport.releaseDate=x.releaseDate | x.confirmed]),\n" +
-							"dayReport.deaths = apoc.coll.sumLongs(" +
-								"[x in ProvinceStateReports WHERE dayReport.releaseDate=x.releaseDate | x.deaths])\n" +
-					")"
-			);
-			/* Eliminar un nodo vacío y su correspondiente conexión */
-			tx.execute(
-				"MATCH (c:Country{iso2:'CA'}) <- [:BELONGS_TO] - (p:ProvinceState{provinceStateId: 'Recovered, Canada'})\n" +
-				"DETACH DELETE p"
+				"MATCH (c:Country) <- [:BELONGS_TO] - (p:ProvinceState) - [:REPORTS] -> (r:Report)\n" +
+					"WHERE r.confirmed IS NULL OR r.deaths IS NULL\n" +
+				"DETACH DELETE r"
 			);
 
-			/* El caso de China y Australia es idéntico, por lo que la solución es generalizable a ambos */
-			for (String iso2: new String[] {"CN", "AU"}) {
-				/* Creación de Reportes para País, generados como la acumulación de Reportes de Provincia o Estado */
-				tx.execute(
-					"MATCH (c:Country{iso2:'" + iso2 + "'}) <- [:BELONGS_TO] - (p:ProvinceState) - [:REPORTS] -> (r:Report)\n" +
-						"WITH COLLECT(DISTINCT r.releaseDate) AS days, COLLECT(r) as reports, c\n" +
-						"FOREACH (day IN days |\n" +
-							"MERGE (c) - [:REPORTS] -> (" +
-								":Report{" +
-									"country:c.countryName, " +
-									"lastUpdate:day, " +
-									"releaseDate:day,\n" +
-									"confirmed:apoc.coll.sumLongs(" +
-										"[x in reports WHERE day=x.releaseDate AND x.confirmed IS NOT null| x.confirmed]),\n" +
-									"deaths:apoc.coll.sumLongs(" +
-										"[x in reports WHERE day=x.releaseDate AND x.deaths IS NOT null | x.deaths]),\n" +
-									"recovered:apoc.coll.sumLongs(" +
-										"[x in reports WHERE day=x.releaseDate AND x.recovered IS NOT null | x.recovered]),\n" +
-									"reportId:c.countryName+'@'+day})\n" +
-						")"
-				);
-				/* Eliminación del último Reporte que contiene 0's y por ello es erróneo */
-				tx.execute(
-					"MATCH (c:Country{iso2:'" + iso2 + "'}) - [:REPORTS] -> (r:Report{releaseDate: '2020-10-14'})\n" +
-					"DETACH DELETE r"
-				);
-			}
+			/* Se genera un nuevo Reporte para todos aquellos Países que solamente tuvieran Reportes desde
+			sus respectivas Provincias o Estados */
+			tx.execute(
+				"MATCH (c:Country) <- [:BELONGS_TO] - (p:ProvinceState) - [:REPORTS] -> (r:Report)\n" +
+					"WHERE NOT EXISTS{(c) - [:REPORTS] -> (:Report)}\n" +
+				"WITH COLLECT(DISTINCT r.releaseDate) AS days, COLLECT(r) as reports, c\n" +
+				"FOREACH (day IN days |\n" +
+					"MERGE (c) - [:REPORTS] -> (" +
+						":Report{country:c.countryName, lastUpdate:day, releaseDate:day,\n" +
+							    "confirmed:apoc.coll.sumLongs(" +
+									"[x in reports WHERE day=x.releaseDate AND x.confirmed IS NOT null| x.confirmed]),\n" +
+							    "deaths:apoc.coll.sumLongs(" +
+									"[x in reports WHERE day=x.releaseDate AND x.deaths IS NOT null | x.deaths]),\n" +
+								"recovered:apoc.coll.sumLongs(" +
+									"[x in reports WHERE day=x.releaseDate AND x.recovered IS NOT null | x.recovered]),\n" +
+							    "reportId:c.countryName+'@'+day})\n" +
+				")"
+			);
+
+			/* Aquellos Países que contengan Reportes incorrectos o con valores sin establecer se volverán a calcular
+			 * como la acumulación de los Reportes de sus Provincias o Estados */
+			tx.execute(
+				"MATCH (c:Country) <- [:BELONGS_TO] - (p:ProvinceState) - [:REPORTS] -> (r:Report)\n" +
+				"WITH c, collect(r) as ProvinceStateReports\n" +
+				"MATCH (c) - [:REPORTS] -> (gr:Report)\n" +
+					"WHERE gr.confirmed IS NULL OR gr.deaths IS NULL\n" +
+				"WITH collect(gr) AS CountryReports, ProvinceStateReports\n" +
+				"FOREACH (dayReport IN CountryReports |\n" +
+					"SET dayReport.confirmed = apoc.coll.sumLongs(" +
+							"[x in ProvinceStateReports WHERE dayReport.releaseDate=x.releaseDate | x.confirmed]),\n" +
+						"dayReport.deaths = apoc.coll.sumLongs(" +
+							"[x in ProvinceStateReports WHERE dayReport.releaseDate=x.releaseDate | x.deaths])\n" +
+				")"
+			);
+
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_REPORTE_PAÍS, true);
 		}
