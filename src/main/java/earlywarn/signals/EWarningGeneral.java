@@ -3,6 +3,7 @@ package earlywarn.signals;
 import org.apache.commons.math3.stat.correlation.*;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
 import org.jgrapht.nio.csv.CSVFormat;
 import org.jgrapht.nio.csv.CSVImporter;
@@ -116,7 +117,7 @@ public class EWarningGeneral {
      */
     protected void checkDates() throws DateOutRangeException {
         if (this.startDate.isAfter(this.endDate)) {
-            throw new DateOutRangeException("<startDate> must be older than <endDate>");
+            throw new DateOutRangeException("<startDate> must be older than <endDate>.");
         }
         Queries queries = new Queries(this.db);
         LocalDate maxDate = queries.maxReportDate();
@@ -126,7 +127,7 @@ public class EWarningGeneral {
         }
         if (this.windowSize > 0 && ChronoUnit.DAYS.between(this.startDate, this.endDate) < this.windowSize - 1) {
             throw new DateOutRangeException("The interval between <startDate> and <endDate> must be equal or greater " +
-                                            "than <windowSize>");
+                                            "than <windowSize>.");
         }
     }
 
@@ -351,6 +352,52 @@ public class EWarningGeneral {
         /* Specification of the importation of the graph */
         CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
         gImporter.setParameter(CSVFormat.Parameter.MATRIX_FORMAT_ZERO_WHEN_NO_EDGE, true);
+        /* Creation of graph by adjacency matrix */
+        gImporter.importGraph(g, new StringReader(networkToString(network)));
+        return g;
+    }
+
+    /**
+     * Transforms a 2d double array representing a network into a String of its corresponding matrix.
+     * @param network 2d double array of the network to be transformed.
+     * @return String Representation of the network, where each row represent a row of the matrix and the same
+     * happens with the columns. Values are separated by comas.
+     */
+    protected String networkToString(double[][] network) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0, j = 0; i < network.length; i++, j = 0) {
+            for (; j < network.length - 1; j++) {
+                if (network[i][j] == 0 || j <= i) {
+                    result.append(",");
+                }
+                else {
+                    result.append(network[i][j] + ",");
+                }
+            }
+            if (network[i][j] == 0) {
+                result.append(System.lineSeparator());
+            }
+            else {
+                result.append(network[i][j] + System.lineSeparator());
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * Transforms a 2d double array representing a network into a Graph of the JGraphT library.
+     * @param network 2d double array of the network to be transformed.
+     * @return Graph The corresponding Graph of the JGraphT library.
+     */
+    protected Graph<String, DefaultWeightedEdge> networkToGraph(double[][] network) {
+        /* Graph Type builder */
+        Graph<String, DefaultWeightedEdge> g = GraphTypeBuilder
+                .undirected().allowingMultipleEdges(false).allowingSelfLoops(false).weighted(true)
+                .edgeClass(DefaultWeightedEdge.class).vertexSupplier(SupplierUtil.createStringSupplier(1))
+                .buildGraph();
+        /* Specification of the importation of the graph */
+        CSVImporter gImporter = new CSVImporter(CSVFormat.MATRIX, ',');
+        gImporter.setParameter(CSVFormat.Parameter.EDGE_WEIGHTS, true);
         /* Creation of graph by adjacency matrix */
         gImporter.importGraph(g, new StringReader(networkToString(network)));
         return g;

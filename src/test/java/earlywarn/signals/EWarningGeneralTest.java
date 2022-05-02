@@ -33,7 +33,7 @@ public class EWarningGeneralTest {
      * Initialize a temporal Neo4j instance Database for the current Class tests.
      * It reads a file containing the queries for the creation of some Country Nodes. It also reads a file with the
      * queries needed to create some Report Nodes of the previous Country Nodes between the date 22-1-2020 and 1-3-2020.
-     * Last it creates execute a query that creates a Relationship between each Country Node and its corresponding
+     * Last it creates and execute a query that creates a Relationship between each Country Node and its corresponding
      * Report Nodes. Furthermore, it saves a reference to the Database Service used to run queries in the Database.
      * Thanks to the @BeforeAll annotation is the first method of the test to be executed, so it works as a constructor.
      * @throws IOException If there is a problem reading any resource file.
@@ -94,7 +94,7 @@ public class EWarningGeneralTest {
                 () -> new EWarningGeneral(this.db, LocalDate.of(2020, 1, 22), LocalDate.of(2020, 1, 15))
         );
 
-        Assertions.assertTrue(thrown.getMessage().equals("<startDate> must be older than <endDate>"));
+        Assertions.assertTrue(thrown.getMessage().equals("<startDate> must be older than <endDate>."));
     }
 
     /**
@@ -145,7 +145,7 @@ public class EWarningGeneralTest {
     }
 
     /**
-     * Tests that the method checkDates() from the EWarningGeneral Class is properly throws Exception when the dates are
+     * Tests that the method checkDates() from the EWarningGeneral Class properly throws Exception when the dates are
      * wrong. This test will check that the interval of dates between the start date and the end date are equal or
      * greater than the window size.
      * @author Angel Fragua
@@ -159,7 +159,7 @@ public class EWarningGeneralTest {
         );
 
         Assertions.assertTrue(thrown.getMessage().equals("The interval between <startDate> and <endDate> must be " +
-                "equal or greater than <windowSize>"));
+                "equal or greater than <windowSize>."));
     }
 
     /**

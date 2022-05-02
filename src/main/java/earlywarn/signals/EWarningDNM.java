@@ -1,6 +1,10 @@
 package earlywarn.signals;
 
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.jgrapht.Graph;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
+import org.jgrapht.alg.spanning.KruskalMinimumSpanningTree;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.time.LocalDate;
@@ -18,6 +22,12 @@ public class EWarningDNM extends EWarningGeneral{
     /* Default values */
     protected final static int windowSizeDefault = 0;
     protected final static boolean cumulativeDataDefault = false;
+    private final static List<List<String>> pathsSPDefault = new ArrayList<>(List.of(
+            new ArrayList<>(List.of("NO", "IT")),
+            new ArrayList<>(List.of("IE", "UA")),
+            new ArrayList<>(List.of("IS", "AZ")),
+            new ArrayList<>(List.of("PT", "FI"))
+    ));
 
     /* Class properties */
     private boolean cumulativeData;
@@ -115,7 +125,7 @@ public class EWarningDNM extends EWarningGeneral{
         super.checkDates();
         if (ChronoUnit.DAYS.between(this.startDate, this.endDate) < 3 - 1 && this.windowSize == 0) {
             throw new DateOutRangeException("The interval between <startDate> and <endDate> must be at least " +
-                                            "of 3 days");
+                                            "of 3 days.");
         }
     }
 
@@ -298,7 +308,7 @@ public class EWarningDNM extends EWarningGeneral{
                 for (int k = 0; startDateWindow.plusDays(k).compareTo(startDateWindow.plusDays(i + 2)) < 0; k++) {
                     windowT0.get(j).add(this.data[j][k]);
                 }
-                for (int k = 1; startDateWindow.plusDays(k).compareTo(startDateWindow.plusDays(i + 2)) < 0; k++) {
+                for (int k = 0; startDateWindow.plusDays(k).compareTo(startDateWindow.plusDays(i + 2)) <= 0; k++) {
                     windowT1.get(j).add(this.data[j][k]);
                 }
             }
@@ -341,8 +351,8 @@ public class EWarningDNM extends EWarningGeneral{
                 if (j > i) {
                     yT0 = windowT0[j];
                     yT1 = windowT1[j];
-                    yT0Sd = sdFunction.evaluate(xT0);
-                    yT1Sd = sdFunction.evaluate(xT1);
+                    yT0Sd = sdFunction.evaluate(yT0);
+                    yT1Sd = sdFunction.evaluate(yT1);
 
                     cc = Math.abs(super.calculateCorrelation(xT1, yT1)) -
                          Math.abs(super.calculateCorrelation(xT0, yT0));
@@ -354,5 +364,64 @@ public class EWarningDNM extends EWarningGeneral{
         }
 
         return network;
+    }
+
+    /**
+     * Calculates the early warning signals based on the Minimum Spanning Tree - Dynamic Network Marker (MSP-DNM).
+     * @return List<Double> List of all the values of the Minimum Spanning Tree - Dynamic Network Marker (MSP-DNM) of
+     * each network between the established dates.
+     * @author Angel Fragua
+     */
+    public List<Double> MST() {
+        List<Double> mstDNMs = new ArrayList<>();
+        for (double[][] net : this.networks) {
+            net = Arrays.stream(net)
+                    .map(x -> Arrays.stream(x).map(y -> (y < 1.0E-12) ? 0 : y).toArray())
+                    .toArray(double[][]::new);
+            Graph<String, DefaultWeightedEdge> g = super.networkToGraph(net);
+            KruskalMinimumSpanningTree mst = new KruskalMinimumSpanningTree<>(g);
+
+            mstDNMs.add(mst.getSpanningTree().getWeight());
+        }
+
+        return mstDNMs;
+    }
+
+    public List<List<Double>> SP(List<List<String>> paths) {
+        List<List<Double>> spDNMs = new ArrayList<>();
+
+        /* If paths is empty, then default paths for default countries are established: northeast-southeast,
+        easter-gestear, northeaster-southwester, northwester-southeaster*/
+        if (paths.isEmpty()) {
+            paths = this.pathsSPDefault;
+        }
+        /* Check if all iso2 references are established and get its index */
+        int[][] pathsIdx = new int[paths.size()][2];
+        for (int i = 0; i < paths.size(); i++) {
+            pathsIdx[i][0] = countries.indexOf(paths.get(i).get(0));
+            pathsIdx[i][1] = countries.indexOf(paths.get(i).get(1));
+            if (pathsIdx[i][0] == -1 || pathsIdx[i][1] == -1) {
+                throw new CountryUndefinedException("Some ISO-3166-Alpha2 references for the paths are incorrect or " +
+                        "not established in the Class.");
+            }
+            spDNMs.add(new ArrayList<>());
+        }
+
+        double pathLenght = 0;
+        double[][] net;
+        for (int i = 0; i < this.networks.length; i++) {
+            net = Arrays.stream(this.networks[i])
+                    .map(x -> Arrays.stream(x).map(y -> (y < 1.0E-12) ? 0 : y).toArray())
+                    .toArray(double[][]::new);
+            Graph<String, DefaultWeightedEdge> g = super.networkToGraph(net);
+            DijkstraShortestPath<String, DefaultWeightedEdge> sp = new DijkstraShortestPath(g);
+
+            for (int j = 0; j < pathsIdx.length; j++) {
+                pathLenght = sp.getPathWeight(String.valueOf(pathsIdx[j][0] + 1), String.valueOf(pathsIdx[j][1] + 1));
+                spDNMs.get(j).add(pathLenght == Double.POSITIVE_INFINITY ? 0: pathLenght);
+            }
+        }
+
+        return spDNMs;
     }
 }
