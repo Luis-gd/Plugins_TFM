@@ -39,12 +39,26 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
       <version>3.6.1</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.12.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jgrapht</groupId>
+      <artifactId>jgrapht-core</artifactId>
+      <version>1.5.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jgrapht</groupId>
+      <artifactId>jgrapht-io</artifactId>
+      <version>1.5.1</version>
     </dependency>
 
     <!-- Test Dependencies -->
@@ -112,13 +126,14 @@
         <version>${maven-shade-plugin.version}</version>
         <configuration>
           <createDependencyReducedPom>false</createDependencyReducedPom>
-          <!--https://stackoverflow.com/questions/64110058/maven-shade-plugin-how-resolve-the-warning-message-define-1-overlapping-resour-->
+          <!-- https://stackoverflow.com/questions/64110058/maven-shade-plugin-how-resolve-the-warning-message-define-1-overlapping-resour -->
+          <!-- https://stackoverflow.com/questions/56063566/how-can-i-remove-module-info-class-warning-for-a-shaded-jar -->
           <filters>
             <filter>
-              <artifact>org.apache.commons:*</artifact>
+              <artifact>*:*</artifact>
               <excludes>
-                <exclude>META-INF/*.txt</exclude>
-                <exclude>META-INF/*.MF</exclude>
+                <exclude>module-info.class</exclude>
+                <exclude>META-INF/**</exclude>
               </excludes>
             </filter>
           </filters>
