@@ -431,11 +431,41 @@ public class EWarningSpecific extends EWarningGeneral{
      * Calculates the early warning signals based on the average of the Forman Ricci Curvature of all network's edges.
      * @return List<Double> List of all the values of the average Forman Ricci Curvature of all network's edges between
      * the established dates.
-     * TODO: Falta por implementar. Muy complicada.
      * @author Angel Fragua
      */
     public List<Double> formanRicciCurvature() {
+        /* F(e) = #{triangles containing e} + 2 - #{edges parallel to e} */
+        /* #{edges parallel to e} =  edges sharing a node or a triangle, but not both */
         List<Double> formanRicciCurvatures = new ArrayList<>();
+
+        Set<String> source;
+        Set<String> target;
+        Set<String> triangles;
+        Set<String> parallelEdges;
+        long fr;
+        for (int[][] unweightedNet : this.unweighted) {
+            Graph<String, DefaultEdge> g = super.networkToGraph(unweightedNet);
+
+            fr = 0;
+            for (DefaultEdge e: g.edgeSet()) {
+                /* Triangles */
+                source = Graphs.neighborSetOf(g, g.getEdgeSource(e));
+                target = Graphs.neighborSetOf(g, g.getEdgeTarget(e));
+                triangles = new HashSet<>(source);
+                triangles.retainAll(target);
+                fr += triangles.size() + 2;
+
+                /* Parallel edges */
+                parallelEdges = new HashSet<>(source);
+                parallelEdges.addAll(target);
+                parallelEdges.remove(g.getEdgeSource(e));
+                parallelEdges.remove(g.getEdgeTarget(e));
+                parallelEdges.removeAll(triangles);
+                fr -= parallelEdges.size();
+            }
+
+            formanRicciCurvatures.add(g.edgeSet().isEmpty() ? Double.NaN : (double) fr / (double) g.edgeSet().size());
+        }
 
         return formanRicciCurvatures;
     }

@@ -534,4 +534,95 @@ public class EWarningSpecificTest {
 
         assertThat(ew.PRS()).isEqualTo(PRSs);
     }
+
+    /**
+     * Tests that the method formanRicciCurvature() from EWarningSpecific returns the correct List with
+     * a 10 decimal precision.
+     * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
+     * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
+     * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
+     */
+    @Test
+    void formanRicciCurvature1() {
+        List<Double> formanRicciCurvatures = new ArrayList<>(Arrays.asList(Double.NaN,Double.NaN,Double.NaN,2.,2.75,
+                1.714285714285714,1.714285714285714,1.714285714285714,3.714285714285714,3.714285714285714,4.,2.,2.,
+                1.333333333333333,2.,2.,2.,2.,2.,Double.NaN,Double.NaN,Double.NaN,Double.NaN,Double.NaN,Double.NaN,
+                Double.NaN,Double.NaN,2.,8.,8.865853658536585,7.316666666666666,4.589743589743589,2.902255639097744,
+                4.721893491124260));
+
+        EWarningSpecific ew = new EWarningSpecific(this.db, LocalDate.of(2020, 1, 22), LocalDate.of(2020, 3, 1),
+                EWarningSpecific.countriesDefault, 7, "spearman", false, false, 0.4);
+        ew.checkWindows();
+
+        assertThat(ew.formanRicciCurvature().stream().map(x -> round(x, 10)).collect(Collectors.toList()))
+                .isEqualTo(formanRicciCurvatures.stream().map(x -> round(x, 10)).collect(Collectors.toList()));
+    }
+
+    /**
+     * Tests that the method formanRicciCurvature() from EWarningSpecific returns the correct List with
+     * a 10 decimal precision.
+     * This test checks cumulativeData = false which means that the data will be converted from the cumulative covid
+     * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
+     * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
+     */
+    @Test
+    void formanRicciCurvature2() {
+        List<Double> formanRicciCurvatures = new ArrayList<>(Arrays.asList(2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,Double.NaN,
+                Double.NaN,2.,2.,2.,2.,2.,Double.NaN,Double.NaN,Double.NaN,Double.NaN,Double.NaN,Double.NaN,Double.NaN,
+                6.));
+
+        EWarningSpecific ew = new EWarningSpecific(this.db, LocalDate.of(2020, 1, 27), LocalDate.of(2020, 2, 25),
+                EWarningSpecific.countriesDefault, 10, "pearson", false, true, 0.8);
+        ew.checkWindows();
+
+        assertThat(ew.formanRicciCurvature().stream().map(x -> round(x, 10)).collect(Collectors.toList()))
+                .isEqualTo(formanRicciCurvatures.stream().map(x -> round(x, 10)).collect(Collectors.toList()));
+    }
+
+    /**
+     * Tests that the method formanRicciCurvature() from EWarningSpecific returns the correct List with
+     * a 10 decimal precision.
+     * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
+     * cases to daily cases, and squareRootData = false which won't apply the square root to the original data to
+     * smooth it. Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
+     */
+    @Test
+    void formanRicciCurvature3() {
+        List<Double> formanRicciCurvatures = new ArrayList<>(Arrays.asList(7.,6.227272727272728,5.75,5.96,5.96,
+                6.227272727272728,7.,6.,3.8125,4.076923076923077,3.75,5.,5.,3.666666666666667,2.875,4.,1.75,
+                0.666666666666667,2.,1.,1.,4.333333333333333,9.316455696202532,12.127659574468085,14.283333333333333));
+
+        EWarningSpecific ew = new EWarningSpecific(this.db, LocalDate.of(2020, 2, 1), LocalDate.of(2020, 2, 28),
+                EWarningSpecific.countriesDefault, 14, "kendall", true, false, 0.6);
+        ew.checkWindows();
+
+        assertThat(ew.formanRicciCurvature().stream().map(x -> round(x, 10)).collect(Collectors.toList()))
+                .isEqualTo(formanRicciCurvatures.stream().map(x -> round(x, 10)).collect(Collectors.toList()));
+    }
+
+    /**
+     * Tests that the method formanRicciCurvature() from EWarningSpecific returns the correct List with
+     * a 10 decimal precision.
+     * This test checks cumulativeData = true which means that the data won't be converted from the cumulative covid
+     * cases to daily cases, and squareRootData = true which apply the square root to the original data to smooth it.
+     * Rest of parameters are being changed to assure its correctness.
+     * @author Angel Fragua
+     */
+    @Test
+    void formanRicciCurvature4() {
+        List<Double> formanRicciCurvatures = new ArrayList<>(Arrays.asList(2.857142857142857,3.666666666666667,
+                3.666666666666667,5.,5.,5.,5.,5.,3.666666666666667,2.857142857142857,2.4,1.75,3.,3.,3.,3.,3.,2.,2.,2.,
+                2.,4.,5.,5.,5.,5.,6.));
+
+        EWarningSpecific ew = new EWarningSpecific(this.db, LocalDate.of(2020, 1, 31), LocalDate.of(2020, 3, 1),
+                new ArrayList<>(Arrays.asList("AL", "BE", "FR", "ES", "SE", "CH", "GB", "TR", "UA")), 14, "pearson",
+                true, true, 0.5);
+        ew.checkWindows();
+
+        assertThat(ew.formanRicciCurvature().stream().map(x -> round(x, 10)).collect(Collectors.toList()))
+                .isEqualTo(formanRicciCurvatures.stream().map(x -> round(x, 10)).collect(Collectors.toList()));
+    }
 }

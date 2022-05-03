@@ -269,7 +269,7 @@ public class EWarningDNM extends EWarningGeneral{
                 }
             }
 
-            networks.add(windowToNetwork(windowT0, windowT1));
+            networks.add(windowToNetwork(windowT0, windowT1, this.adjacencies[i], this.adjacencies[i + 1]));
             startDateWindow = startDateWindow.plusDays(1);
             i = i + 1;
         }
@@ -318,23 +318,29 @@ public class EWarningDNM extends EWarningGeneral{
                             .toArray(double[][]::new),
                     windowT1.stream()
                             .map(l -> l.stream().mapToDouble(Double::doubleValue).toArray())
-                            .toArray(double[][]::new)));
+                            .toArray(double[][]::new),
+                    this.adjacencies[i], this.adjacencies[i + 1]));
         }
         return networks.toArray(new double[networks.size()][][]);
     }
 
     /**
      * Transform the data of the confirmed covid cases of the two fixed windows with one date of difference between them
-     * to de matrix adjacency of the network, where the edges represent the coefficient correlation between
+     * to the graph matrix of the network, where the edges represent the coefficient correlation between
      * its pair of nodes, and the nodes represent each country.
      * @param windowT0 Data of the confirmed covid cases in a fixed period of time, where the Rows represent
      * each country and the columns represent each date from the latest to the new ones.
      * @param windowT1 Data of the confirmed covid cases in a fixed period of time, where the Rows represent
      * each country and the columns represent each date from the latest to the new ones.
+     * @param adjacencyT0 Adjacency matrix as a 2d int array of the windowT0. In this case is not needed, so it will
+     * be ignored.
+     * @param adjacencyT1 Adjacency matrix as a 2d int array of the windowT1. In this case is not needed, so it will
+     * be ignored.
      * @return double[][] The network's matrix created with the data of the two fixed time windows.
      * @author Angel Fragua
      */
-    protected double[][] windowToNetwork(double[][] windowT0, double[][] windowT1) {
+    protected double[][] windowToNetwork(double[][] windowT0, double[][] windowT1, int[][] adjacencyT0,
+                                         int[][]adjacencyT1) {
         int numCountries = this.countries.size();
         double[][] network = new double[numCountries][numCountries];
         StandardDeviation sdFunction = new StandardDeviation();
@@ -367,8 +373,8 @@ public class EWarningDNM extends EWarningGeneral{
     }
 
     /**
-     * Calculates the early warning signals based on the Minimum Spanning Tree - Dynamic Network Marker (MSP-DNM).
-     * @return List<Double> List of all the values of the Minimum Spanning Tree - Dynamic Network Marker (MSP-DNM) of
+     * Calculates the early warning signals based on the Minimum Spanning Tree - Dynamic Network Marker (MST-DNM).
+     * @return List<Double> List of all the values of the Minimum Spanning Tree - Dynamic Network Marker (MST-DNM) of
      * each network between the established dates.
      * @author Angel Fragua
      */
@@ -387,6 +393,15 @@ public class EWarningDNM extends EWarningGeneral{
         return mstDNMs;
     }
 
+    /**
+     * Calculates the early warning signals based on the Shortest Path - Dynamic Network Marker (SP-DNM).
+     * @param paths List of the pair of countries from which the shortest path will be searched. This pair of countries
+     * will also be lists but in this case of size two, where the first element is a ISO-3166-Alpha2 of the origin
+     * country and the second one is another ISO-3166-Alpha2 reference of the destination country.
+     * @return List<List<Double>> List of all the values of the Shortest Path - Dynamic Network Marker (SP-DNM) of
+     * each network between the established dates.
+     * @author Angel Fragua
+     */
     public List<List<Double>> SP(List<List<String>> paths) {
         List<List<Double>> spDNMs = new ArrayList<>();
 

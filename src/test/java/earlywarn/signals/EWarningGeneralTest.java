@@ -158,8 +158,8 @@ public class EWarningGeneralTest {
                 () -> new EWarningGeneral(this.db, LocalDate.of(2020, 1, 22), LocalDate.of(2020, 2, 3))
         );
 
-        Assertions.assertTrue(thrown.getMessage().equals("The interval between <startDate> and <endDate> must be " +
-                "equal or greater than <windowSize>."));
+        Assertions.assertTrue(thrown.getMessage().equals("The interval between the first report date in the database " +
+                "and the <endDate> must be equal or greater than <windowSize>."));
     }
 
     /**

@@ -125,9 +125,9 @@ public class EWarningGeneral {
         if (this.startDate.isBefore(minDate) || this.endDate.isAfter(maxDate)) {
             throw new DateOutRangeException("Dates out of range. [" + minDate + " , " + maxDate + "] (year-month-day)");
         }
-        if (this.windowSize > 0 && ChronoUnit.DAYS.between(this.startDate, this.endDate) < this.windowSize - 1) {
-            throw new DateOutRangeException("The interval between <startDate> and <endDate> must be equal or greater " +
-                                            "than <windowSize>.");
+        if (this.windowSize > 0 && ChronoUnit.DAYS.between(minDate, this.endDate) < this.windowSize - 1) {
+            throw new DateOutRangeException("The interval between the first report date in the database and the " +
+                                            "<endDate> must be equal or greater than <windowSize>.");
         }
     }
 
@@ -296,7 +296,7 @@ public class EWarningGeneral {
     }
 
     /**
-     * Transform the data of the confirmed covid cases in a fixed window time to de matrix adjacency of the network,
+     * Transform the data of the confirmed covid cases in a fixed window time to the graph matrix of the network,
      * where the edges represent the coefficient correlation between its pair of nodes, and the nodes represent each
      * country.
      * @param window Data of the confirmed covid cases in a fixed period of time, where the Rows represent each country
