@@ -1,6 +1,8 @@
 package earlywarn.main;
 
+import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
+import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.main.modelo.EstadoLínea;
 import earlywarn.main.modelo.Línea;
 import earlywarn.main.modelo.criterio.Criterio;
@@ -22,6 +24,9 @@ public class GestorLíneas {
 
 	// Mapa que almacena el estado de cada línea
 	private final Map<String, EstadoLínea> líneas;
+
+	// Clase usada para calcular el fitness final. Puede ser null.
+	private ICálculoFitness cálculoFitness;
 
 	/**
 	 * Crea una instancia del gestor. El método está protegido ya que se debe usar {@link GestorLíneasBuilder} para
@@ -48,6 +53,15 @@ public class GestorLíneas {
 	 */
 	protected void _añadirCriterio(Criterio criterio) {
 		criterios.put(criterio.id, criterio);
+	}
+
+	/**
+	 * Añade un método de cálculo de fitness al gestor, lo que le permite agrupar los valores de cada criterio
+	 * en uno solo. Usado por {@link GestorLíneasBuilder}.
+	 * @param cálculoFitness Clase usada para calcular el fitness
+	 */
+	protected void _añadirCálculoFitness(ICálculoFitness cálculoFitness) {
+		this.cálculoFitness = cálculoFitness;
 	}
 
 	/**
@@ -84,6 +98,22 @@ public class GestorLíneas {
 		}
 	}
 
+	/**
+	 * Obtiene el valor de fitness actual dados los valores de todos los criterios. Requiere que se haya especificado
+	 * un método de cálculo de fitness al instanciar esta clase
+	 * @return Valor de fitness (entre 0 y 1) que representa la calidad de la solución actual
+	 * @throws IllegalOperationException Si no se ha especificado un método de cálculo de fitness al crear esta
+	 * instancia
+	 */
+	public double getFitness() {
+		if (cálculoFitness != null) {
+			return cálculoFitness.calcularFitness(criterios.values());
+		} else {
+			throw new IllegalOperationException("No se puede calcular el fitness de la solución si no se ha " +
+				"especificado un método de cálculo");
+		}
+	}
+
 	private void abrirCerrarLíneas(List<String> líneas, boolean abrir) {
 		for (String idLínea : líneas) {
 			EstadoLínea estadoLínea = this.líneas.get(idLínea);
@@ -96,10 +126,4 @@ public class GestorLíneas {
 			}
 		}
 	}
-
-	/*
-	 * TODO: Permitir obtener el valor de fitness final usando una instancia de una clase capaz de agrupar los valores
-	 * 	de los diferentes criterios en uno solo
-	 */
-
 }

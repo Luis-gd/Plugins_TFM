@@ -1,5 +1,6 @@
 package earlywarn.main;
 
+import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -16,6 +17,11 @@ public class GestorLíneasBuilder extends GestorLíneas {
 
 	public GestorLíneasBuilder añadirCriterio(Criterio criterio) {
 		_añadirCriterio(criterio);
+		return this;
+	}
+
+	public GestorLíneasBuilder añadirCálculoFitness(ICálculoFitness cálculoFitness) {
+		_añadirCálculoFitness(cálculoFitness);
 		return this;
 	}
 
