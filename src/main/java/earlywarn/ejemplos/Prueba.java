@@ -40,6 +40,13 @@ public class Prueba {
 	}
 
 	@UserFunction
+	@Description("Devuelve el año más antiguo del que hay datos de turismo")
+	public Long últimoAñoDatosTurismo() {
+		Consultas consultas = new Consultas(db);
+		return (long) consultas.getÚltimoAñoDatosTurismo();
+	}
+
+	@UserFunction
 	@Description("Prueba para Propiedades.inicializadas()")
 	public Boolean propInit() {
 		return new Propiedades(db).inicializadas();
