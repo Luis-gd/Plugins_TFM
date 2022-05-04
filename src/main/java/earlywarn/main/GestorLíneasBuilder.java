@@ -1,7 +1,6 @@
 package earlywarn.main;
 
 import earlywarn.definiciones.ICálculoFitness;
-import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
 import org.neo4j.graphdb.GraphDatabaseService;
 

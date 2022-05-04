@@ -6,7 +6,6 @@ import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.main.modelo.criterio.Criterio;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Calcula el fitness de una solución aplicando unos pesos predeterminados a cada criterio

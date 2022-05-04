@@ -3,7 +3,6 @@ package earlywarn.definiciones;
 import earlywarn.main.modelo.criterio.Criterio;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Interfaz que permite calcular el fitness de una solución dados diferentes criterios con un cierto valor para cada
