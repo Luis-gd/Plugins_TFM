@@ -1,9 +1,12 @@
-package earlywarn.main;
+package earlywarn.main.modelo;
 
 import earlywarn.definiciones.ETLOperationRequiredException;
 import earlywarn.definiciones.Propiedad;
 import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
+import earlywarn.main.Consultas;
+import earlywarn.main.Propiedades;
+import earlywarn.main.Utils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -15,7 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Representa una línea de conexión entre dos aeropuertos que engloba todos los vuelos entre ellos en un cierto
+ * Representa una línea de conexión dirigida entre dos aeropuertos que engloba todos los vuelos entre ellos en un cierto
  * rango de fechas.
  * Esta clase permite consultar ciertas propiedades de la línea (como el número total de pasajeros o de vuelos)
  * minimizando el número de accesos a la BD (solo se accede la primera vez que se consulta un dato, después el dato

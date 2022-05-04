@@ -387,11 +387,11 @@ public class Consultas {
 	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
 	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public TreeMap<String, Integer> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+	public TreeMap<String, Long> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
-		TreeMap<String, Integer> ret = new TreeMap<>();
+		TreeMap<String, Long> ret = new TreeMap<>();
 
 		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)
 		&& propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
@@ -413,7 +413,7 @@ public class Consultas {
 						Map<String, Object> row = res.next();
 						String aerolínea = (String) row.get(columnas.get(0));
 						if (!aerolínea.equals(AEROLÍNEA_DESCONOCIDA)) {
-							ret.put(aerolínea, Math.toIntExact((Long) row.get(columnas.get(1))));
+							ret.put(aerolínea, (Long) row.get(columnas.get(1)));
 						}
 					}
 				}
@@ -430,7 +430,7 @@ public class Consultas {
 	/**
 	 * @see #getPasajerosPorAerolínea(LocalDate, LocalDate, String)
 	 */
-	public TreeMap<String, Integer> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin) {
+	public TreeMap<String, Long> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin) {
 		return getPasajerosPorAerolínea(díaInicio, díaFin, "");
 	}
 
@@ -450,11 +450,11 @@ public class Consultas {
 	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
 	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public TreeMap<String, Integer> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
+	public TreeMap<String, Long> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String díaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
-		TreeMap<String, Integer> ret = new TreeMap<>();
+		TreeMap<String, Long> ret = new TreeMap<>();
 
 		if (propiedades.getBool(Propiedad.ETL_PASAJEROS) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)
 		&& propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
@@ -493,7 +493,7 @@ public class Consultas {
 						String aeropuerto = (String) row.get(columnas.get(0));
 						// Parece que algunos resultados vienen sin aeropuerto
 						if (!aeropuerto.isEmpty()) {
-							ret.put(aeropuerto, Math.toIntExact((Long) row.get(columnas.get(1))));
+							ret.put(aeropuerto, (Long) row.get(columnas.get(1)));
 						}
 					}
 				}
@@ -510,7 +510,7 @@ public class Consultas {
 	/**
 	 * @see #getPasajerosPorAeropuerto(LocalDate, LocalDate, String)
 	 */
-	public TreeMap<String, Integer> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin) {
+	public TreeMap<String, Long> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin) {
 		return getPasajerosPorAeropuerto(díaInicio, díaFin, "");
 	}
 

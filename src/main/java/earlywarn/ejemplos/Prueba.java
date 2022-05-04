@@ -5,7 +5,7 @@ import java.util.List;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
 import earlywarn.definiciones.Propiedad;
-import earlywarn.main.Línea;
+import earlywarn.main.modelo.Línea;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
@@ -98,7 +98,7 @@ public class Prueba {
 	@Description("Obtiene el número de pasajeros que viajan con cada aerolínea entre todos los vuelos de llegada " +
 		"al país indicado en el rango de fechas indicado. Si el país se deja en blanco, se tienen en cuenta " +
 		"todos los vuelos.")
-	public Map<String, Integer> getPasajerosPorAerolínea(@Name("idPaís") String idPaís,
+	public Map<String, Long> getPasajerosPorAerolínea(@Name("idPaís") String idPaís,
 														 @Name("fechaInicio") LocalDate fechaInicio,
 														 @Name("fechaFin") LocalDate fechaFin) {
 		Consultas consultas = new Consultas(db);
@@ -109,7 +109,7 @@ public class Prueba {
 	@Description("Obtiene el número de pasajeros que viajan desde y hacia cada aeropuerto entre todos los vuelos de " +
 		"llegada al país indicado en el rango de fechas indicado. Solo se incluyen aeropuertos del país indicado. " +
 		"Si el país se deja en blanco, se tienen en cuenta todos los vuelos y aeropuertos.")
-	public Map<String, Integer> getPasajerosPorAeropuerto(@Name("idPaís") String idPaís,
+	public Map<String, Long> getPasajerosPorAeropuerto(@Name("idPaís") String idPaís,
 														 @Name("fechaInicio") LocalDate fechaInicio,
 														 @Name("fechaFin") LocalDate fechaFin) {
 		Consultas consultas = new Consultas(db);
