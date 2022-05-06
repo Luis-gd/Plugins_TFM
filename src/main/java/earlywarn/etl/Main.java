@@ -14,17 +14,19 @@ public class Main {
 	 *                                relativa a la carpeta de import definida en la configuración de Neo4J.
 	 * @param rutaFicheroTurismo Ruta al fichero CSV que contiene los datos del ratio de turistas de las diferentes
 	 *                           regiones, relativa a la carpeta de import definida en la configuración de Neo4J.
-	 * @param mismaFechaTurismo True si al rellenar los datos de turistas en vuelos deberían buscarse datos de turismo
-	 *                          en la misma fecha. Para más detalles, ver {@link Añadir#añadirTuristasVuelo}.
+	 * @param mismaFechaTurismo True si al rellenar los datos de turistas en vuelos y gasto turístico de pasajeros
+	 *                          deberían buscarse datos de turismo/gasto en la misma fecha. Para más detalles,
+	 *                          ver {@link Añadir#añadirTuristasVuelo}.
 	 *                          Si este parámetro es false, aproximarFaltantesTuristas debe ser true.
-	 * @param aproximarFaltantesTurismo True si al rellenar los datos de turistas en vuelos deberían aproximarse los
-	 *                                  datos de turismo cuando no estén disponibles. Para más detalles, ver
-	 *                                  {@link Añadir#añadirTuristasVuelo}.
+	 * @param aproximarFaltantesTurismo True si al rellenar los datos de turistas en vuelos y gasto turístico de
+	 *                                  pasajeros deberían aproximarse los datos de turismo/gasto cuando no estén
+	 *                                  disponibles. Para más detalles, ver {@link Añadir#añadirTuristasVuelo}.
 	 *                                  Si este parámetro es false, mismaFechaTuristas debe ser true.
 	 */
 	@Procedure(mode = Mode.WRITE)
 	public void mainETL(@Name("rutaFicheroConectividad") String rutaFicheroConectividad,
 						@Name("rutaFicheroTurismo") String rutaFicheroTurismo,
+						@Name("rutaFicheroGasto") String rutaFicheroGasto,
 						@Name("mismaFechaTurismo") Boolean mismaFechaTurismo,
 						@Name("aproximarFaltantesTurismo") Boolean aproximarFaltantesTurismo) {
 		Modificar modificar = new Modificar();
@@ -37,6 +39,10 @@ public class Main {
 		añadir.añadirConectividad(rutaFicheroConectividad);
 		añadir.calcularNúmeroPasajeros();
 		añadir.añadirRatioTuristas(rutaFicheroTurismo);
+		añadir.añadirGastoTurístico(rutaFicheroGasto);
 		añadir.añadirTuristasVuelo(mismaFechaTurismo, aproximarFaltantesTurismo);
+		añadir.añadirIngresosVuelo(mismaFechaTurismo, aproximarFaltantesTurismo);
+		añadir.añadirRelaciónProvinciaEstadoPaís();
+		añadir.añadirReportesPaís();
 	}
 }
