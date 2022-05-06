@@ -193,7 +193,7 @@ public class Línea {
 	 * operación ETL que convierte las fechas de vuelos a tipo date.
 	 * Se excluyen los pasajeros de vuelos cuya aerolínea se desconoce.
 	 * @return Mapa que relaciona códigos de aerolíneas con el número de pasajeros que viajan con cada una
-	 * en el rango de fechas establecido.
+	 * en el rango de fechas establecido. No incluye aerolínas con 0 pasajeros.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#calcularNúmeroPasajeros()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
@@ -214,8 +214,9 @@ public class Línea {
 						while (res.hasNext()) {
 							Map<String, Object> row = res.next();
 							String aerolínea = (String) row.get(columnas.get(0));
-							if (!aerolínea.equals(Consultas.AEROLÍNEA_DESCONOCIDA)) {
-								pasajerosPorAerolínea.put(aerolínea, (Long) row.get(columnas.get(1)));
+							Long numPasajeros = (Long) row.get(columnas.get(1));
+							if (!aerolínea.equals(Consultas.AEROLÍNEA_DESCONOCIDA) && numPasajeros > 0) {
+								pasajerosPorAerolínea.put(aerolínea, numPasajeros);
 							}
 						}
 					}

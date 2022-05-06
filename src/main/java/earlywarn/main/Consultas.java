@@ -382,7 +382,7 @@ public class Consultas {
 	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
 	 *               si se deja en blanco.
 	 * @return Mapa que relaciona códigos de aerolíneas con el número de pasajeros que viajan con cada una
-	 * en el rango de fechas indicado.
+	 * en el rango de fechas indicado. No incluye aerolínas con 0 pasajeros.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
 	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
@@ -412,8 +412,9 @@ public class Consultas {
 					while (res.hasNext()) {
 						Map<String, Object> row = res.next();
 						String aerolínea = (String) row.get(columnas.get(0));
-						if (!aerolínea.equals(AEROLÍNEA_DESCONOCIDA)) {
-							ret.put(aerolínea, (Long) row.get(columnas.get(1)));
+						Long numPasajeros = (Long) row.get(columnas.get(1));
+						if (!aerolínea.equals(AEROLÍNEA_DESCONOCIDA) && numPasajeros > 0) {
+							ret.put(aerolínea, numPasajeros);
 						}
 					}
 				}
@@ -445,7 +446,7 @@ public class Consultas {
 	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino y solo se devolverán
 	 *               aeropuertos de este país. Si se deja en blanco, la restricción no se aplica.
 	 * @return Mapa que relaciona códigos IATA de aeropuertos con el número de pasajeros que viajan desde y hasta cada
-	 * uno en el rango de fechas indicado.
+	 * uno en el rango de fechas indicado. No incluye aeropuertos con 0 pasajeros.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
 	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
@@ -491,9 +492,10 @@ public class Consultas {
 					while (res.hasNext()) {
 						Map<String, Object> row = res.next();
 						String aeropuerto = (String) row.get(columnas.get(0));
+						Long numPasajeros = (Long) row.get(columnas.get(1));
 						// Parece que algunos resultados vienen sin aeropuerto
-						if (!aeropuerto.isEmpty()) {
-							ret.put(aeropuerto, (Long) row.get(columnas.get(1)));
+						if (!aeropuerto.isEmpty() && numPasajeros > 0) {
+							ret.put(aeropuerto, numPasajeros);
 						}
 					}
 				}
