@@ -1,5 +1,7 @@
 package earlywarn.etl;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -8,6 +10,9 @@ import org.neo4j.procedure.Procedure;
  * Clase que contiene el método principal con el que se inician las operaciones ETL sobre la BD.
  */
 public class Main {
+	@Context
+	public GraphDatabaseService db;
+
 	/**
 	 * Ejecuta todas las operaciones ETL.
 	 * @param rutaFicheroConectividad Ruta al fichero CSV que contiene los datos de conectividad de aeropuertos,
@@ -29,12 +34,12 @@ public class Main {
 						@Name("rutaFicheroGasto") String rutaFicheroGasto,
 						@Name("mismaFechaTurismo") Boolean mismaFechaTurismo,
 						@Name("aproximarFaltantesTurismo") Boolean aproximarFaltantesTurismo) {
-		Modificar modificar = new Modificar();
+		Modificar modificar = new Modificar(db);
 		modificar.convertirRelacionesAOD();
 		modificar.borrarVuelosSinSIR();
 		modificar.convertirFechasVuelos();
 
-		Añadir añadir = new Añadir();
+		Añadir añadir = new Añadir(db);
 		añadir.añadirConexionesAeropuertoPaís();
 		añadir.añadirConectividad(rutaFicheroConectividad);
 		añadir.calcularNúmeroPasajeros();

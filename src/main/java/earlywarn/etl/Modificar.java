@@ -17,6 +17,18 @@ public class Modificar {
 	public GraphDatabaseService db;
 
 	/**
+	 * Requerido por Neo4J
+	 * @deprecated Este constructor no debe utilizarse. Usar {@link Modificar#Modificar(GraphDatabaseService)} en su lugar.
+	 */
+	@Deprecated
+	public Modificar() {
+
+	}
+	public Modificar(GraphDatabaseService db) {
+		this.db = db;
+	}
+
+	/**
 	 * Modifica el formato de las relaciones entre aeropuertos y días de operación. En lugar de almacenar la fecha
 	 * usando el tipo de la relación, pasa dicha fecha a un campo llamado "date" en la relación y cambia el tipo
 	 * de todas estas relaciones a "OPERATES_ON".

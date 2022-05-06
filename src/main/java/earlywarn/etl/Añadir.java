@@ -23,6 +23,19 @@ public class Añadir {
 	public GraphDatabaseService db;
 
 	/**
+	 * Requerido por Neo4J
+	 * @deprecated Este constructor no debe utilizarse. Usar {@link Añadir#Añadir(GraphDatabaseService)} en su lugar.
+	 */
+	@Deprecated
+	public Añadir() {
+
+	}
+	// Requerido para poder llamar a procedimientos desde otra clase
+	public Añadir(GraphDatabaseService db) {
+		this.db = db;
+	}
+
+	/**
 	 * Añade las conexiones entre aeropuertos y países que faltan en la BD.
 	 * Estas conexiones se obtienen buscando aeropuertos situados en un ProvinceState pero que no están relacionados
 	 * con Country.
