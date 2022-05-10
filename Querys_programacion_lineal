@@ -1,0 +1,22 @@
+Get_aeropuertos_salidas: 
+MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
+    WHERE c.countryName= 'Spain'
+    AND not (f.flightIfinal =  '') 
+    AND date('2020-02-15') <= date(f.dateOfDeparture) <= date('2020-02-15')
+    RETURN DISTINCT  salida.airportName  ORDER BY salida.airportName
+    
+Get_aeropuertos_entradas:
+MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
+    WHERE c.countryName= 'Spain'
+    AND not (f.flightIfinal =  '') 
+    AND date('2020-02-15') <= date(f.dateOfDeparture) <= date('2020-02-15')
+    RETURN DISTINCT  entrada.airportName  ORDER BY entrada.airportName
+Get_sir:
+MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+-[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
+WHERE c.countryName= 'Spain'
+AND not (f.flightIfinal = '')
+AND date('2020-02-15') <= date(f.dateOfDeparture) <= date('2020-02-15')
+RETURN f.flightIfinal AS sir, entrada.airportName AS aeropuertoLlegada, salida.airportName AS aeropuertoSalida
