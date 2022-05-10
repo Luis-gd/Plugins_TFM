@@ -27,4 +27,4 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
     AND date('2020-02-15') <= date(f.dateOfDeparture) <= date('2020-02-15')
-    RETURN  round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY salida.airportName 
+    RETURN  round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName 
