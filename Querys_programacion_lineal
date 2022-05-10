@@ -20,3 +20,11 @@ WHERE c.countryName= 'Spain'
 AND not (f.flightIfinal = '')
 AND date('2020-02-15') <= date(f.dateOfDeparture) <= date('2020-02-15')
 RETURN f.flightIfinal AS sir, entrada.airportName AS aeropuertoLlegada, salida.airportName AS aeropuertoSalida
+
+Get_pasajeros_por_vuelo:
+MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
+    WHERE c.countryName= 'Spain'
+    AND not (f.flightIfinal =  '') 
+    AND date('2020-02-15') <= date(f.dateOfDeparture) <= date('2020-02-15')
+    RETURN  round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY salida.airportName 
