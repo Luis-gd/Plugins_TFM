@@ -52,3 +52,10 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     AND not (f.flightIfinal =  '') 
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN  entrada.connectivity, entrada.airportName ORDER BY  entrada.airportName
+
+Get_gasto_por_vuelo:
+MATCH (c:Country)<-[]-(n:TuristExpense)<-[]-(c2:Country)
+    WHERE c.countryName= 'Spain'
+    AND n.month=9
+    AND n.year=2020
+    RETURN DISTINCT n.expense, c2.countryName ORDER BY c2.countryName
