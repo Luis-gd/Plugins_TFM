@@ -44,3 +44,11 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     AND not (f.flightIfinal = '')
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN DISTINCT f.operator ORDER BY f.operator
+
+Get_conectividad_por_aeropuerto:
+MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
+    WHERE c.countryName= 'Spain'
+    AND not (f.flightIfinal =  '') 
+    AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
+    RETURN  entrada.connectivity, entrada.airportName ORDER BY  entrada.airportName
