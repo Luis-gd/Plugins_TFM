@@ -27,7 +27,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
-    RETURN  round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName 
+    RETURN round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName 
 
 Get_pasajeros_por_vuelo_y_companyias:
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
@@ -35,7 +35,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
-    RETURN  round(f.occupancyPercentage * f.seatsCapacity/100), f.operator, entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName
+    RETURN DISTINCT round(f.occupancyPercentage * f.seatsCapacity/100), f.operator, entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName
     
 Get_companyias:    
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
