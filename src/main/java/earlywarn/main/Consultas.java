@@ -156,7 +156,7 @@ public class Consultas {
 	 * Requiere que se haya llevado a cabo la operación ETL que elimina vuelos sin datos SIR y la operación ETL que
 	 * convierte las fechas de vuelos a tipo date.
 	 * Ejemplo: earlywarn.main.SIR_por_pais(date("2019-06-01"), date({year: 2019, month: 7, day: 1}), "Spain")
-	 * @param pais Nombre del país tal y como aparece en la base de datos
+	 * @param país Nombre del país tal y como aparece en la base de datos
 	 * @param diaInicio Primer día a tener en cuenta
 	 * @param diaFin Último día a tener en cuenta
 	 * @return Valor del riesgo importado (SIR total) para el país indicado teniendo en cuenta todos los vuelos entrantes
@@ -164,7 +164,7 @@ public class Consultas {
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Modificar#borrarVuelosSinSIR()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public Double getRiesgoPorPais(String pais, LocalDate diaInicio, LocalDate diaFin) {
+	public Double getRiesgoPorPais(LocalDate diaInicio, LocalDate diaFin, String país) {
 		// Las formas de escribir las fechas en neo4j son como entrada: date("2019-06-01") y date({year: 2019, month: 7}
 		String diaInicioStr = diaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String diaFinStr = diaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -176,7 +176,7 @@ public class Consultas {
 				try (Result res = tx.execute(
 					"MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(:Airport)" +
 					"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
-					"WHERE c.countryName=\"" + pais + "\" " +
+					"WHERE c.countryName=\"" + país + "\" " +
 					"AND date(\"" + diaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + diaFinStr + "\")" +
 					"RETURN sum(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();

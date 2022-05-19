@@ -7,26 +7,26 @@ import earlywarn.main.modelo.Línea;
  * Representa el riesgo importado total que llega a través de la red de tráfico aéreo
  */
 public class RiesgoImportado extends Criterio {
-	private final int valorInicial;
-	private int valorActual;
+	private final double valorInicial;
+	private double valorActual;
 
-	public RiesgoImportado(int valorInicial) {
+	public RiesgoImportado(double valorInicial) {
 		this.valorInicial = valorInicial;
 		valorActual = valorInicial;
 		id = IDCriterio.RIESGO_IMPORTADO;
 	}
 
-	public int getValorInicial() {
+	public double getValorInicial() {
 		return valorInicial;
 	}
 
-	public int getValorActual() {
+	public double getValorActual() {
 		return valorActual;
 	}
 
 	@Override
 	public double getPorcentaje() {
-		return 1 - (double) valorActual / valorInicial;
+		return 1 - valorActual / valorInicial;
 	}
 
 	@Override

@@ -9,6 +9,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.LocalDate;
 
 /**
  * Clase que representa los datos de configuración para la metaheurística
@@ -21,23 +22,16 @@ public class Config {
 	 */
 	private static final float MULT_TAMAÑO_MEMORIA_Y = 2;
 
-	// --- Valores leídos tal cual del XML
-	// Vns
-	public float tamañoMemoriaX;
-	public float distanciaMemoriaX;
-	public int itCambioEntorno;
-
-	public float maxPorcentLíneas;
-	public int numComprobaciones;
-	public float porcentLíneas;
-	public int iteraciones;
-	public float líneasPorIt;
-
-	// RS
-	public float tInicial;
-	public float alfa;
-	public int itReducciónT;
+	// --- Valores leídos tal cual del XML ---
+	public ConfigVNS configVNS;
+	public ConfigRS configRS;
+	// Parar la ejecución cuando transcurra este número de iteraciones sin una mejora en la función objetivo
 	public int itParada;
+	// País sobre el que se está trabajando
+	public String país;
+	// Rango de fechas sobre el que se está trabajando
+	public LocalDate díaInicio;
+	public LocalDate díaFin;
 
 	// --- Valores derivados de los leídos del XML ---
 	/*
@@ -62,39 +56,49 @@ public class Config {
 			throw new RuntimeException("Error al abrir el fichero de configuración vns-rs", e);
 		}
 
+		configVNS = new ConfigVNS();
+		configRS = new ConfigRS();
+
 		Element raíz = xml.getDocumentElement();
 
 		Element elemItCambioEntorno = Utils.toLista(raíz.getElementsByTagName("itCambioEntorno")).get(0);
-		itCambioEntorno = Integer.parseInt(elemItCambioEntorno.getTextContent());
+		configVNS.itCambioEntorno = Integer.parseInt(elemItCambioEntorno.getTextContent());
 		Element elemTamañoMemoriaX = Utils.toLista(raíz.getElementsByTagName("tamañoMemoriaX")).get(0);
-		tamañoMemoriaX = Float.parseFloat(elemTamañoMemoriaX.getTextContent());
+		configVNS.tamañoMemoriaX = Float.parseFloat(elemTamañoMemoriaX.getTextContent());
 		Element elemDistanciaMemoriaX = Utils.toLista(raíz.getElementsByTagName("distanciaMemoriaX")).get(0);
-		distanciaMemoriaX = Float.parseFloat(elemDistanciaMemoriaX.getTextContent());
+		configVNS.distanciaMemoriaX = Float.parseFloat(elemDistanciaMemoriaX.getTextContent());
 
 		Element elemEntornoY = Utils.toLista(raíz.getElementsByTagName("entornoY")).get(0);
 		Element elemMaxPorcentLíneas = Utils.toLista(elemEntornoY.getElementsByTagName("maxPorcentLíneas")).get(0);
-		maxPorcentLíneas = Float.parseFloat(elemMaxPorcentLíneas.getTextContent());
+		configVNS.maxPorcentLíneas = Float.parseFloat(elemMaxPorcentLíneas.getTextContent());
 		Element elemNumComprobaciones = Utils.toLista(elemEntornoY.getElementsByTagName("numComprobaciones")).get(0);
-		numComprobaciones = Integer.parseInt(elemNumComprobaciones.getTextContent());
+		configVNS.numComprobaciones = Integer.parseInt(elemNumComprobaciones.getTextContent());
 		Element elemPorcentLíneas = Utils.toLista(elemEntornoY.getElementsByTagName("porcentLíneas")).get(0);
-		porcentLíneas = Float.parseFloat(elemPorcentLíneas.getTextContent());
+		configVNS.porcentLíneas = Float.parseFloat(elemPorcentLíneas.getTextContent());
 		Element elemIteraciones = Utils.toLista(elemEntornoY.getElementsByTagName("iteraciones")).get(0);
-		iteraciones = Integer.parseInt(elemIteraciones.getTextContent());
+		configVNS.iteraciones = Integer.parseInt(elemIteraciones.getTextContent());
 		Element elemLíneasPorIt = Utils.toLista(elemEntornoY.getElementsByTagName("líneasPorIt")).get(0);
-		líneasPorIt = Float.parseFloat(elemLíneasPorIt.getTextContent());
+		configVNS.líneasPorIt = Float.parseFloat(elemLíneasPorIt.getTextContent());
 
 		Element elemTInicial = Utils.toLista(raíz.getElementsByTagName("tInicial")).get(0);
-		tInicial = Float.parseFloat(elemTInicial.getTextContent());
+		configRS.tInicial = Float.parseFloat(elemTInicial.getTextContent());
 		Element elemAlfa = Utils.toLista(raíz.getElementsByTagName("alfa")).get(0);
-		alfa = Float.parseFloat(elemAlfa.getTextContent());
+		configRS.alfa = Float.parseFloat(elemAlfa.getTextContent());
 		Element elemItReducciónT = Utils.toLista(raíz.getElementsByTagName("itReducciónT")).get(0);
-		itReducciónT = Integer.parseInt(elemItReducciónT.getTextContent());
+		configRS.itReducciónT = Integer.parseInt(elemItReducciónT.getTextContent());
+
 		Element elemItParada = Utils.toLista(raíz.getElementsByTagName("itParada")).get(0);
 		itParada = Integer.parseInt(elemItParada.getTextContent());
+		Element elemPaís = Utils.toLista(raíz.getElementsByTagName("país")).get(0);
+		país = elemPaís.getTextContent();
+		Element elemDíaInicio = Utils.toLista(raíz.getElementsByTagName("primerDía")).get(0);
+		díaInicio = Utils.stringADate(elemDíaInicio.getTextContent());
+		Element elemDíaFin = Utils.toLista(raíz.getElementsByTagName("últimoDía")).get(0);
+		díaFin = Utils.stringADate(elemDíaFin.getTextContent());
 
 		// Calcular valores derivados
-		double umbralItUsuario = iteraciones / Utils.log2(líneasPorIt);
-		umbralIt = umbralItUsuario * getDistComprobacionesY() / porcentLíneas;
+		double umbralItUsuario = configVNS.iteraciones / Utils.log2(configVNS.líneasPorIt);
+		umbralIt = umbralItUsuario * getDistComprobacionesY() / configVNS.porcentLíneas;
 	}
 
 	public double getUmbralIt() {
@@ -106,13 +110,13 @@ public class Config {
 	 * de entorno vertical. La distancia se mide en porcentaje de las líneas totales (0-1).
 	 */
 	public float getDistComprobacionesY() {
-		return maxPorcentLíneas / numComprobaciones;
+		return configVNS.maxPorcentLíneas / configVNS.numComprobaciones;
 	}
 
 	/**
 	 * @return Número de entradas que deberían almacenarse en la memoria de cambio de entorno vertical
 	 */
 	public int getTamañoMemoriaY() {
-		return ((Long) Math.round(getUmbralIt() * numComprobaciones * MULT_TAMAÑO_MEMORIA_Y)).intValue();
+		return ((Long) Math.round(getUmbralIt() * configVNS.numComprobaciones * MULT_TAMAÑO_MEMORIA_Y)).intValue();
 	}
 }

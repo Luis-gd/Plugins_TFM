@@ -3,16 +3,14 @@ package earlywarn.main;
 import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.definiciones.IllegalOperationException;
+import earlywarn.definiciones.OperaciónLínea;
 import earlywarn.main.modelo.EstadoLínea;
 import earlywarn.main.modelo.Línea;
 import earlywarn.main.modelo.criterio.Criterio;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.time.LocalDate;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Permite abrir y cerrar líneas durante la ejecución del programa. Lleva un registro con los valores de todos los
@@ -24,6 +22,8 @@ public class GestorLíneas {
 
 	// Mapa que almacena el estado de cada línea
 	private final Map<String, EstadoLínea> líneas;
+	// Número de líneas actualmente abiertas
+	private int numAbiertas;
 
 	// Clase usada para calcular el fitness final. Puede ser null.
 	private ICálculoFitness cálculoFitness;
@@ -44,6 +44,7 @@ public class GestorLíneas {
 			EstadoLínea estadoLínea = new EstadoLínea(new Línea(idLínea, díaInicio, díaFin, db), true);
 			líneas.put(idLínea, estadoLínea);
 		}
+		numAbiertas = líneas.size();
 	}
 
 	/**
@@ -65,21 +66,92 @@ public class GestorLíneas {
 	}
 
 	/**
-	 * Abre las líneas identificadas por los IDs incluidos en la lista indicada. Si una línea ya estaba abierta, se
-	 * ignorará.
-	 * @param líneas Lista con los IDs de las lineas que se quieren abrir.
+	 * Abre o cierra las líneas identificadas por los IDs incluidos en la lista indicada. Si alguna de las líneas
+	 * indicadas ya estaba en el estado objetivo, se ignorará.
+	 * @param líneas Lista con los IDs de las lineas que se quieren abrir o cerrar.
+	 * @param operación Operación a realizar (apertura o cierre)
 	 */
-	public void abrirLíneas(List<String> líneas) {
-		abrirCerrarLíneas(líneas, true);
+	public void abrirCerrarLíneas(List<String> líneas, OperaciónLínea operación) {
+		boolean abrir = operación == OperaciónLínea.ABRIR;
+		for (String idLínea : líneas) {
+			EstadoLínea estadoLínea = this.líneas.get(idLínea);
+			if (estadoLínea.abierta != abrir) {
+				estadoLínea.abierta = !estadoLínea.abierta;
+				// Recalcular los valores de todos los criteros
+				for (Criterio criterio : criterios.values()) {
+					criterio.recalcular(estadoLínea.línea, abrir);
+				}
+
+				if (operación == OperaciónLínea.ABRIR) {
+					numAbiertas++;
+				} else {
+					numAbiertas--;
+				}
+			}
+		}
 	}
 
 	/**
-	 * Cierra las líneas identificadas por los IDs incluidos en la lista indicada. Si una línea ya estaba cerrada, se
-	 * ignorará.
-	 * @param líneas Lista con los IDs de las lineas que se quieren cerrar.
+	 * @return Número de líneas actualmente abiertas
 	 */
-	public void cerrarLíneas(List<String> líneas) {
-		abrirCerrarLíneas(líneas, false);
+	public int getNumAbiertas() {
+		return numAbiertas;
+	}
+
+	/**
+	 * @return Número de líneas actualmente cerradas
+	 */
+	public int getNumCerradas() {
+		return líneas.size() - numAbiertas;
+	}
+
+	/**
+	 * @return Lista con todas las líneas que se encuentran actualmente cerradas
+	 */
+	public List<String> getCerradas() {
+		List<String> ret = new ArrayList<>();
+		for (EstadoLínea estadoLínea : líneas.values()) {
+			if (!estadoLínea.abierta) {
+				ret.add(estadoLínea.línea.id);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Devuelve los identificadores de las líneas que ocupen cada una de las posiciones indicadas dentro del conjunto
+	 * de todas las líneas que se encuentren en el estado indicado.
+	 * Por ejemplo, si el estado especificado es "abierta" y las posiciones son 1, 3 y 12, se devolverán la primera
+	 * línea abierta, la tercera y la decimosegunda.
+	 * @param posiciones Lista con las posiciones de las líneas a devolver
+	 * @param getAbiertas Si es true, solo se considerarán las líneas abiertas. Si es false, las cerradas.
+	 * @return Lista con las líneas que ocupan las posiciones indicadas de entre todas las que tienen el estado
+	 * indicado.
+	 */
+	public List<String> getPorPosiciónYEstado(List<Integer> posiciones, boolean getAbiertas) {
+		List<String> ret = new ArrayList<>();
+
+		List<Integer> posicionesOrdenadas = new ArrayList<>(posiciones);
+		posicionesOrdenadas.sort(null);
+
+		Iterator<EstadoLínea> itLíneas = líneas.values().iterator();
+		// Lleva la cuenta de cuántas líneas hemos encontrado hasta ahora que estén en el estado que buscamos
+		int procesadas = 0;
+		for (Integer posActual : posicionesOrdenadas) {
+			boolean encontrada = false;
+			while (!encontrada) {
+				EstadoLínea entradaActual = itLíneas.next();
+				if (entradaActual.abierta == getAbiertas) {
+					// Esta es la línea nº <procesadas> que está en el estado que buscamos
+					if (procesadas == posActual) {
+						ret.add(entradaActual.línea.id);
+						encontrada = true;
+					}
+					procesadas++;
+				}
+			}
+		}
+		return ret;
 	}
 
 	/**
@@ -111,19 +183,6 @@ public class GestorLíneas {
 		} else {
 			throw new IllegalOperationException("No se puede calcular el fitness de la solución si no se ha " +
 				"especificado un método de cálculo");
-		}
-	}
-
-	private void abrirCerrarLíneas(List<String> líneas, boolean abrir) {
-		for (String idLínea : líneas) {
-			EstadoLínea estadoLínea = this.líneas.get(idLínea);
-			if (estadoLínea.abierta != abrir) {
-				estadoLínea.abierta = !estadoLínea.abierta;
-				// Recalcular los valores de todos los criteros
-				for (Criterio criterio : criterios.values()) {
-					criterio.recalcular(estadoLínea.línea, abrir);
-				}
-			}
 		}
 	}
 }

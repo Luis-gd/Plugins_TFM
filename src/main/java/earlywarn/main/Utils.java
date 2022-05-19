@@ -4,8 +4,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 /**
  * Clase que almacena utilidades varias
@@ -92,5 +92,48 @@ public class Utils {
 
 	public static double log2(double valor) {
 		return Math.log(valor) / LN_2;
+	}
+
+	/**
+	 * Crea una instancia de LocalDate en base a una fecha especificada como año-mes-día
+	 * @param string String con la fecha en formato año-mes-día
+	 * @return LocalDate que representa la fecha indicada
+	 */
+	public static LocalDate stringADate(String string) {
+		String[] split =  string.split("-");
+		return LocalDate.of(Integer.parseInt(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
+	}
+
+	/**
+	 * Devuelve una cierta cantidad de números aleatorios entre 0 y el valor máximo especificado, sin repetición.
+	 * @param max Límite superior usado para generar los valores (exclusivo)
+	 * @param cantidad Número de números aleatorios a generar
+	 * @return Lista con (cantidad) números aleatorios entre 0 y (max) - 1, sin repetición. Si (cantidad) >= (max),
+	 * devuelve una lista con los números desde 0 hasta (max) - 1.
+	 */
+	public static List<Integer> múltiplesAleatorios(int max, int cantidad) {
+		Random random = new Random();
+		int maxActual = max;
+		Set<Integer> númerosElegidos = new TreeSet<>();
+
+		while (númerosElegidos.size() < cantidad && maxActual > 0) {
+			int valorRandom = random.nextInt(maxActual);
+			/*
+			 * Funcionamiento del algoritmo: Por cada número que ya haya salido elegido que sea menor o igual al random
+			 * generado, tenemos que incrementar dicho random en 1. Así tenemos en cuenta las posiciones de los números
+			 * que ya han salido.
+			 * La comparación se hace teniendo en cuenta los incrementos de iteraciones anteriores.
+			 */
+			for (Integer elegidoActual : númerosElegidos) {
+				if (elegidoActual <= valorRandom) {
+					valorRandom++;
+				} else {
+					break;
+				}
+			}
+			númerosElegidos.add(valorRandom);
+			maxActual--;
+		}
+		return new ArrayList<>(númerosElegidos);
 	}
 }
