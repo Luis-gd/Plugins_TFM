@@ -1,6 +1,7 @@
 package earlywarn.mh.vnsrs;
 
 import earlywarn.definiciones.OperaciónLínea;
+import earlywarn.main.Utils;
 
 import java.util.*;
 
@@ -10,6 +11,8 @@ import java.util.*;
 public class GestorEntornos {
 	private final Random random;
 	private final ConfigVNS config;
+	// Temperatura inicial del RS
+	private final double temperaturaInicial;
 	// Número total de líneas
 	private final int numLíneas;
 	// Número de iteraciones restantes hasta que se tenga que considerar otro posible cambio de entorno
@@ -17,14 +20,18 @@ public class GestorEntornos {
 	private final EntornoVNS entornoActual;
 
 	private final MemoriaCasosX casosX;
+	private final MemoriaEstadosY estadosY;
 
-	public GestorEntornos(ConfigVNS config, int numLíneas) {
+	public GestorEntornos(ConfigVNS configVNS, ConversorLíneas conversorLíneas, int numLíneas,
+						  double temperaturaInicial) {
 		random = new Random();
-		this.config = config;
+		config = configVNS;
+		this.temperaturaInicial = temperaturaInicial;
 		this.numLíneas = numLíneas;
 		sigCambioEntorno = config.itCambioEntorno;
 		entornoActual = new EntornoVNS(OperaciónLínea.CERRAR, 0);
 		casosX = new MemoriaCasosX(Math.round(config.tamañoMemoriaX * numLíneas), numLíneas);
+		estadosY = new MemoriaEstadosY(config, conversorLíneas, numLíneas);
 	}
 
 	/*
@@ -41,6 +48,14 @@ public class GestorEntornos {
 	 */
 	public void registrarCasoX(CasoEntornoX caso) {
 		casosX.añadir(caso, caso.numLíneasAbiertas);
+	}
+
+	/**
+	 * Añade una nueva entrada a la memoria que almacena las últimas posiciones visitadas
+	 * @param líneasVariadas Líneas que han cambiado de estado con respecto a la posición anterior
+	 */
+	public void registrarEstadoY(List<String> líneasVariadas) {
+		estadosY.insertar(líneasVariadas);
 	}
 
 	/**
@@ -71,6 +86,9 @@ public class GestorEntornos {
 	}
 
 	/**
+	 * Determina cuál será la opreración de variación de líneas (apertura o cierre) que se ejecutará en el siguiente
+	 * entorno. Para ello emplea una memoria de casos que recuerdan si abrir/cerrar líneas fue positivo o no en
+	 * situaciones que tenían un número de líneas abiertas similar al actual.
 	 * @param numLíneasAbiertas Número de líneas actualmente abiertas
 	 * @return Operación horizontal (cierre o apertura de líneas) que se debería realizar en el próximo entorno
 	 */
@@ -113,10 +131,27 @@ public class GestorEntornos {
 	}
 
 	/**
+	 * @param temperaturaActual Temperatura actual del recocido simulado tras finalizar la iteración actual
 	 * @return Número de entorno vertical (afecta al número de líneas a abrir o cerrar) del próximo entorno
 	 */
 	private int numEntornoY(double temperaturaActual) {
-		// TODO
-		throw new IllegalStateException("No implementado");
+		/*
+		 * Tenemos que calcular el valor de estancamiento para cada porcentaje de líneas para el que se hace esta
+		 * comprobación
+		 */
+		List<Double> valoresEstancamiento = new ArrayList<>();
+		for (int i = 1; i <= config.numComprobaciones; i++) {
+			int numLíneasActual = Math.round(config.getDistComprobacionesY() * i * numLíneas);
+			// Iteraciones que hace que no logramos al menos (numLíneas) de distancia con respecto a la solución actual
+			int iteraciones = estadosY.iteracionesSinDistancia(numLíneasActual);
+			double estancamiento = iteraciones / (config.getUmbralIt() * i);
+			// El valor de estancamiento se ajusta en función del % de temperatura restante
+			double estancamientoAjustado = estancamiento * temperaturaActual / temperaturaInicial;
+			valoresEstancamiento.add(estancamientoAjustado);
+		}
+		// El valor de estancamiento final es la media de todos los calculados
+		double estancamientoMedio = Utils.getMedia(valoresEstancamiento);
+		// El estancamiento medio se redondea hacia abajo para determinar el número de entorno vertical
+		return (int) Math.floor(estancamientoMedio);
 	}
 }

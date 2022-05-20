@@ -1,6 +1,7 @@
 package earlywarn.mh.vnsrs;
 
 import earlywarn.definiciones.IRecocidoSimulado;
+import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.definiciones.OperaciónLínea;
 import earlywarn.main.Consultas;
 import earlywarn.main.GestorLíneas;
@@ -12,6 +13,7 @@ import earlywarn.main.modelo.criterio.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -23,16 +25,18 @@ public class VnsRs implements IRecocidoSimulado {
 	private final Config config;
 	private RecocidoSimulado rs;
 	private GestorEntornos gEntornos;
-	private GestorLíneas líneas;
+	private GestorLíneas gLíneas;
 	private final RegistroAeropuertos registroAeropuertos;
 	private final Consultas consultas;
+	private final List<String> líneas;
+	private final ConversorLíneas conversorLíneas;
 
 	// Número máximo de iteraciones. La ejecución siempre terminará si se alcanza. -1 si no hay límite.
 	private int iterMax;
 	// Número total de posibles soluciones aceptadas
 	private int solucionesAceptadas;
-	// Lista de líneas cerradas en la mejor solución encontrada hasta ahora y su fitness
-	private List<String> mejorSolución;
+	// Mejor solución encontrada hasta ahora (como array de booleanos) y su fitness
+	private boolean[] mejorSolución;
 	private double fitnessMejorSolución;
 	// Número de iteración actual
 	private int iter;
@@ -45,9 +49,11 @@ public class VnsRs implements IRecocidoSimulado {
 		this.db = db;
 		this.log = log;
 		this.config = config;
-		iterMax = -1;
+		iterMax = Integer.MAX_VALUE;
 		registroAeropuertos = new RegistroAeropuertos(config.díaInicio, config.díaFin, db);
 		consultas = new Consultas(db);
+		líneas = consultas.getLíneas(config.díaInicio, config.díaFin, config.país);
+		conversorLíneas = new ConversorLíneas(líneas);
 	}
 
 	/**
@@ -57,6 +63,24 @@ public class VnsRs implements IRecocidoSimulado {
 		rs = new RecocidoSimulado(config.configRS);
 		init();
 		_ejecutar();
+	}
+
+	/**
+	 * Printea la lista de líneas abiertas y cerradas de la mejor solución encontrada tras la ejecución del algoritmo.
+	 * Requiere que se haya ejecutado el algoritmo con anterioridad.
+	 * @throws IllegalOperationException Si la metaheurística aún no se ha ejecutado
+	 */
+	public void printResultado() {
+		if (mejorSolución == null) {
+			throw new IllegalOperationException("No se puede printear el resultado de la metaheurística si ésta no " +
+				"se ha ejecutado aún");
+		}
+		String mensaje = "Fin ejecución VNS + RS. Mejor solución:\n" +
+			"Líneas abiertas: " +
+			Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución)) +
+			"\nLíneas cerradas: " +
+			Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución)) + "\n";
+		log.info(mensaje);
 	}
 
 	@Override
@@ -82,8 +106,8 @@ public class VnsRs implements IRecocidoSimulado {
 	 * Inicializa las variables necesarias para ejecutar el algoritmo
 	 */
 	private void init() {
-		gEntornos = new GestorEntornos(config.configVNS, líneas.getNumLíneas());
-		líneas = new GestorLíneasBuilder(config.país, config.díaInicio, config.díaFin, db)
+		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
+		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db)
 			.añadirCriterio(new RiesgoImportado(
 				consultas.getRiesgoPorPais(config.díaInicio, config.díaFin, config.país)))
 			.añadirCriterio(new NumPasajeros(
@@ -111,14 +135,14 @@ public class VnsRs implements IRecocidoSimulado {
 	 * Ejecuta la metaheurística una vez que ésta está inicializada
 	 */
 	private void _ejecutar() {
-		double fitnessActual = líneas.getFitness();
+		double fitnessActual = gLíneas.getFitness();
 
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
 			List<String> líneasAVariar = getLíneasAVariar(entorno);
-			int numAbiertas = líneas.getNumAbiertas();
-			líneas.abrirCerrarLíneas(líneasAVariar, entorno.operación);
-			double nuevoFitness = líneas.getFitness();
+			int numAbiertas = gLíneas.getNumAbiertas();
+			gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación);
+			double nuevoFitness = gLíneas.getFitness();
 
 			// Insertar un nuevo caso en la memoria indicando la operación realizada y si hubo una mejora en el fitness
 			gEntornos.registrarCasoX(
@@ -127,7 +151,7 @@ public class VnsRs implements IRecocidoSimulado {
 			// Comprobar si esta solución es el nuevo máximo global
 			if (nuevoFitness > fitnessMejorSolución) {
 				fitnessMejorSolución = nuevoFitness;
-				mejorSolución = líneas.getCerradas();
+				mejorSolución = gLíneas.getLíneasBool();
 				iteracionesSinMejora = 0;
 			} else {
 				iteracionesSinMejora++;
@@ -137,13 +161,16 @@ public class VnsRs implements IRecocidoSimulado {
 			if (rs.considerarSolución(fitnessActual, nuevoFitness)) {
 				fitnessActual = nuevoFitness;
 				solucionesAceptadas++;
+				gEntornos.registrarEstadoY(líneasAVariar);
 			} else {
-				líneas.abrirCerrarLíneas(líneasAVariar, entorno.operación.invertir());
+				gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación.invertir());
+				// Indicar que nos mantenemos en el mismo estado, es decir, no se ha variado ninguna línea
+				gEntornos.registrarEstadoY(new ArrayList<>());
 			}
 
 			iter++;
 			rs.sigIter();
-			gEntornos.sigIter(líneas.getNumAbiertas(), rs.temperatura);
+			gEntornos.sigIter(gLíneas.getNumAbiertas(), rs.temperatura);
 		}
 	}
 
@@ -156,13 +183,13 @@ public class VnsRs implements IRecocidoSimulado {
 	private List<String> getLíneasAVariar(EntornoVNS entorno) {
 		int numLíneasPosibles;
 		if (entorno.operación == OperaciónLínea.ABRIR) {
-			numLíneasPosibles = líneas.getNumAbiertas();
+			numLíneasPosibles = gLíneas.getNumAbiertas();
 		} else {
-			numLíneasPosibles = líneas.getNumCerradas();
+			numLíneasPosibles = gLíneas.getNumCerradas();
 		}
 		// Posiciones al azar en la lista de líneas que identifican las líneas a abrir o cerrar
 		List<Integer> posiciones = Utils.múltiplesAleatorios(numLíneasPosibles, entorno.getNumLíneas());
-		return líneas.getPorPosiciónYEstado(posiciones, entorno.operación == OperaciónLínea.CERRAR);
+		return gLíneas.getPorPosiciónYEstado(posiciones, entorno.operación == OperaciónLínea.CERRAR);
 	}
 
 	/**

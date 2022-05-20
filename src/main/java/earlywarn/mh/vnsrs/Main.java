@@ -36,6 +36,7 @@ public class Main {
 		Config config = new Config(RUTA_CONFIG);
 		VnsRs vnsrs = new VnsRs(config, db, log);
 		vnsrs.ejecutar();
+		vnsrs.printResultado();
 	}
 
 	/**

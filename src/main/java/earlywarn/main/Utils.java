@@ -136,4 +136,25 @@ public class Utils {
 		}
 		return new ArrayList<>(númerosElegidos);
 	}
+
+	/**
+	 * Devuelve una string que incluye el ID de todas las líneas en la lista de líneas indicada
+	 * @param líneas Lista de líneas a convertir
+	 * @return String que incluye todas las líneas en la lista
+	 */
+	public static String listaLíneasAString(List<String> líneas) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("[");
+		boolean primera = true;
+		for (String línea : líneas) {
+			if (primera) {
+				primera = false;
+			} else {
+				sb.append(", ");
+			}
+			sb.append(línea);
+		}
+		sb.append("]");
+		return sb.toString();
+	}
 }

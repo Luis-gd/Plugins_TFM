@@ -16,13 +16,6 @@ import java.time.LocalDate;
  */
 @SuppressWarnings("ProhibitedExceptionThrown")
 public class Config {
-	/*
-	 * La memoria en la dimensión de cambio de entorno Y será <este valor> veces el valor de umbral de iteraciones
-	 * para la comprobación más grande
-	 */
-	private static final float MULT_TAMAÑO_MEMORIA_Y = 2;
-
-	// --- Valores leídos tal cual del XML ---
 	public ConfigVNS configVNS;
 	public ConfigRS configRS;
 	// Parar la ejecución cuando transcurra este número de iteraciones sin una mejora en la función objetivo
@@ -32,15 +25,6 @@ public class Config {
 	// Rango de fechas sobre el que se está trabajando
 	public LocalDate díaInicio;
 	public LocalDate díaFin;
-
-	// --- Valores derivados de los leídos del XML ---
-	/*
-	 * Cada vez que tardemas más de <umbralIt> iteraciones en variar al menos <nº de líneas que representa la
-	 * menor de las comprobaciones de líneas en el cambio de entorno en Y>, el valor de estancamiento de esa
-	 * primera comprobación aumentará en 1. El esto de comprobaciones usan n * <umbralIt> como umbral, siendo n el
-	 * número de comprobación (desde n = 1 para la primera hasta n = <numComprobaciones> para la última)
-	 */
-	private final double umbralIt;
 
 	/**
 	 * Instancia la configuración
@@ -95,28 +79,5 @@ public class Config {
 		díaInicio = Utils.stringADate(elemDíaInicio.getTextContent());
 		Element elemDíaFin = Utils.toLista(raíz.getElementsByTagName("últimoDía")).get(0);
 		díaFin = Utils.stringADate(elemDíaFin.getTextContent());
-
-		// Calcular valores derivados
-		double umbralItUsuario = configVNS.iteraciones / Utils.log2(configVNS.líneasPorIt);
-		umbralIt = umbralItUsuario * getDistComprobacionesY() / configVNS.porcentLíneas;
-	}
-
-	public double getUmbralIt() {
-		return umbralIt;
-	}
-
-	/**
-	 * @return Distancia a la que se encuentra cada una de las comprobaciones de estancamiento usadas en el cambio
-	 * de entorno vertical. La distancia se mide en porcentaje de las líneas totales (0-1).
-	 */
-	public float getDistComprobacionesY() {
-		return configVNS.maxPorcentLíneas / configVNS.numComprobaciones;
-	}
-
-	/**
-	 * @return Número de entradas que deberían almacenarse en la memoria de cambio de entorno vertical
-	 */
-	public int getTamañoMemoriaY() {
-		return ((Long) Math.round(getUmbralIt() * configVNS.numComprobaciones * MULT_TAMAÑO_MEMORIA_Y)).intValue();
 	}
 }

@@ -7,6 +7,7 @@ import earlywarn.definiciones.OperaciónLínea;
 import earlywarn.main.modelo.EstadoLínea;
 import earlywarn.main.modelo.Línea;
 import earlywarn.main.modelo.criterio.Criterio;
+import earlywarn.mh.vnsrs.ConversorLíneas;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.time.LocalDate;
@@ -17,11 +18,14 @@ import java.util.*;
  * criterios que dependen de las líneas abiertas y permite consultar su valor porcentual en cualquier momento.
  */
 public class GestorLíneas {
+	private final ConversorLíneas conversorLíneas;
 	// Lista de criterios almacenados, cada uno identificado por un valor de un enum
 	private final Map<IDCriterio, Criterio> criterios;
 
 	// Mapa que almacena el estado de cada línea
 	private final Map<String, EstadoLínea> líneas;
+	// Array de booleanos que también almacena el estado de las líneas. Permite copiar una solución de forma rápida.
+	private final boolean[] líneasBool;
 	// Número de líneas actualmente abiertas
 	private int numAbiertas;
 
@@ -31,20 +35,27 @@ public class GestorLíneas {
 	/**
 	 * Crea una instancia del gestor. El método está protegido ya que se debe usar {@link GestorLíneasBuilder} para
 	 * instanciar esta clase.
-	 * @param idPaís ID del país sobre el que se va a trabajar. Solo se trabajará con líneas que tengan aeropuertos de
-	 *               este país como destino.
+	 * @param líneas Lista con los IDs de todas las líneas. Debe haber sido creada con el mismo día de inicio y fin
+	 *               que los especificados a continuación.
+	 * @param conversorLíneas Conversor de líneas que permita obtener el ID numérico de una línea
 	 * @param díaInicio Primer día a tener en cuenta a la hora de determinar las líneas sobre las que se va a trabajar
 	 * @param díaFin Último día a tener en cuenta a la hora de determinar las líneas sobre las que se va a trabajar
 	 * @param db Instancia de la base de datos
 	 */
-	protected GestorLíneas(String idPaís, LocalDate díaInicio, LocalDate díaFin, GraphDatabaseService db) {
-		líneas = new TreeMap<>();
+	protected GestorLíneas(List<String> líneas, ConversorLíneas conversorLíneas, LocalDate díaInicio,
+						   LocalDate díaFin, GraphDatabaseService db) {
+		this.conversorLíneas = conversorLíneas;
+		this.líneas = new TreeMap<>();
+		líneasBool = new boolean[líneas.size()];
 		criterios = new EnumMap<>(IDCriterio.class);
-		for (String idLínea : new Consultas(db).getLíneas(díaInicio, díaFin, idPaís)) {
+		for (String idLínea : líneas) {
 			EstadoLínea estadoLínea = new EstadoLínea(new Línea(idLínea, díaInicio, díaFin, db), true);
-			líneas.put(idLínea, estadoLínea);
+			this.líneas.put(idLínea, estadoLínea);
 		}
-		numAbiertas = líneas.size();
+		for (int i = 0; i < líneas.size(); i++) {
+			líneasBool[i] = true;
+		}
+		numAbiertas = this.líneas.size();
 	}
 
 	/**
@@ -77,6 +88,7 @@ public class GestorLíneas {
 			EstadoLínea estadoLínea = this.líneas.get(idLínea);
 			if (estadoLínea.abierta != abrir) {
 				estadoLínea.abierta = !estadoLínea.abierta;
+				líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
 				// Recalcular los valores de todos los criteros
 				for (Criterio criterio : criterios.values()) {
 					criterio.recalcular(estadoLínea.línea, abrir);
@@ -89,6 +101,10 @@ public class GestorLíneas {
 				}
 			}
 		}
+	}
+
+	public List<String> getLíneas() {
+		return new ArrayList<>(líneas.keySet());
 	}
 
 	/**
@@ -113,16 +129,10 @@ public class GestorLíneas {
 	}
 
 	/**
-	 * @return Lista con todas las líneas que se encuentran actualmente cerradas
+	 * @return Array de booleanos que representa el estado de todas las líneas según su ID numérico
 	 */
-	public List<String> getCerradas() {
-		List<String> ret = new ArrayList<>();
-		for (EstadoLínea estadoLínea : líneas.values()) {
-			if (!estadoLínea.abierta) {
-				ret.add(estadoLínea.línea.id);
-			}
-		}
-		return ret;
+	public boolean[] getLíneasBool() {
+		return líneasBool.clone();
 	}
 
 	/**
