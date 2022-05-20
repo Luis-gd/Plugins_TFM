@@ -92,6 +92,13 @@ public class GestorLíneas {
 	}
 
 	/**
+	 * @return Número de líneas totales
+	 */
+	public int getNumLíneas() {
+		return líneas.size();
+	}
+
+	/**
 	 * @return Número de líneas actualmente abiertas
 	 */
 	public int getNumAbiertas() {

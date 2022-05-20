@@ -82,7 +82,7 @@ public class VnsRs implements IRecocidoSimulado {
 	 * Inicializa las variables necesarias para ejecutar el algoritmo
 	 */
 	private void init() {
-		gEntornos = new GestorEntornos(config.configVNS);
+		gEntornos = new GestorEntornos(config.configVNS, líneas.getNumLíneas());
 		líneas = new GestorLíneasBuilder(config.país, config.díaInicio, config.díaFin, db)
 			.añadirCriterio(new RiesgoImportado(
 				consultas.getRiesgoPorPais(config.díaInicio, config.díaFin, config.país)))
@@ -116,10 +116,15 @@ public class VnsRs implements IRecocidoSimulado {
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
 			List<String> líneasAVariar = getLíneasAVariar(entorno);
+			int numAbiertas = líneas.getNumAbiertas();
 			líneas.abrirCerrarLíneas(líneasAVariar, entorno.operación);
 			double nuevoFitness = líneas.getFitness();
 
-			// Comrpobar si esta solución es el nuevo máximo global
+			// Insertar un nuevo caso en la memoria indicando la operación realizada y si hubo una mejora en el fitness
+			gEntornos.registrarCasoX(
+				new CasoEntornoX(numAbiertas, entorno.operación == OperaciónLínea.ABRIR, nuevoFitness > fitnessActual));
+
+			// Comprobar si esta solución es el nuevo máximo global
 			if (nuevoFitness > fitnessMejorSolución) {
 				fitnessMejorSolución = nuevoFitness;
 				mejorSolución = líneas.getCerradas();
@@ -138,7 +143,7 @@ public class VnsRs implements IRecocidoSimulado {
 
 			iter++;
 			rs.sigIter();
-			gEntornos.sigIter(rs.temperatura);
+			gEntornos.sigIter(líneas.getNumAbiertas(), rs.temperatura);
 		}
 	}
 
