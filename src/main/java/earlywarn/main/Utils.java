@@ -65,11 +65,18 @@ public class Utils {
 	 * @return Desviación típica máxima que puede obtenerse variando los valores del conjunto de datos entre 0 y 1
 	 */
 	public static double getStdMáxima(int númeroDatos) {
-		int numElemAltos = (int) Math.floor(númeroDatos);
-		int numElemBajos = (int) Math.ceil(númeroDatos);
+		int numElemAltos = (int) Math.floor(númeroDatos / 2.0f);
+		int numElemBajos = (int) Math.ceil(númeroDatos / 2.0f);
 		float media = (float) numElemAltos / númeroDatos;
 
-		return Math.sqrt(((1 - media) * numElemAltos + (0 - media) * numElemBajos) / númeroDatos);
+		/*
+		 * Distancia de los elementos altos a la media: 1 - media
+		 * Distancia de los elementos bajos a la media: media
+		 * Suma de los cuadrados de todas las distancias:
+		 * 	(dist. elementos altos)^2 * (nº elementos altos) + (dist. elementos bajos)^2 * (nº elementos bajos)
+		 * Desviación típica: sqrt(Suma de cuadrados / total elementos)
+		 */
+		return Math.sqrt((Math.pow(1 - media, 2) * numElemAltos + Math.pow(media, 2) * numElemBajos) / númeroDatos);
 	}
 
 	/**

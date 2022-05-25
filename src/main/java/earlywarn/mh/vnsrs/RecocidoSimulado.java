@@ -22,7 +22,7 @@ public class RecocidoSimulado {
 
 		iteración = 0;
 		temperatura = config.tInicial;
-		fase = -1;
+		fase = 0;
 	}
 
 	/**

@@ -156,18 +156,18 @@ public class Consultas {
 	 * Requiere que se haya llevado a cabo la operación ETL que elimina vuelos sin datos SIR y la operación ETL que
 	 * convierte las fechas de vuelos a tipo date.
 	 * Ejemplo: earlywarn.main.SIR_por_pais(date("2019-06-01"), date({year: 2019, month: 7, day: 1}), "Spain")
-	 * @param país Nombre del país tal y como aparece en la base de datos
-	 * @param diaInicio Primer día a tener en cuenta
-	 * @param diaFin Último día a tener en cuenta
+	 * @param idPaís Identificador del país tal y como aparece en la base de datos
+	 * @param díaInicio Primer día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
 	 * @return Valor del riesgo importado (SIR total) para el país indicado teniendo en cuenta todos los vuelos entrantes
 	 * en el periodo especificado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Modificar#borrarVuelosSinSIR()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public Double getRiesgoPorPais(LocalDate diaInicio, LocalDate diaFin, String país) {
+	public Double getRiesgoPorPaís(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		// Las formas de escribir las fechas en neo4j son como entrada: date("2019-06-01") y date({year: 2019, month: 7}
-		String diaInicioStr = diaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-		String diaFinStr = diaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String diaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String diaFinStr = díaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
 
 		if (propiedades.getBool(Propiedad.ETL_BORRAR_VUELOS_SIN_SIR) &&
@@ -176,7 +176,7 @@ public class Consultas {
 				try (Result res = tx.execute(
 					"MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(:Airport)" +
 					"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
-					"WHERE c.countryName=\"" + país + "\" " +
+					"WHERE c.countryId=\"" + idPaís + "\" " +
 					"AND date(\"" + diaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + diaFinStr + "\")" +
 					"RETURN sum(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();

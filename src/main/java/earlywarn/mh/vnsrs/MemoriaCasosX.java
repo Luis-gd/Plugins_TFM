@@ -34,7 +34,7 @@ public class MemoriaCasosX {
 		random = new Random();
 		casos = new TreeMap<>();
 		numCasos = new ArrayList<>();
-		for (int i = 0; i < valorMax; i++) {
+		for (int i = 0; i <= valorMax; i++) {
 			numCasos.add(0);
 		}
 		numElementos = 0;

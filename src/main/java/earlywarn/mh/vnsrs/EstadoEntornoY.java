@@ -9,12 +9,12 @@ public class EstadoEntornoY {
 	// Distancia de Hamming entre esta entrada y el estado actual
 	public int distancia;
 
-	public EstadoEntornoY(int numLíneas) {
+	public EstadoEntornoY(int numLíneas, int distancia) {
 		líneas = new boolean[numLíneas];
 		for (int i = 0; i < numLíneas; i++) {
 			líneas[i] = true;
 		}
-		distancia = -1;
+		this.distancia = distancia;
 	}
 
 	public EstadoEntornoY(EstadoEntornoY otra) {

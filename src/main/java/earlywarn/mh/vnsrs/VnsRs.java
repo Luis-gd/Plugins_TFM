@@ -109,7 +109,7 @@ public class VnsRs implements IRecocidoSimulado {
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
 		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db)
 			.añadirCriterio(new RiesgoImportado(
-				consultas.getRiesgoPorPais(config.díaInicio, config.díaFin, config.país)))
+				consultas.getRiesgoPorPaís(config.díaInicio, config.díaFin, config.país)))
 			.añadirCriterio(new NumPasajeros(
 				consultas.getPasajerosTotales(config.díaInicio, config.díaFin, config.país)))
 			.añadirCriterio(new IngresosTurísticos(
@@ -183,9 +183,9 @@ public class VnsRs implements IRecocidoSimulado {
 	private List<String> getLíneasAVariar(EntornoVNS entorno) {
 		int numLíneasPosibles;
 		if (entorno.operación == OperaciónLínea.ABRIR) {
-			numLíneasPosibles = gLíneas.getNumAbiertas();
-		} else {
 			numLíneasPosibles = gLíneas.getNumCerradas();
+		} else {
+			numLíneasPosibles = gLíneas.getNumAbiertas();
 		}
 		// Posiciones al azar en la lista de líneas que identifican las líneas a abrir o cerrar
 		List<Integer> posiciones = Utils.múltiplesAleatorios(numLíneasPosibles, entorno.getNumLíneas());

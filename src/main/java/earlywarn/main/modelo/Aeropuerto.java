@@ -58,7 +58,7 @@ public class Aeropuerto {
 			if (propiedades.getBool(Propiedad.ETL_CONECTIVIDAD)) {
 				try (Transaction tx = db.beginTx()) {
 					try (Result res = tx.execute(
-						"MATCH (a:Airport {iata: " + id + "}) " +
+						"MATCH (a:Airport {iata: \"" + id + "\"}) " +
 						"RETURN a.connectivity")) {
 
 						Map<String, Object> row = res.next();
@@ -81,7 +81,7 @@ public class Aeropuerto {
 		if (numVuelosSalida == null) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
-					"MATCH (:Airport {iata: " + id + "})-[]-(:AirportOperationDay)-[]->(f:FLIGHT) " +
+					"MATCH (:Airport {iata: \"" + id + "\"})-[]-(:AirportOperationDay)-[]->(f:FLIGHT) " +
 					"WHERE date(\"" + díaInicio + "\") <= f.dateOfDeparture <= date(\"" + díaFin + "\") " +
 					"RETURN count(f)")) {
 
@@ -105,7 +105,7 @@ public class Aeropuerto {
 			if (propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
 				try (Transaction tx = db.beginTx()) {
 					try (Result res = tx.execute(
-						"MATCH (:Airport {iata: " + id + "})-[]-(c:Country) " +
+						"MATCH (:Airport {iata: \"" + id + "\"})-[]-(c:Country) " +
 						"RETURN c.countryId")) {
 
 						Map<String, Object> row = res.next();

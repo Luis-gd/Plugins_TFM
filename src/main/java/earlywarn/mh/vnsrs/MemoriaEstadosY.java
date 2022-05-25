@@ -35,7 +35,8 @@ public class MemoriaEstadosY {
 		EstadoEntornoY estadoPrevio;
 		if (estados.isEmpty()) {
 			// Estado inicial: Todo abierto
-			estadoPrevio = new EstadoEntornoY(numLíneas);
+			estadoPrevio = new EstadoEntornoY(numLíneas, 0);
+			estados.add(estadoPrevio);
 		} else {
 			estadoPrevio = estados.get(0);
 		}
