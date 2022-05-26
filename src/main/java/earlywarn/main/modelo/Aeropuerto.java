@@ -62,7 +62,13 @@ public class Aeropuerto {
 						"RETURN a.connectivity")) {
 
 						Map<String, Object> row = res.next();
-						conectividadBase = ((Long) row.get(res.columns().get(0))).intValue();
+						Object valor = row.get(res.columns().get(0));
+						if (valor == null) {
+							// Este aeropuerto no tiene datos de conectividad
+							conectividadBase = 0;
+						} else {
+							conectividadBase = ((Long) valor).intValue();
+						}
 					}
 				}
 			} else {

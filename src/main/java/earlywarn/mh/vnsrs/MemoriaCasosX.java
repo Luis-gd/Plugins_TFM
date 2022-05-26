@@ -98,9 +98,11 @@ public class MemoriaCasosX {
 	private int getNumLíneasCasoABorrar(int numLíneasCasoInsertado) {
 		/*
 		 * Cada conjunto tendrá un peso igual a (nº elementos) * ((distancia al nº de líneas del caso insertado) + 1).
-		 * Creamos un mapa que mapée el número de líneas al peso acumulado de cada conjunto.
+		 * Creamos una lista que almacene pares con el número de líneas y el peso acumulado de cada conjunto.
+		 * Esta lista queda ordenada ascendentemente por peso acumulado, lo que nos permite iterarla directamente
+		 * para elegir un elemento al azar teniendo en cuenta sus pesos.
 		 */
-		Map<Integer, Integer> pesosAcumulados = new TreeMap<>();
+		List<Map.Entry<Integer, Integer>> pesosAcumulados = new ArrayList<>();
 		int casosProcesados = 0;
 		int variaciónNumLíneas = 0;
 		int pesoTotal = 0;
@@ -114,7 +116,7 @@ public class MemoriaCasosX {
 				int numCasosActual = numCasos.get(numLíneas);
 				if (numCasosActual > 0) {
 					pesoTotal += numCasosActual * (variaciónNumLíneas + 1);
-					pesosAcumulados.put(numLíneas, pesoTotal);
+					pesosAcumulados.add(new AbstractMap.SimpleEntry<>(numLíneas, pesoTotal));
 					casosProcesados += numCasosActual;
 				}
 			}
@@ -125,7 +127,7 @@ public class MemoriaCasosX {
 					int numCasosActual = numCasos.get(numLíneas);
 					if (numCasosActual > 0) {
 						pesoTotal += numCasosActual * (variaciónNumLíneas + 1);
-						pesosAcumulados.put(numLíneas, pesoTotal);
+						pesosAcumulados.add(new AbstractMap.SimpleEntry<>(numLíneas, pesoTotal));
 						casosProcesados += numCasosActual;
 					}
 				}
@@ -134,7 +136,7 @@ public class MemoriaCasosX {
 		}
 		// Ahora seleccionamos uno de los valores al azar, teniendo en cuenta el peso de cada subconjunto
 		int valorElegido = random.nextInt(pesoTotal);
-		for (Map.Entry<Integer, Integer> entrada : pesosAcumulados.entrySet()) {
+		for (Map.Entry<Integer, Integer> entrada : pesosAcumulados) {
 			if (entrada.getValue() > valorElegido) {
 				return entrada.getKey();
 			}

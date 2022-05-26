@@ -136,8 +136,11 @@ public class VnsRs implements IRecocidoSimulado {
 	 */
 	private void _ejecutar() {
 		double fitnessActual = gLíneas.getFitness();
+		fitnessMejorSolución = fitnessActual;
 
 		while (continuar()) {
+			log.info("Inicio iter " + iter + ". Fitness actual: " + fitnessActual);
+
 			EntornoVNS entorno = gEntornos.getEntorno();
 			List<String> líneasAVariar = getLíneasAVariar(entorno);
 			int numAbiertas = gLíneas.getNumAbiertas();
