@@ -10,7 +10,7 @@ import org.neo4j.procedure.Procedure;
 
 /**
  * En esta clase se encuentran los procedimientos encargados de modificar datos en la BD antes de empezar a trabajar
- * con la misma. Estas modificaciones puden cambiar el formato de los datos o la estructura de la BD.
+ * con la misma. Estas modificaciones pueden cambiar el formato de los datos o la estructura de la BD.
  */
 public class Modificar {
 	@Context
