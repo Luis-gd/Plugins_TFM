@@ -21,7 +21,7 @@ public class Main {
 	 * Número de iteraciones que se deberían realizar para obtener una estimación del porcentaje de soluciones
 	 * aceptadas por cada valor de temperatura con el que se pruebe
 	 */
-	private static final int ITERACIONES_ACEPTACIÓN_INICIAL = 100;
+	private static final int ITERACIONES_ACEPTACIÓN_INICIAL = 1000;
 
 	@Context
 	public GraphDatabaseService db;

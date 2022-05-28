@@ -49,5 +49,8 @@ public class Main {
 		añadir.añadirIngresosVuelo(mismaFechaTurismo, aproximarFaltantesTurismo);
 		añadir.añadirRelaciónProvinciaEstadoPaís();
 		añadir.añadirReportesPaís();
+
+		Índices índices = new Índices(db);
+		índices.indexarIataAeropuertos();
 	}
 }

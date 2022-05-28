@@ -25,17 +25,17 @@ public class FitnessPorPesos implements ICálculoFitness {
 		// TODO Pesos finales
 		switch (criterio) {
 			case RIESGO_IMPORTADO:
-				return 0.333333f;
+				return 0.6f;
 			case NÚMERO_PASAJEROS:
-				return 0.083333f;
+				return 0.05f;
 			case INGRESOS_TURÍSTICOS:
-				return 0.083333f;
+				return 0.05f;
 			case HOMOGENEIDAD_AEROLÍNEAS:
-				return 0.083333f;
+				return 0.05f;
 			case HOMOGENEIDAD_AEROPUERTOS:
-				return 0.083333f;
+				return 0.05f;
 			case CONECTIVIDAD:
-				return 0.333333f;
+				return 0.2f;
 			default:
 				throw new IllegalOperationException();
 		}

@@ -75,7 +75,7 @@ public class VnsRs implements IRecocidoSimulado {
 			throw new IllegalOperationException("No se puede printear el resultado de la metaheurística si ésta no " +
 				"se ha ejecutado aún");
 		}
-		String mensaje = "Fin ejecución VNS + RS. Mejor solución:\n" +
+		String mensaje = "Fin ejecución VNS + RS. Mejor solución (fitness " + fitnessMejorSolución + "):\n" +
 			"Líneas abiertas: " +
 			Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución)) +
 			"\nLíneas cerradas: " +
@@ -119,8 +119,14 @@ public class VnsRs implements IRecocidoSimulado {
 			.añadirCriterio(new HomogeneidadAeropuertos(
 				consultas.getPasajerosPorAeropuerto(config.díaInicio, config.díaFin, config.país), config.país,
 				registroAeropuertos))
-			.añadirCriterio(new Conectividad(
-				consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos))
+			/*
+			 * Esto tarda 30s en ejecutar, así que de momento fijo el valor de conectividad para España entre
+			 * el 24/9/2020 y el 30/9/2020 (33837)
+			 * TODO: Restaurar código original
+			 */
+			/*.añadirCriterio(new Conectividad(
+				consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos))*/
+			.añadirCriterio(new Conectividad(33837, registroAeropuertos))
 			.añadirCálculoFitness(new FitnessPorPesos())
 			.build();
 
@@ -136,12 +142,14 @@ public class VnsRs implements IRecocidoSimulado {
 	 */
 	private void _ejecutar() {
 		double fitnessActual = gLíneas.getFitness();
+		mejorSolución = gLíneas.getLíneasBool();
 		fitnessMejorSolución = fitnessActual;
 
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
-			log.info("Inicio iter " + iter + ". Fitness actual: " + fitnessActual + ", entorno: " +
-				entorno.operación + " " + entorno.getNumLíneas());
+			log.info("Inicio iter " + iter + ". Abiertas: " + gLíneas.getNumAbiertas() + ", fitness actual: " +
+				fitnessActual + ", entorno: " + entorno.operación + " " + entorno.getNumLíneas() +
+				", T: " + rs.temperatura);
 
 			List<String> líneasAVariar = getLíneasAVariar(entorno);
 			int numAbiertas = gLíneas.getNumAbiertas();
