@@ -16,6 +16,7 @@ public enum Propiedad {
 	ETL_BORRAR_VUELOS_SIN_SIR,
 	// True si se han convertido las fechas de vuelos a tipo date
 	ETL_CONVERTIR_FECHAS_VUELOS,
+
 	// True si se ha calculado el número de pasajeros de cada avión
 	ETL_PASAJEROS,
 	// True si se han insertado las relaciones faltantes entre aeropuertos y países
@@ -33,5 +34,8 @@ public enum Propiedad {
 	// True si todas las Provincias o Estados tienen su respectiva relación con su correspondiente País
 	ETL_PAÍS_PROVINCIA_ESTADO,
 	// True si todos los países tienen una relación directa con Reportes y no solo sus Estados, Provincias o Regiones
-	ETL_REPORTE_PAÍS
+	ETL_REPORTE_PAÍS,
+
+	// True si se ha creado un índice sobre el código IATA de los aeropuertos
+	ETL_INDEXAR_IATA_AEROPUERTOS
 }
