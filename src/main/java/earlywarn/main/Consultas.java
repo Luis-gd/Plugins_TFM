@@ -23,6 +23,10 @@ public class Consultas {
 	// Aerolínea que tienen asignada los vuelos de la BD para los que no se conoce quién opera el vuelo
 	public static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
 
+	// -- Valores constantes --
+	private final double beta = 0.167; // Índice de transimisión
+	private final double alpha = 0.1;  // Índice de recuperación
+
 	/*
 	 * La instancia de la base de datos.
 	 * Debe ser obtenida usando la anotación @Context en un procedimiento o función
