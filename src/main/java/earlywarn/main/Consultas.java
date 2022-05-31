@@ -576,4 +576,48 @@ public class Consultas {
 
 		return ret;
 	}
+
+	/**
+	 * Devuelve una lista con los cálculos del SIR iniciales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
+	 * en este mismo orden.
+	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
+	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR.
+	 * @return Lista con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al inicio del vuelo.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 */
+	public List<Double> getSIRInicialPorVuelo(Number idVuelo){
+		// Propiedades propiedades = new Propiedades(db);
+		List<Double> ret = new ArrayList<>();
+
+		try(Transaction tx = db.beginTx()){
+			try (Result res = tx.execute(
+					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
+							"WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
+							"(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
+							"RETURN f.passengers, iz.population, r.recovered, r.confirmed, r.deaths"
+			)){
+				List<String> columnas = res.columns();
+				while (res.hasNext()) {
+					Map<String, Object> row = res.next();
+					double passengers = (Long) row.get(columnas.get(0));
+					double population = (Long) row.get(columnas.get(1));
+					double recovered = (Long) row.get(columnas.get(2));
+					double confirmed = (Long) row.get(columnas.get(3));
+					double deaths = (Long) row.get(columnas.get(4));
+
+					//Cálculo del SIR
+					double susceptible = population-recovered-deaths;
+					double S0 = passengers*(susceptible/population);
+					double I0 = passengers*(confirmed/population);
+					double R0 = passengers*((recovered+deaths)/population);
+					ret.add(S0);
+					ret.add(I0);
+					ret.add(R0);
+				}
+			}
+		}
+		return ret;
+	}
 }

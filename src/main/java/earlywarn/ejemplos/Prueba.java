@@ -116,6 +116,13 @@ public class Prueba {
 		return consultas.getPasajerosPorAeropuerto(fechaInicio, fechaFin, idPaís);
 	}
 
+	@UserFunction
+	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al inicio del vuelo con el identificador <<idVuelo>>")
+	public List<Double> getSIRInicialPorVuelo(@Name("idVuelo") Long idVuelo) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getSIRInicialPorVuelo(idVuelo);
+	}
+
 	// -- Líneas --
 
 	@UserFunction
