@@ -117,10 +117,19 @@ public class Prueba {
 	}
 
 	@UserFunction
-	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al inicio del vuelo con el identificador <<idVuelo>>")
+	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al inicio del vuelo con el identificador <<idVuelo>>" +
+			"La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
 	public List<Double> getSIRInicialPorVuelo(@Name("idVuelo") Long idVuelo) {
 		Consultas consultas = new Consultas(db);
 		return consultas.getSIRInicialPorVuelo(idVuelo);
+	}
+
+	@UserFunction
+	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al final del vuelo con el identificador <<idVuelo>>, " +
+			"siendo el valor de infectados el riesgo del vuelo. La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
+	public List<Double> getSIRFinalPorVuelo(@Name("idVuelo") Long idVuelo) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getSIRFinalPorVuelo(idVuelo);
 	}
 
 	// -- Líneas --

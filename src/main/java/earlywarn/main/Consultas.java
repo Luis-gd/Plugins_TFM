@@ -588,7 +588,7 @@ public class Consultas {
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public List<Double> getSIRInicialPorVuelo(Number idVuelo){
-		// Propiedades propiedades = new Propiedades(db);
+		// Propiedades props = new Propiedades(db);
 		List<Double> ret = new ArrayList<>();
 
 		try(Transaction tx = db.beginTx()){
@@ -609,13 +609,59 @@ public class Consultas {
 
 					//Cálculo del SIR
 					double susceptible = population-recovered-deaths;
-					double S0 = passengers*(susceptible/population);
-					double I0 = passengers*(confirmed/population);
-					double R0 = passengers*((recovered+deaths)/population);
-					ret.add(S0);
-					ret.add(I0);
-					ret.add(R0);
+					double s0 = passengers*(susceptible/population);
+					double i0 = passengers*(confirmed/population);
+					double r0 = passengers*((recovered+deaths)/population);
+					ret.add(s0);
+					ret.add(i0);
+					ret.add(r0);
 				}
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Devuelve una lista con los cálculos del SIR finales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
+	 * en este mismo orden, haciendo el número de infectados referencia al RIESGO del vuelo.
+	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
+	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR final.
+	 * @return Lista con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al final del vuelo.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 */
+	public List<Double> getSIRFinalPorVuelo(Number idVuelo){
+		// Propiedades props = new Propiedades(db);
+		List<Double> ret = new ArrayList<>();
+		List<Double> initial = getSIRInicialPorVuelo(idVuelo);
+		double sFinal = initial.get(0);
+		double iFinal = initial.get(1);
+		double rFinal = initial.get(2);
+
+		try(Transaction tx = db.beginTx()){
+			try (Result res = tx.execute(
+					"MATCH(f:FLIGHT{flightId:" + idVuelo + "}) RETURN duration.between(datetime(f.instantOfDeparture)," +
+							"datetime(f.instantOfArrival)).seconds, f.passengers"
+			)){
+				List<String> columnas = res.columns();
+				while (res.hasNext()) {
+					Map<String, Object> row = res.next();
+					double durationInSeconds = (Long) row.get(columnas.get(0));
+					double passengers = (Long) row.get(columnas.get(1));
+
+					//Bucle para calcular el SIR final
+					for (int i = 0; i < ((durationInSeconds/60)/15); i++){
+						double sAux = sFinal;
+						double iAux = iFinal;
+						double rAux = rFinal;
+						sFinal = sAux-beta*sAux*iAux/passengers;
+						iFinal = iAux+beta*sAux*iAux/passengers-alpha*iAux;
+						rFinal = rAux+alpha*iAux;
+					}
+					ret.add(sFinal);
+					ret.add(iFinal);
+					ret.add(rFinal);				}
 			}
 		}
 		return ret;
