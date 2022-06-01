@@ -23,12 +23,14 @@ public class Main {
 	 */
 	private static final int ITERACIONES_ACEPTACIÓN_INICIAL = 1000;
 
+	private static final String RUTA_CONFIG = "import/config_vnsrs.xml";
+	private static final String RUTA_RESULTADO = "export/resultado_vnsrs.txt";
+	private static final String RUTA_ESTADÍSTICAS = "export/stats_vnsrs.csv";
+
 	@Context
 	public GraphDatabaseService db;
 	@Context
 	public Log log;
-
-	private static final String RUTA_CONFIG = "import/config_vnsrs.xml";
 
 	@Procedure
 	public void vnsRs() {
@@ -37,6 +39,8 @@ public class Main {
 		VnsRs vnsrs = new VnsRs(config, db, log);
 		vnsrs.ejecutar();
 		vnsrs.printResultado();
+		vnsrs.guardarResultado(RUTA_RESULTADO);
+		vnsrs.guardarEstadísticas(RUTA_ESTADÍSTICAS);
 	}
 
 	/**

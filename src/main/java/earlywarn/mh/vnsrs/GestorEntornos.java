@@ -35,7 +35,9 @@ public class GestorEntornos {
 	}
 
 	/*
-	 * Devuelve el entorno de VNS en el que nos encontramos ahora mismo
+	 * Devuelve el entorno de VNS en el que nos encontramos ahora mismo.
+	 * Nota: Los valores de esta instancia se irán modificando según se cambie de entorno. Si se quiere mantener
+	 * el estado íntegro de la misma a largo plazo, crear una copia de la misma.
 	 */
 	public EntornoVNS getEntorno() {
 		return entornoActual;

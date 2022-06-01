@@ -1,5 +1,6 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.definiciones.OperaciónLínea;
 
 /**
@@ -18,10 +19,30 @@ public class EntornoVNS {
 		this.numEntornoY = numEntornoY;
 	}
 
+	public EntornoVNS(EntornoVNS otro) {
+		operación = otro.operación;
+		numEntornoY = otro.numEntornoY;
+	}
+
 	/**
 	 * @return Número de líneas a abrir o cerrar en este entorno
 	 */
 	public int getNumLíneas() {
 		return 1 << numEntornoY;
+	}
+
+	/**
+	 * @return Número de líneas a abrir o cerrar en este entorno. El valor será positivo si la operación es
+	 * {@link OperaciónLínea#ABRIR} o negativo si es {@link OperaciónLínea#CERRAR}.
+	 */
+	public int getNumLíneasConSigno() {
+		switch (operación) {
+			case ABRIR:
+				return getNumLíneas();
+			case CERRAR:
+				return getNumLíneas() * -1;
+			default:
+				throw new IllegalOperationException();
+		}
 	}
 }

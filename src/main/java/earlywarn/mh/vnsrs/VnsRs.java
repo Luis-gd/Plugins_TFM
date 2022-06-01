@@ -13,6 +13,11 @@ import earlywarn.main.modelo.criterio.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +35,7 @@ public class VnsRs implements IRecocidoSimulado {
 	private final Consultas consultas;
 	private final List<String> líneas;
 	private final ConversorLíneas conversorLíneas;
+	private Estadísticas estadísticas;
 
 	// Número máximo de iteraciones. La ejecución siempre terminará si se alcanza. -1 si no hay límite.
 	private int iterMax;
@@ -42,8 +48,6 @@ public class VnsRs implements IRecocidoSimulado {
 	private int iter;
 	// Número de iteraciones que hace que no se encuentra un nuevo óptimo global
 	private int iteracionesSinMejora;
-
-	// TODO: Estadísticas de la ejecución
 
 	public VnsRs(Config config, GraphDatabaseService db, Log log) {
 		this.db = db;
@@ -77,10 +81,59 @@ public class VnsRs implements IRecocidoSimulado {
 		}
 		String mensaje = "Fin ejecución VNS + RS. Mejor solución (fitness " + fitnessMejorSolución + "):\n" +
 			"Líneas abiertas: " +
-			Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución)) +
+			Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución), true) +
 			"\nLíneas cerradas: " +
-			Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución)) + "\n";
+			Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución), true);
 		log.info(mensaje);
+	}
+
+	/**
+	 * Almacena la mejor solución encontrada en un fichero.
+	 * El fichero contendrá 3 líneas:
+	 * - La primera tendrá el valor de fitness de la solución
+	 * - La segunda tendrá los IDs de todas las líneas abiertas separados con comas
+	 * - La tercera tendrá los IDs de todas las líneas cerradas separadas con comas
+	 * Requiere que se haya ejecutado el algoritmo con anterioridad.
+	 * @param rutaFichero Ruta al fichero de salida
+	 * @throws IllegalOperationException Si la metaheurística aún no se ha ejecutado
+	 */
+	public void guardarResultado(String rutaFichero) {
+		if (mejorSolución == null) {
+			throw new IllegalOperationException("No se puede almacenar el resultado de la metaheurística si " +
+				"ésta no se ha ejecutado aún");
+		} else {
+			try {
+				Files.createDirectory(Paths.get(rutaFichero).getParent());
+			} catch (FileAlreadyExistsException e) {
+				// OK
+			} catch (IOException e) {
+				log.warn("No se ha podido crear el directorio para almacenar el resultado de la metaheurística.\n" + e);
+				return;
+			}
+
+			try (FileWriter fSalida = new FileWriter(rutaFichero)) {
+				fSalida.write(fitnessMejorSolución + "\n");
+				fSalida.write(Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución), false) + "\n");
+				fSalida.write(Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución), false) + "\n");
+			} catch (IOException e) {
+				log.warn("No se ha podido guardar el resultado de la metaheurística.\n" + e);
+			}
+		}
+	}
+
+	/**
+	 * Almacena las estadísticas de la ejecución a un fichero CSV.
+	 * Requiere que se haya ejecutado el algoritmo con anterioridad.
+	 * @param rutaFichero Ruta al fichero de salida
+	 * @throws IllegalOperationException Si la metaheurística aún no se ha ejecutado
+	 */
+	public void guardarEstadísticas(String rutaFichero) {
+		if (estadísticas == null) {
+			throw new IllegalOperationException("No se puede almacenar las estadísticas de la metaheurística si " +
+				"ésta no se ha ejecutado aún");
+		} else {
+			estadísticas.toCsv(rutaFichero);
+		}
 	}
 
 	@Override
@@ -129,6 +182,7 @@ public class VnsRs implements IRecocidoSimulado {
 			.añadirCriterio(new Conectividad(33837, registroAeropuertos))
 			.añadirCálculoFitness(new FitnessPorPesos())
 			.build();
+		estadísticas = new Estadísticas(log);
 
 		solucionesAceptadas = 0;
 		mejorSolución = null;
@@ -144,6 +198,10 @@ public class VnsRs implements IRecocidoSimulado {
 		double fitnessActual = gLíneas.getFitness();
 		mejorSolución = gLíneas.getLíneasBool();
 		fitnessMejorSolución = fitnessActual;
+
+		// Registrar estadísticas del estado inicial
+		estadísticas.registrarIteración(new EstadísticasIteración(-1, gLíneas.getNumAbiertas(),
+			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
 
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
@@ -179,6 +237,10 @@ public class VnsRs implements IRecocidoSimulado {
 				// Indicar que nos mantenemos en el mismo estado, es decir, no se ha variado ninguna línea
 				gEntornos.registrarEstadoY(new ArrayList<>());
 			}
+
+			// Registrar estadísticas de esta iteración
+			estadísticas.registrarIteración(new EstadísticasIteración(iter, gLíneas.getNumAbiertas(),
+				new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
 
 			iter++;
 			rs.sigIter();

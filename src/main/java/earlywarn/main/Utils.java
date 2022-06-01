@@ -145,13 +145,17 @@ public class Utils {
 	}
 
 	/**
-	 * Devuelve una string que incluye el ID de todas las líneas en la lista de líneas indicada
+	 * Devuelve una string que incluye el ID de todas las líneas en la lista de líneas indicada. Cada ID se separa
+	 * con una coma.
 	 * @param líneas Lista de líneas a convertir
+	 * @param corchetes Si es true, la string que representa la lista se encerrará entre corchetes
 	 * @return String que incluye todas las líneas en la lista
 	 */
-	public static String listaLíneasAString(List<String> líneas) {
+	public static String listaLíneasAString(List<String> líneas, boolean corchetes) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("[");
+		if (corchetes) {
+			sb.append("[");
+		}
 		boolean primera = true;
 		for (String línea : líneas) {
 			if (primera) {
@@ -161,7 +165,9 @@ public class Utils {
 			}
 			sb.append(línea);
 		}
-		sb.append("]");
+		if (corchetes) {
+			sb.append("]");
+		}
 		return sb.toString();
 	}
 }
