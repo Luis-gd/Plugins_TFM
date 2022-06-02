@@ -1,4 +1,7 @@
 package earlywarn.mh;
+
+import java.util.Random;
+
 /**
  * Class representing the PSO Engine. This class implements all the necessary methods for initializing the swarm,
  * updating the velocity and position vectors, determining the fitness of particles and finding the best particle.
@@ -10,35 +13,40 @@ public class PSOEngine {
     int maxIterations = 10000; //Max number of iterations
     double c1 = 1.496180; //Cognitive coefficient
     double c2 = 1.496180; //Social coefficient
-    double w = 0.729844; //Inertia coefficient
+    //TODO: Modificar valor
+    double Is = 0.729844; //Stickiness factor
+    double linearDecayStickiness = 1/(8*maxIterations/100); //Decay of the stickiness in every iteration
+    Random generadorAleatorio = new Random();
 
-    public PSOEngine (int numDimensions, int numParticles, int maxIterations, double c1, double c2, double w ) {
+    public PSOEngine (int numDimensions, int numParticles, int maxIterations, double c1, double c2, double Is,
+                      double linearDecayStickiness) {
         this.numDimensions = numDimensions;
         this.numParticles = numParticles;
         this.maxIterations = maxIterations;
         this.c1 = c1;
         this.c2 = c2;
-        this.w = w;
+        this.Is = Is;
+        this.linearDecayStickiness = linearDecayStickiness;
     }
 
 
     /**
-     * Method to initialize the particles for PSO
+     * Método que inicializa las partículas, la posición y la pegasojidad son aleatorias,
+     * con valores [0,1] y 1 respectivamente
      * @param particles The set of particles to initialize
      */
     public void initParticles(Particle[] particles) {
         //For each particle
         for (int i=0; i<particles.length;i++) {
             boolean[] positions = new boolean[numDimensions];
-            double[] velocities = new double [numDimensions];
-            //For each dimension of the particle assign a random x value [-5.12,5.12] and velocity=0
+            double[] stickiness = new double[numDimensions];
             for (int j=0; j<numDimensions; j++) {
                 //CAMBIAR LA INICIALIZACIÓN DE POSITIONS
-                positions[j] = true;
-                velocities[j] = 0;
+                positions[j] = generadorAleatorio.nextBoolean();
+                stickiness[j] = 1;
             }
             //Create the particle
-            particles[i] = new Particle(positions, velocities);
+            particles[i] = new Particle(positions, stickiness);
             //Set particles personal best to initialized values
             particles[i].personalBest = particles[i].position.clone();
         }
@@ -47,15 +55,17 @@ public class PSOEngine {
     /**
      * Method to update the velocities vector of a particle
      * @param particle The particle to update the velocity for
+     * @param r1 Random number cognitive importance
+     * @param r2 Random number social importance
      */
-    public void updateVelocity(Particle particle, boolean[] best, double[] r1, double[] r2) {
+    public void updateFlippingProbability(Particle particle, boolean[] best, double[] r1, double[] r2) {
         //First we clone the velocities, positions, personal and neighbourhood best
-        double[] velocities = particle.velocity.clone();
+        double[] stickiness = particle.stickiness.clone();
         boolean[] personalBest = particle.personalBest.clone();
         boolean[] positions = particle.position.clone();
         boolean[] bestNeigh = best.clone();
 
-        double[] inertiaTerm = new double[numDimensions];
+        double[] StickinessProbability = new double[numDimensions];
         double[] difference1 = new double[numDimensions];
         double[] difference2 = new double[numDimensions];
 
@@ -65,9 +75,14 @@ public class PSOEngine {
         double[] cognitiveTerm = new double[numDimensions];
         double[] socialTerm = new double[numDimensions];
 
-        //Calculate inertia component
+        //TODO: Comprobar y seguir a partir de aquí
+        //Calculate stickiness
         for (int i=0; i<numDimensions; i++) {
-            inertiaTerm[i] = w*velocities[i];
+            StickinessProbability[i]=Is*(1-stickiness[i]);
+            stickiness[i] = stickiness[i] - linearDecayStickiness;
+            if(stickiness[i]<0){
+                stickiness[i] = 0;
+            }
         }
 
         //Calculate the cognitive component
@@ -113,7 +128,7 @@ public class PSOEngine {
 
         //Update particles velocity at all dimensions
         for (int i=0; i<numDimensions; i++) {
-            particle.velocity[i] = inertiaTerm[i]+cognitiveTerm[i]+socialTerm[i];
+            particle.flippingProbability[i] = StickinessProbability[i]+cognitiveTerm[i]+socialTerm[i];
         }
     }
 
@@ -127,7 +142,7 @@ public class PSOEngine {
         for (int i=0; i<numDimensions; i++) {
             //particle.position[i] = particle.position[i]+particle.velocity[i];
         }
-
+        //TODO: Si cambia la posición poner stickness a 1
     }
 
     /**

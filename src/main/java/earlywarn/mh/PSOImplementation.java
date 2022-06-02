@@ -10,17 +10,18 @@ public class PSOImplementation {
     public final int maxIterations = 10000; //Max number of iterations
     public final double c1 = 1.496180; //Cognitive coefficient
     public final double c2 = 1.496180; //Social coefficient
-    public final double w = 0.729844; //Inertia coefficient
+    public final double Is = 0.729844; //Stickiness factor
     public  double[] r1; //Random vector 1
     public  double[] r2;  //Random vector 2
     public boolean[] best;
     Particle[] particles; //Array to hold all particles
+    public double linearDecayStickiness = 1/(8*maxIterations/100); //Decay of the stickiness in every iteration
 
     public PSOImplementation() {
         //PSO algorithm
 
         particles = new Particle[numParticles];
-        PSOEngine PSO = new PSOEngine(numDimensions, numParticles, maxIterations, c1, c2, w);
+        PSOEngine PSO = new PSOEngine(numDimensions, numParticles, maxIterations, c1, c2, Is, linearDecayStickiness);
 
         //Initialize particles
         PSO.initParticles(particles);
@@ -50,7 +51,7 @@ public class PSOImplementation {
 
             //Update the velocity and position vectors
             for (int i=0; i<numParticles;i++) {
-                PSO.updateVelocity(particles[i], best, r1, r2);
+                PSO.updateFlippingProbability(particles[i], best, r1, r2);
                 PSO.updatePosition(particles[i]);
             }
             numIter++;
