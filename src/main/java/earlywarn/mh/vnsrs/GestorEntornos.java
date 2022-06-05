@@ -81,7 +81,7 @@ public class GestorEntornos {
 	 */
 	private void cambioEntorno(int numLíneasAbiertas, double temperaturaActual) {
 		// No fijamos los valores directamente para asegurarnos de que la operación es atómica
-		OperaciónLínea entornoX = entornoX(numLíneasAbiertas);
+		OperaciónLínea entornoX = entornoX(numLíneasAbiertas, temperaturaActual);
 		int numEntornoY = numEntornoY(temperaturaActual);
 		entornoActual.operación = entornoX;
 		entornoActual.numEntornoY = numEntornoY;
@@ -92,9 +92,16 @@ public class GestorEntornos {
 	 * entorno. Para ello emplea una memoria de casos que recuerdan si abrir/cerrar líneas fue positivo o no en
 	 * situaciones que tenían un número de líneas abiertas similar al actual.
 	 * @param numLíneasAbiertas Número de líneas actualmente abiertas
+	 * @param temperaturaActual Temperatura actual del recocido simulado tras finalizar la iteración actual
 	 * @return Operación horizontal (cierre o apertura de líneas) que se debería realizar en el próximo entorno
 	 */
-	private OperaciónLínea entornoX(int numLíneasAbiertas) {
+	private OperaciónLínea entornoX(int numLíneasAbiertas, double temperaturaActual) {
+		/*
+		 * Primero generamos una probabilidad aleatoria de realizar una de las dos operaciones. Cuando la temperatura
+		 * es alta, esta probabilidad tendrá más peso que el cálculo que se hace a continuación.
+		 */
+		double probabilidadAbrirRandom = random.nextDouble();
+
 		// Seleccionar los casos que votarán cuál debe ser la siguiente operación
 		int numMinLíneas = Math.round(numLíneasAbiertas - numLíneas * config.distanciaMemoriaX);
 		int numMaxLíneas = Math.round(numLíneasAbiertas + numLíneas * config.distanciaMemoriaX);
@@ -124,8 +131,18 @@ public class GestorEntornos {
 				votosCerrar += peso;
 			}
 		}
-		// Elegimos la operación a realizar usando los pesos como probabilidades
-		if (random.nextDouble() < (double) votosAbrir / (votosAbrir + votosCerrar)) {
+		// El ratio de votos determina la probabilidad de abrir líneas (en este cálculo basado en casos)
+		double probabilidadAbrirCasos = (double) votosAbrir / (votosAbrir + votosCerrar);
+
+		/*
+		 * Las dos probabilidades (aleatoria y basada en casos) tendrán diferente peso según el valor
+		 * de temperatura.
+		 */
+		double porcentTemperatura = temperaturaActual / temperaturaInicial;
+		double probabilidadFinal = probabilidadAbrirRandom * porcentTemperatura +
+			probabilidadAbrirCasos * (1 - porcentTemperatura);
+
+		if (random.nextDouble() < probabilidadFinal) {
 			return OperaciónLínea.ABRIR;
 		} else {
 			return OperaciónLínea.CERRAR;
@@ -147,13 +164,23 @@ public class GestorEntornos {
 			// Iteraciones que hace que no logramos al menos (numLíneas) de distancia con respecto a la solución actual
 			int iteraciones = estadosY.iteracionesSinDistancia(numLíneasActual);
 			double estancamiento = iteraciones / (config.getUmbralIt() * i);
+
 			// El valor de estancamiento se ajusta en función del % de temperatura restante
 			double estancamientoAjustado = estancamiento * temperaturaActual / temperaturaInicial;
+			// También se tiene en cuenta la velocidad de variación de líneas especificada por el usuario
+			estancamientoAjustado *= Utils.log2(config.líneasPorIt);
+
 			valoresEstancamiento.add(estancamientoAjustado);
 		}
 		// El valor de estancamiento final es la media de todos los calculados
 		double estancamientoMedio = Utils.getMedia(valoresEstancamiento);
 		// El estancamiento medio se redondea hacia abajo para determinar el número de entorno vertical
-		return (int) Math.floor(estancamientoMedio);
+		int numEntorno = (int) Math.floor(estancamientoMedio);
+		// Comprobar que no excedemos el entorno máximo permitido
+		int numEntornoMax = config.getMaxEntornoY(numLíneas);
+		if (numEntorno > numEntornoMax) {
+			numEntorno = numEntornoMax;
+		}
+		return numEntorno;
 	}
 }

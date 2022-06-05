@@ -102,6 +102,26 @@ public class Utils {
 	}
 
 	/**
+	 * Redondea el valor especificado a la potencia de 2 más cercana y devuelve el exponente de dicha potencia
+	 * @param valor Valor a redondear
+	 * @return Exponente de la potencia de dos más cercana al valor indicado
+	 */
+	public static int redondearAPotenciaDeDosExponente(float valor) {
+		int i = 0;
+		float distanciaPrevia = Float.MAX_VALUE;
+		while (true) {
+			int valorActual = (int) Math.pow(2, i);
+			float distancia = Math.abs(valor - valorActual);
+			if (distancia < distanciaPrevia) {
+				distanciaPrevia = distancia;
+				i++;
+			} else {
+				return i - 1;
+			}
+		}
+	}
+
+	/**
 	 * Crea una instancia de LocalDate en base a una fecha especificada como año-mes-día
 	 * @param string String con la fecha en formato año-mes-día
 	 * @return LocalDate que representa la fecha indicada

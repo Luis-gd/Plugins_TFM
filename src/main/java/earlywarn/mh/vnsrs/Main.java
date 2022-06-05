@@ -51,7 +51,7 @@ public class Main {
 	public Double calcularTInicial() {
 		Config config = new Config(RUTA_CONFIG);
 		VnsRs vnsrs = new VnsRs(config, db, log);
-		CalculadoraTInicial calculadora = new CalculadoraTInicial(vnsrs);
+		CalculadoraTInicial calculadora = new CalculadoraTInicial(vnsrs, log);
 		return ((Float) calculadora.determinarTInicial(PORCENTAJE_ACEPTACIÓN_INICIAL, TOLERANCIA_ACEPTACIÓN_INICIAL,
 			ITERACIONES_ACEPTACIÓN_INICIAL)).doubleValue();
 	}

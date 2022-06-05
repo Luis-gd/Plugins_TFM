@@ -63,6 +63,8 @@ public class Config {
 		configVNS.iteraciones = Integer.parseInt(elemIteraciones.getTextContent());
 		Element elemLíneasPorIt = Utils.toLista(elemEntornoY.getElementsByTagName("líneasPorIt")).get(0);
 		configVNS.líneasPorIt = Float.parseFloat(elemLíneasPorIt.getTextContent());
+		Element elemVariaciónMax = Utils.toLista(elemEntornoY.getElementsByTagName("variaciónMax")).get(0);
+		configVNS.variaciónMax = Float.parseFloat(elemVariaciónMax.getTextContent());
 
 		Element elemTInicial = Utils.toLista(raíz.getElementsByTagName("tInicial")).get(0);
 		configRS.tInicial = Float.parseFloat(elemTInicial.getTextContent());

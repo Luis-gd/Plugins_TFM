@@ -37,8 +37,11 @@ public class VnsRs implements IRecocidoSimulado {
 	private final ConversorLíneas conversorLíneas;
 	private Estadísticas estadísticas;
 
-	// Número máximo de iteraciones. La ejecución siempre terminará si se alcanza. -1 si no hay límite.
-	private int iterMax;
+	/*
+	 * Número forzado de iteraciones a realizar. Si se fija, el algoritmo siempre terminará exactamente tras este
+	 * número de iteraciones, ignorando la condición de parada habitual. Si es < 0, no tiene efecto alguno.
+	 */
+	private int numFijoIteraciones;
 	// Número total de posibles soluciones aceptadas
 	private int solucionesAceptadas;
 	// Mejor solución encontrada hasta ahora (como array de booleanos) y su fitness
@@ -53,7 +56,7 @@ public class VnsRs implements IRecocidoSimulado {
 		this.db = db;
 		this.log = log;
 		this.config = config;
-		iterMax = Integer.MAX_VALUE;
+		numFijoIteraciones = -1;
 		registroAeropuertos = new RegistroAeropuertos(config.díaInicio, config.díaFin, db);
 		consultas = new Consultas(db);
 		líneas = consultas.getLíneas(config.díaInicio, config.díaFin, config.país);
@@ -137,8 +140,8 @@ public class VnsRs implements IRecocidoSimulado {
 	}
 
 	@Override
-	public float calcularPorcentajeAceptadas(float tInicial, int iterMax) {
-		this.iterMax = iterMax;
+	public float calcularPorcentajeAceptadas(float tInicial, int numIteraciones) {
+		numFijoIteraciones = numIteraciones;
 		/*
 		 * Creamos la instancia de recocido simulado con datos de configuración basados en los parámetros indicados en
 		 * lugar de usar los de la configuración. Alfa se fija a 1 para que la temperatura no disminuya.
@@ -152,7 +155,7 @@ public class VnsRs implements IRecocidoSimulado {
 		init();
 		_ejecutar();
 
-		return (float) solucionesAceptadas / iterMax;
+		return (float) solucionesAceptadas / numIteraciones;
 	}
 
 	/**
@@ -272,6 +275,10 @@ public class VnsRs implements IRecocidoSimulado {
 	 * @return True si la ejecución debe continuar, false si se cumple la condición de parada.
 	 */
 	private boolean continuar() {
-		return iteracionesSinMejora < config.itParada && iter < iterMax;
+		if (numFijoIteraciones >= 0) {
+			return iter < numFijoIteraciones;
+		} else {
+			return iteracionesSinMejora < config.itParada;
+		}
 	}
 }

@@ -139,11 +139,11 @@ public class MemoriaEstadosY {
 
 		/*
 		 * Una vez iterada toda la memoria, las entradas del array que aún no estén inicializadas representan
-		 * distancias que hace al menos (tamaño actual memoria) iteraciones que no logramos. Rellenamos estos elementos
-		 * del array con ese valor, que es el tiempo más grande que podemos medir.
+		 * distancias que nunca hemos alcanzado. Dado que tiene más sentido que al principio el algoritmo trate
+		 * de variar muchas líneas, fijamos estas entradas al valor máximo posible.
 		 */
 		for (int i = posMásAlta + 1; i < tiempoSinDistancia.length; i++) {
-			tiempoSinDistancia[i] = estados.size();
+			tiempoSinDistancia[i] = tamañoMemoria;
 		}
 	}
 }
