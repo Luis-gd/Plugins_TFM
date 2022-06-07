@@ -8,9 +8,9 @@ public class PSOImplementation {
     public final int numDimensions = 30; //Number of dimensions for problem
     public final int numParticles = 30; //Number of particles in swarm
     public final int maxIterations = 10000; //Max number of iterations
-    public final double c1 = 1.496180; //Cognitive coefficient
-    public final double c2 = 1.496180; //Social coefficient
-    public final double Is = 0.729844; //Stickiness factor
+    public final double Is = 4/numDimensions; //Stickiness factor
+    public final double Ig = (1-Is)/3;//Social factor
+    public final double Ip = 2*Ig;//Cognitive factor
     public  double[] r1; //Random vector 1
     public  double[] r2;  //Random vector 2
     public boolean[] best;
@@ -21,7 +21,7 @@ public class PSOImplementation {
         //PSO algorithm
 
         particles = new Particle[numParticles];
-        PSOEngine PSO = new PSOEngine(numDimensions, numParticles, maxIterations, c1, c2, Is, linearDecayStickiness);
+        PSOEngine PSO = new PSOEngine(numDimensions, numParticles, maxIterations, Is, Ig, Ip, linearDecayStickiness);
 
         //Initialize particles
         PSO.initParticles(particles);
@@ -51,7 +51,7 @@ public class PSOImplementation {
 
             //Update the velocity and position vectors
             for (int i=0; i<numParticles;i++) {
-                PSO.updateFlippingProbability(particles[i], best, r1, r2);
+                PSO.updateFlippingProbability(particles[i], best);
                 PSO.updatePosition(particles[i]);
             }
             numIter++;

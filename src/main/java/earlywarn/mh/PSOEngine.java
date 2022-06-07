@@ -11,21 +11,21 @@ public class PSOEngine {
     int numDimensions = 30; //Number of dimensions for problem
     int numParticles = 30; //Number of particles in swarm
     int maxIterations = 10000; //Max number of iterations
-    double c1 = 1.496180; //Cognitive coefficient
-    double c2 = 1.496180; //Social coefficient
-    //TODO: Modificar valor
-    double Is = 0.729844; //Stickiness factor
+    //TODO: Modificar para convertir el algoritmo en dinámico
+    double Is = 4/numDimensions; //Stickiness factor
+    double Ig = (1-Is)/3;//Social factor
+    double Ip = 2*Ig;//Cognitive factor
     double linearDecayStickiness = 1/(8*maxIterations/100); //Decay of the stickiness in every iteration
     Random generadorAleatorio = new Random();
 
-    public PSOEngine (int numDimensions, int numParticles, int maxIterations, double c1, double c2, double Is,
+    public PSOEngine (int numDimensions, int numParticles, int maxIterations, double Is, double Ig, double Ip,
                       double linearDecayStickiness) {
         this.numDimensions = numDimensions;
         this.numParticles = numParticles;
         this.maxIterations = maxIterations;
-        this.c1 = c1;
-        this.c2 = c2;
         this.Is = Is;
+        this.Ig = Ig;
+        this.Ip = Ip;
         this.linearDecayStickiness = linearDecayStickiness;
     }
 
@@ -41,7 +41,6 @@ public class PSOEngine {
             boolean[] positions = new boolean[numDimensions];
             double[] stickiness = new double[numDimensions];
             for (int j=0; j<numDimensions; j++) {
-                //CAMBIAR LA INICIALIZACIÓN DE POSITIONS
                 positions[j] = generadorAleatorio.nextBoolean();
                 stickiness[j] = 1;
             }
@@ -55,80 +54,45 @@ public class PSOEngine {
     /**
      * Method to update the velocities vector of a particle
      * @param particle The particle to update the velocity for
-     * @param r1 Random number cognitive importance
-     * @param r2 Random number social importance
      */
-    public void updateFlippingProbability(Particle particle, boolean[] best, double[] r1, double[] r2) {
-        //First we clone the velocities, positions, personal and neighbourhood best
-        double[] stickiness = particle.stickiness.clone();
-        boolean[] personalBest = particle.personalBest.clone();
-        boolean[] positions = particle.position.clone();
-        boolean[] bestNeigh = best.clone();
+    public void updateFlippingProbability(Particle particle, boolean[] best) {
 
         double[] StickinessProbability = new double[numDimensions];
-        double[] difference1 = new double[numDimensions];
-        double[] difference2 = new double[numDimensions];
+        double[] differenceCognitiveTerm = new double[numDimensions];
+        double[] differenceSocialTerm = new double[numDimensions];
 
-        double[] c1Timesr1 = new double[numDimensions];
-        double[] c2Timesr2 = new double[numDimensions];
-
-        double[] cognitiveTerm = new double[numDimensions];
-        double[] socialTerm = new double[numDimensions];
-
-        //TODO: Comprobar y seguir a partir de aquí
-        //Calculate stickiness
+        //Calculate stickiness probability and updates stickiness
         for (int i=0; i<numDimensions; i++) {
-            StickinessProbability[i]=Is*(1-stickiness[i]);
-            stickiness[i] = stickiness[i] - linearDecayStickiness;
-            if(stickiness[i]<0){
-                stickiness[i] = 0;
+            StickinessProbability[i]=Is*(1-particle.stickiness[i]);
+            particle.stickiness[i] = particle.stickiness[i] - linearDecayStickiness;
+            if(particle.stickiness[i]<0){
+                particle.stickiness[i] = 0;
             }
         }
 
         //Calculate the cognitive component
-
-        //Calculate personal best - current position
+        //Calculate personal best - current position using hamming distance
         for (int i=0; i<numDimensions; i++) {
-            if(personalBest[i]!=positions[i]){
-                difference1[i] = 1;
+            if(particle.personalBest[i]!=particle.position[i]){
+                differenceCognitiveTerm[i] = 1;
             }else{
-                difference1[i] = 0;
+                differenceCognitiveTerm[i] = 0;
             }
-        }
-
-        //Calculate c1*r1
-        for (int i=0; i<numDimensions; i++) {
-            c1Timesr1[i] = c1*r1[i];
-        }
-
-        //Calculate c1*r1*diff = cognitive term
-        for (int i=0; i<numDimensions; i++) {
-            cognitiveTerm[i] = c1Timesr1[i]*difference1[i];
         }
 
         //Calculate the social term
-
         //Calculate neighbourhood best - current position
         for (int i=0; i<numDimensions; i++) {
-            if(bestNeigh[i]!=positions[i]){
-                difference2[i] = 1;
+            if(best[i]!=particle.position[i]){
+                differenceSocialTerm[i] = 1;
             }else{
-                difference2[i] = 0;
+                differenceSocialTerm[i] = 0;
             }
         }
 
-        //Calculate c2*r2
+        //Update particles flipping probability at all dimensions
         for (int i=0; i<numDimensions; i++) {
-            c2Timesr2[i] = c2*r2[i];
-        }
-        //Calculate c2*r2*diff2 = social component
-        for (int i=0; i<numDimensions; i++) {
-            socialTerm[i] = c2Timesr2[i]*difference2[i];
-        }
-
-        //Update particles velocity at all dimensions
-        for (int i=0; i<numDimensions; i++) {
-            particle.flippingProbability[i] = StickinessProbability[i]+cognitiveTerm[i]+socialTerm[i];
+            particle.flippingProbability[i] = StickinessProbability[i]+Ip*differenceCognitiveTerm[i]+Ig*differenceSocialTerm[i];
         }
     }
 
@@ -136,13 +100,17 @@ public class PSOEngine {
      * Method to update the positions vector of a particle
      * @param particle The particle to update the position for
      */
-    //CAMBIAR COMO SE ACTUALIZA LA POSICION
     public void updatePosition(Particle particle) {
-        //Since new position is ALWAYS calculated after calculating new velocity, it is okay to just add old position to the current velocity (as velocity would have already been updated).
         for (int i=0; i<numDimensions; i++) {
-            //particle.position[i] = particle.position[i]+particle.velocity[i];
+            if(generadorAleatorio.nextDouble()<particle.flippingProbability[i]){
+                if(particle.position[i]){
+                    particle.position[i]=false;
+                }else{
+                    particle.position[i]=true;
+                }
+                particle.stickiness[i]=1;
+            }
         }
-        //TODO: Si cambia la posición poner stickness a 1
     }
 
     /**
