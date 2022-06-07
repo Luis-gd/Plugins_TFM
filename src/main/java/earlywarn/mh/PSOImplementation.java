@@ -6,7 +6,6 @@ package earlywarn.mh;
 public class PSOImplementation {
 
     //TODO:Arreglar como se carga el valor
-    int numCompanyias = 0;
     final int numDimensions = 30; //Number of dimensions for problem
     final int numParticles = 30; //Number of particles in swarm
     final int maxIterations = 10000; //Max number of iterations
@@ -22,7 +21,7 @@ public class PSOImplementation {
 
         particles = new Particle[numParticles];
         PSOEngine PSO = new PSOEngine(numDimensions, numParticles, maxIterations, Is, Ig, Ip, linearDecayStickiness);
-        Criterios.initCriterios(numDimensions,numCompanyias);
+        //Criterios.initCriterios();
 
         //Initialize particles
         PSO.initParticles(particles);

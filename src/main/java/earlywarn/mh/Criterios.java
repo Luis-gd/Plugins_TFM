@@ -2,29 +2,39 @@ package earlywarn.mh;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 public class Criterios{
     //Número de conexiones con las que trabajamos
-    private static int numDimensions=0;
+    static int numDimensions=0;
     //Número de compañias aéreas con las que trabajamos
-    private static int numCompanyias=0;
+    static int numCompanyias=0;
     //TODO: Añadir la opción de meter las restricciones por parámetros
     //TODO: Más adelante modificar el código para que se puedan introducir estos valores por parámetros
     //Restricción del impacto económico de los pasajeros perdidos, en porcentaje
-    private final static float maxPorcentajePasajerosPerdidos=0.2f;
+    final static float maxPorcentajePasajerosPerdidos=0.2f;
     //Restricción de la homogeneidad en el porcentaje de pasajeros que pierden las aerolíneas
-    private final static float maxPorcentajeDesviacionMediaPasajerosPerdidosPorCompanyia=0.2f;
+    final static float maxPorcentajeDesviacionMediaPasajerosPerdidosPorCompanyia=0.2f;
     //Restricción de la homogeneidad en el porcentaje de pérdida de ingresos por turismo en los destinos.
-    private final static float maxPorcentajeDesviacionMediaIngresosDestinos=0.2f;
+    final static float maxPorcentajeDesviacionMediaIngresosDestinos=0.2f;
     //Restricción sobre la conectividad perdida en los destinos.
-    private final static float maxPorcentajeConectividadPerdida=0.2f;
+    final static float maxPorcentajeConectividadPerdida=0.2f;
     //Restricción del porcentaje de pérdida de ingresos por turismo en los destinos
-    private final static float maxPorcentajeDineroPerdidoRegion = 0.2f;
+    final static float maxPorcentajeDineroPerdidoRegion = 0.2f;
     //TODO: Calcular un valor correcto para la penalización
     //Valor que se añade a la función objetivo cuando una solución no cumple una restricción
-    private final static int penalizacionRestriccion=1000000;
+    final static int penalizacionRestriccion=1000000;
     //La solución con la que trabajamos, se modifica en evaluate fitness
-    private static boolean[] solucion;
+    static boolean[] solucion;
+    //Contiene el nombre de los aeropuertos de entrada, en principio serán los de España
+    static List<String> nombreAeropuertosEntradaEspanya = new ArrayList<>();
+    //Contiene el nombre de los aeropuertos de salida
+    static List<String> nombreAeropuertosSalida = new ArrayList<>();
+    //Los caracteres que se utilizan para separar los CSV
+    static String COMMA_DELIMITER=",";
+
+    public float[] riesgoConexion;
 
     /**
      * Calcula el fitness de una partícula, comprueba todos los objetivos/restricciones
@@ -237,15 +247,37 @@ public class Criterios{
         }
         return 0;
     }
-    /**
-     * Método para inicializar el número de dimensiones, hay que llamar a esta función primero para
-     * empezar a trabajar
-     * @param numDimensions2 El número de dimensiones que tendrá el problema, se equivale al número de conexiones
-     *                  con las que trabajamos
-     * @param numCompanyias2 El número de compañías aéreas que tenemos
-     */
-    public static void initCriterios(int numDimensions2,int numCompanyias2){
-        numDimensions=numDimensions2;
-        numCompanyias=numCompanyias2;
+    //TODO:Implementando carga de datos en CSV, más adelante funcionará con llamadas a Neo4j
+    private static void cargaAeropuertosEntrada(){
+        String ubicacionArchivo = "datos/aeropuertos_entradas.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(COMMA_DELIMITER);
+                nombreAeropuertosEntradaEspanya.add(values[0]);
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+
+    private static void cargaAeropuertosSalida(){
+        String ubicacionArchivo = "datos/aeropuertos_salida.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(COMMA_DELIMITER);
+                nombreAeropuertosSalida.add(values[0]);
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+    //TODO: Seguir por aquí
+
+    //TODO:Modificar para que cargue todos los datos llamando a este método
+    public static void initCriterios(){
+        cargaAeropuertosEntrada();
+        cargaAeropuertosSalida();
     }
 }
