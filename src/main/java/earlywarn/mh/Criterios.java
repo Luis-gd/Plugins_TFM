@@ -1,10 +1,7 @@
 package earlywarn.mh;
 
-import javax.validation.constraints.Null;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 public class Criterios{
     //Número de conexiones con las que trabajamos
@@ -12,22 +9,34 @@ public class Criterios{
     //Número de compañias aéreas con las que trabajamos
     private static int numCompanyias=0;
     //TODO: Añadir la opción de meter las restricciones por parámetros
+    //TODO: Más adelante modificar el código para que se puedan introducir estos valores por parámetros
     //Restricción del impacto económico de los pasajeros perdidos, en porcentaje
-    private static float maxPorcentajePasajerosPerdidos=0.2f;
+    private final static float maxPorcentajePasajerosPerdidos=0.2f;
     //Restricción de la homogeneidad en el porcentaje de pasajeros que pierden las aerolíneas
-    private static float maxPorcentajeDesviacionMediaPasajerosPerdidosPorCompanyia=0.2f;
+    private final static float maxPorcentajeDesviacionMediaPasajerosPerdidosPorCompanyia=0.2f;
     //Restricción de la homogeneidad en el porcentaje de pérdida de ingresos por turismo en los destinos.
-    private static float maxPorcentajeDesviacionMediaIngresosDestinos=0.2f;
+    private final static float maxPorcentajeDesviacionMediaIngresosDestinos=0.2f;
     //Restricción sobre la conectividad perdida en los destinos.
-    private static float maxPorcentajeConectividadPerdida=0.2f;
+    private final static float maxPorcentajeConectividadPerdida=0.2f;
     //Restricción del porcentaje de pérdida de ingresos por turismo en los destinos
-    private static float maxPorcentajeDineroPerdidoRegion = 0.2f;
+    private final static float maxPorcentajeDineroPerdidoRegion = 0.2f;
     //TODO: Calcular un valor correcto para la penalización
     //Valor que se añade a la función objetivo cuando una solución no cumple una restricción
-    private final static int penalizacionRestriccion=1000;
+    private final static int penalizacionRestriccion=1000000;
     //La solución con la que trabajamos, se modifica en evaluate fitness
     private static boolean[] solucion;
-    //TODO: Hacer la función evaluteFitness
+
+    /**
+     * Calcula el fitness de una partícula, comprueba todos los objetivos/restricciones
+     * @param positions La posición de una partícula
+     * @return Devuelve su fitness
+     */
+    public static double evaluateFitness(boolean[] positions) {
+        solucion=positions;
+        return calculoRiesgoImportado()+calculoEconomicoPerdidaPasajeros()+calculoPerdidaIngresosDestinos()+
+                calculoHomogeneidadPasajerosAerolineas()+calculoHomogeneidadIngresosTurismoDestinos()+
+                calculoConectividadDestinos();
+    }
     //TODO: Hay que cargar todos los datos, ahora mismo los estoy dando por hecho, cada dimensión una conexión
     /**
      * Calcula el fitness del riesgo importado dada una solución
@@ -57,11 +66,11 @@ public class Criterios{
         int totalPasajerosConexiones=0;
         for(int i=0;i<numDimensions;i++){
             totalPasajeros=totalPasajeros+pasajerosConexion[i];
-            if(solucion[i]==true){
+            if(solucion[i]){
                 totalPasajerosConexiones=totalPasajerosConexiones+pasajerosConexion[i];
             }
         }
-        float porcentajePerdido=1-totalPasajerosConexiones/totalPasajeros;
+        float porcentajePerdido=1-(float)totalPasajerosConexiones/totalPasajeros;
         if(porcentajePerdido>maxPorcentajePasajerosPerdidos){
             return penalizacionRestriccion;
         }
@@ -78,11 +87,11 @@ public class Criterios{
         int totalIngresosConexion=0;
         for(int i=0;i<numDimensions;i++){
             totalIngresos=totalIngresos+ingresosDestinoConexion[i];
-            if(solucion[i]==true){
+            if(solucion[i]){
                 totalIngresosConexion=totalIngresosConexion+ingresosDestinoConexion[i];
             }
         }
-        float porcentajePerdido=1-totalIngresosConexion/totalIngresos;
+        float porcentajePerdido=1-(float)totalIngresosConexion/totalIngresos;
         if(porcentajePerdido>maxPorcentajeDineroPerdidoRegion){
             return penalizacionRestriccion;
         }
@@ -97,9 +106,9 @@ public class Criterios{
     private static int calculoHomogeneidadPasajerosAerolineas(){
         int i;
         int[][] pasajerosConexion=new int[numDimensions][numCompanyias];
-        int totalPasajeros[]=new int[numCompanyias];
-        int totalPasajerosConexiones[]=new int[numCompanyias];
-        float porcentajePerdido[] = new float[numCompanyias];
+        int[] totalPasajeros=new int[numCompanyias];
+        int[] totalPasajerosConexiones=new int[numCompanyias];
+        float[] porcentajePerdido = new float[numCompanyias];
         float porcentajePerdidoMedia = 0.0f;
         float porcentajePerdidoDesviacionMedia = 0.0f;
         for(int j=0;j<numCompanyias;j++){
@@ -190,7 +199,7 @@ public class Criterios{
         List<Float> porcentajePerdido = new ArrayList<>();
         int conectividadTotal=0;
         float sumaConectividadConexiones=0.0f;
-        float porcentajeConectividadPerdida=0;
+        float porcentajeConectividadPerdida;
         int i;
         for(i=0;i<numDimensions;i++){
             if(numVuelosAeropuerto.get(aeropuertosEntradaRepetidos[i])!=null){

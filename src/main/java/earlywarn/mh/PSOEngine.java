@@ -12,10 +12,10 @@ public class PSOEngine {
     int numParticles = 30; //Number of particles in swarm
     int maxIterations = 10000; //Max number of iterations
     //TODO: Modificar para convertir el algoritmo en dinámico
-    double Is = 4/numDimensions; //Stickiness factor
+    double Is = (double)4/numDimensions; //Stickiness factor
     double Ig = (1-Is)/3;//Social factor
     double Ip = 2*Ig;//Cognitive factor
-    double linearDecayStickiness = 1/(8*maxIterations/100); //Decay of the stickiness in every iteration
+    double linearDecayStickiness = (double)1/((double)8*maxIterations/100); //Decay of the stickiness in every iteration
     Random generadorAleatorio = new Random();
 
     public PSOEngine (int numDimensions, int numParticles, int maxIterations, double Is, double Ig, double Ip,
@@ -103,11 +103,7 @@ public class PSOEngine {
     public void updatePosition(Particle particle) {
         for (int i=0; i<numDimensions; i++) {
             if(generadorAleatorio.nextDouble()<particle.flippingProbability[i]){
-                if(particle.position[i]){
-                    particle.position[i]=false;
-                }else{
-                    particle.position[i]=true;
-                }
+                particle.position[i]=!particle.position[i];
                 particle.stickiness[i]=1;
             }
         }
@@ -122,29 +118,11 @@ public class PSOEngine {
         boolean[] best = null;
         double bestFitness = Double.MAX_VALUE;
         for(int i=0; i<numParticles; i++) {
-            //CAMBIAR COMO SE CALCULA EL FITNESS
-            /*if (evaluateFitness(particles[i].personalBest)<= bestFitness) {
-                bestFitness = evaluateFitness(particles[i].personalBest);
+            if (Criterios.evaluateFitness(particles[i].personalBest)<= bestFitness) {
+                bestFitness = Criterios.evaluateFitness(particles[i].personalBest);
                 best = particles[i].personalBest;
-            }*/
+            }
         }
         return best;
     }
-
-    /**
-     * Method to calculate the fitness of a particle using the Rastrigin function
-     * @param positions The position vector to evaluate the fitness for
-     * @return The fitness of the particle
-     */
-    /*
-    public double evaluateFitness(double[] positions) {
-        double fitness = 0;
-        for (int i=0; i<numDimensions; i++) {
-            fitness = fitness + (Math.pow(positions[i],2)-(10*Math.cos(2*Math.PI*positions[i])));
-        }
-
-        fitness = fitness + (10*numDimensions);
-        return fitness;
-    }
-    */
 }
