@@ -96,12 +96,6 @@ public class GestorEntornos {
 	 * @return Operación horizontal (cierre o apertura de líneas) que se debería realizar en el próximo entorno
 	 */
 	private OperaciónLínea entornoX(int numLíneasAbiertas, double temperaturaActual) {
-		/*
-		 * Primero generamos una probabilidad aleatoria de realizar una de las dos operaciones. Cuando la temperatura
-		 * es alta, esta probabilidad tendrá más peso que el cálculo que se hace a continuación.
-		 */
-		double probabilidadAbrirRandom = random.nextDouble();
-
 		// Seleccionar los casos que votarán cuál debe ser la siguiente operación
 		int numMinLíneas = Math.round(numLíneasAbiertas - numLíneas * config.distanciaMemoriaX);
 		int numMaxLíneas = Math.round(numLíneasAbiertas + numLíneas * config.distanciaMemoriaX);
@@ -135,12 +129,11 @@ public class GestorEntornos {
 		double probabilidadAbrirCasos = (double) votosAbrir / (votosAbrir + votosCerrar);
 
 		/*
-		 * Las dos probabilidades (aleatoria y basada en casos) tendrán diferente peso según el valor
-		 * de temperatura.
+		 * En función del porcentaje de temperatura restante, se va transicionando de una elección completamente
+		 * aleatoria a una basada en la probabilidad antes calculada.
 		 */
 		double porcentTemperatura = temperaturaActual / temperaturaInicial;
-		double probabilidadFinal = probabilidadAbrirRandom * porcentTemperatura +
-			probabilidadAbrirCasos * (1 - porcentTemperatura);
+		double probabilidadFinal = 0.5 * porcentTemperatura + probabilidadAbrirCasos * (1 - porcentTemperatura);
 
 		if (random.nextDouble() < probabilidadFinal) {
 			return OperaciónLínea.ABRIR;

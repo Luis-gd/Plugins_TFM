@@ -23,7 +23,7 @@ public class MemoriaEstadosY {
 		this.conversorLíneas = conversorLíneas;
 		this.numLíneas = numLíneas;
 		tamañoMemoria = config.getTamañoMemoriaY();
-		tiempoSinDistancia = new int[numLíneas];
+		tiempoSinDistancia = new int[numLíneas + 1];
 	}
 
 	/**
