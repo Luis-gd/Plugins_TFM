@@ -132,6 +132,14 @@ public class Prueba {
 		return consultas.getSIRFinalPorVuelo(idVuelo);
 	}
 
+	@UserFunction
+	@Description("Calcula el riesgo acumulado hasta la fecha del aeropuerto con identificador <<idAeropuerto>>. Devuelve un valor decimal que" +
+			"representa el riesgo")
+	public double getRiesgoAeropuerto(@Name("idAeropuerto") Long idAeropuerto) {
+		Consultas consultas = new Consultas(db);
+		return consultas.getRiesgoAeropuerto(idAeropuerto);
+	}
+
 	// -- Líneas --
 
 	@UserFunction

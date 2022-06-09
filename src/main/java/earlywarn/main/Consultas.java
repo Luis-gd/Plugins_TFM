@@ -24,8 +24,11 @@ public class Consultas {
 	public static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
 
 	// -- Valores constantes --
-	private final double beta = 0.167; // Índice de transimisión
-	private final double alpha = 0.1;  // Índice de recuperación
+	//private final double beta = 0.167; // Índice de transimisión
+	//private final double alpha = 0.1;  // Índice de recuperación
+	private final double alpha = 1.0/(9*96);
+	private final double beta = (0.253/96);
+
 
 	/*
 	 * La instancia de la base de datos.
@@ -596,22 +599,24 @@ public class Consultas {
 					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
 							"WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
 							"(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
-							"RETURN f.passengers, iz.population, r.recovered, r.confirmed, r.deaths"
+							"RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
 			)){
 				List<String> columnas = res.columns();
 				while (res.hasNext()) {
 					Map<String, Object> row = res.next();
-					double passengers = (Long) row.get(columnas.get(0));
-					double population = (Long) row.get(columnas.get(1));
-					double recovered = (Long) row.get(columnas.get(2));
+					double occupancyPercentage = (Double) row.get(columnas.get(0));
+					double seatsCapacity = (Long) row.get(columnas.get(1));
+					double population = (Long) row.get(columnas.get(2));
 					double confirmed = (Long) row.get(columnas.get(3));
 					double deaths = (Long) row.get(columnas.get(4));
+					double recovered = (Long) row.get(columnas.get(5)) + deaths;
 
 					//Cálculo del SIR
-					double susceptible = population-recovered-deaths;
-					double s0 = passengers*(susceptible/population);
-					double i0 = passengers*(confirmed/population);
-					double r0 = passengers*((recovered+deaths)/population);
+					double flightOccupancy = seatsCapacity*(occupancyPercentage/100);
+					double susceptible = population-(confirmed-recovered);
+					double s0 = flightOccupancy*susceptible/population;
+					double i0 = flightOccupancy*confirmed/population;
+					double r0 = flightOccupancy*recovered/population;
 					ret.add(s0);
 					ret.add(i0);
 					ret.add(r0);
@@ -642,21 +647,23 @@ public class Consultas {
 		try(Transaction tx = db.beginTx()){
 			try (Result res = tx.execute(
 					"MATCH(f:FLIGHT{flightId:" + idVuelo + "}) RETURN duration.between(datetime(f.instantOfDeparture)," +
-							"datetime(f.instantOfArrival)).seconds, f.passengers"
+							"datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
 			)){
 				List<String> columnas = res.columns();
 				while (res.hasNext()) {
 					Map<String, Object> row = res.next();
 					double durationInSeconds = (Long) row.get(columnas.get(0));
-					double passengers = (Long) row.get(columnas.get(1));
+					double occupancyPercentage = (Double) row.get(columnas.get(1));
+					double seatsCapacity = (Long) row.get(columnas.get(2));
+					double flightOccupancy = seatsCapacity*(occupancyPercentage/100);
 
 					//Bucle para calcular el SIR final
 					for (int i = 0; i < ((durationInSeconds/60)/15); i++){
 						double sAux = sFinal;
 						double iAux = iFinal;
 						double rAux = rFinal;
-						sFinal = sAux-beta*sAux*iAux/passengers;
-						iFinal = iAux+beta*sAux*iAux/passengers-alpha*iAux;
+						sFinal = sAux-beta*sAux*iAux/flightOccupancy;
+						iFinal = iAux+beta*sAux*iAux/flightOccupancy-alpha*iAux;
 						rFinal = rAux+alpha*iAux;
 					}
 					ret.add(sFinal);
@@ -666,4 +673,18 @@ public class Consultas {
 		}
 		return ret;
 	}
+
+	/**
+	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador <<idAerpuerto>> hasta la fecha actual.
+	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
+	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
+	 * @return Valor decimal representativo del riesgo del aeropuerto.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 */
+	public double getRiesgoAeropuerto(Number idAeropuerto){
+		return 0;
+	}
+
 }
