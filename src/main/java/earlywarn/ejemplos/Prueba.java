@@ -19,6 +19,10 @@ public class Prueba {
 	@Context
 	public GraphDatabaseService db;
 
+	// -- Valores constantes --
+	private final static String alphaDef= "" + (1.0/(9*96));
+	private final static String betaDef = "" + (0.253/96);
+
 	// -- Ejemplos genéricos --
 
 	@UserFunction
@@ -126,10 +130,13 @@ public class Prueba {
 
 	@UserFunction
 	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al final del vuelo con el identificador <<idVuelo>>, " +
-			"siendo el valor de infectados el riesgo del vuelo. La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
-	public List<Double> getSIRFinalPorVuelo(@Name("idVuelo") Long idVuelo) {
+			"siendo el valor de infectados el riesgo del vuelo. Se usan los valores de los índices de transmisión (beta) y recuperación (alpha)" +
+			"por defecto si el usuario no los especifica. La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
+	public List<Double> getSIRFinalPorVuelo(@Name("idVuelo") Long idVuelo,
+											@Name(value = "alphaValue", defaultValue = alphaDef) Number alphaValue,
+											@Name(value = "betaValue", defaultValue = betaDef) Number betaValue) {
 		Consultas consultas = new Consultas(db);
-		return consultas.getSIRFinalPorVuelo(idVuelo);
+		return consultas.getSIRFinalPorVuelo(idVuelo, alphaValue, betaValue);
 	}
 
 	@UserFunction

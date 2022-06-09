@@ -24,10 +24,10 @@ public class Consultas {
 	public static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
 
 	// -- Valores constantes --
-	//private final double beta = 0.167; // Índice de transimisión
-	//private final double alpha = 0.1;  // Índice de recuperación
-	private final double alpha = 1.0/(9*96);
-	private final double beta = (0.253/96);
+	/* private final double beta = 0.167; // Índice de transimisión
+	private final double alpha = 0.1;  // Índice de recuperación
+	private final double alphaDef= 1.0/(9*96);
+	private final double betaDef = (0.253/96); */
 
 
 	/*
@@ -626,17 +626,24 @@ public class Consultas {
 		return ret;
 	}
 
+
+
 	/**
 	 * Devuelve una lista con los cálculos del SIR finales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
-	 * en este mismo orden, haciendo el número de infectados referencia al RIESGO del vuelo.
+	 * en este mismo orden, haciendo el número de infectados referencia al RIESGO del vuelo, usando los valores de índice
+	 * de transmisión y recuperación especificados.
 	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR final.
+	 * @param alphaValue Valor referente al índice de recuperación del virus, alpha.
+	 * @param betaValue Valor referente al índice de transmisión del virus, beta.
 	 * @return Lista con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al final del vuelo.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public List<Double> getSIRFinalPorVuelo(Number idVuelo){
+	public List<Double> getSIRFinalPorVuelo(Number idVuelo, Number alphaValue, Number betaValue){
+		double alpha = (Double) alphaValue;
+		double beta = (Double) betaValue;
 		// Propiedades props = new Propiedades(db);
 		List<Double> ret = new ArrayList<>();
 		List<Double> initial = getSIRInicialPorVuelo(idVuelo);
