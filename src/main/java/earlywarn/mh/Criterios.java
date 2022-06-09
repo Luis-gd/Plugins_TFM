@@ -33,6 +33,8 @@ public class Criterios{
     static List<String> nombreAeropuertosSalida = new ArrayList<>();
     //Contiene el nombre de las compañías aéreas
     static List<String> nombreCompanyias = new ArrayList<>();
+    //Listado de vuelos que hay entre los aeropuertos, puede haber más de un vuelo entre los mismos aeropuertos
+    static List<conexion> listaVuelos = new ArrayList<>();
     //Los caracteres que se utilizan para separar los CSV
     static String COMMA_DELIMITER=",";
 
@@ -299,8 +301,21 @@ public class Criterios{
         }
     }
 
-    private static void cargaConexionesYRiesgoImportado(){
-
+    /**
+     * Función que carga todos los vuelos que se van a realizar ese día
+     */
+    private static void cargaVuelos(){
+        String ubicacionArchivo = "datos/sir.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(COMMA_DELIMITER);
+                conexion anyadir = new conexion(values[1],values[2]);
+                listaVuelos.add(anyadir);
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
     }
 
     //TODO:Modificar para que cargue todos los datos llamando a este método
@@ -308,5 +323,6 @@ public class Criterios{
         cargaAeropuertosEntrada();
         cargaAeropuertosSalida();
         cargaCompanyias();
+        cargaVuelos();
     }
 }
