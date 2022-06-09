@@ -675,16 +675,37 @@ public class Consultas {
 	}
 
 	/**
-	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador <<idAerpuerto>> hasta la fecha actual.
+	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador <<idAerpuerto>> entre las fechas de inicio
+	 * y fin indicadas.
 	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
+	 * @param fechaInicio Primer día a tener en cuenta
+	 * @param fechaFin Último día a tener en cuenta
 	 * @return Valor decimal representativo del riesgo del aeropuerto.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public double getRiesgoAeropuerto(Number idAeropuerto){
-		return 0;
+	public double getRiesgoAeropuerto(String idAeropuerto, LocalDate fechaInicio, LocalDate fechaFin){
+		String fechaInicioStr = fechaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String fechaFinStr = fechaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+
+		if(propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)){
+			try(Transaction tx = db.beginTx()) {
+				try (Result res = tx.execute(
+						"MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay)<-[]-" +
+								"(f:FLIGHT) WHERE date(\"" + fechaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + fechaFinStr +
+								"\") RETURN sum(f.flightIfinal)"
+				)) {
+					Map<String, Object> row = res.next();
+					return Utils.resultadoADouble(row.get(res.columns().get(0)));
+				}
+			}
+		} else  {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
+					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
+		}
 	}
 
 }
