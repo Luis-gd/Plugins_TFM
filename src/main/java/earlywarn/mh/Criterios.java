@@ -31,6 +31,8 @@ public class Criterios{
     static List<String> nombreAeropuertosEntradaEspanya = new ArrayList<>();
     //Contiene el nombre de los aeropuertos de salida
     static List<String> nombreAeropuertosSalida = new ArrayList<>();
+    //Contiene el nombre de las compañías aéreas
+    static List<String> nombreCompanyias = new ArrayList<>();
     //Los caracteres que se utilizan para separar los CSV
     static String COMMA_DELIMITER=",";
 
@@ -248,6 +250,10 @@ public class Criterios{
         return 0;
     }
     //TODO:Implementando carga de datos en CSV, más adelante funcionará con llamadas a Neo4j
+
+    /**
+     * Función que carga los aeropuertos de entrada
+     */
     private static void cargaAeropuertosEntrada(){
         String ubicacionArchivo = "datos/aeropuertos_entradas.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
@@ -261,6 +267,9 @@ public class Criterios{
         }
     }
 
+    /**
+     * Función que carga los aeropuertos de salida
+     */
     private static void cargaAeropuertosSalida(){
         String ubicacionArchivo = "datos/aeropuertos_salida.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
@@ -273,11 +282,31 @@ public class Criterios{
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
     }
-    //TODO: Seguir por aquí
+
+    /**
+     * Función que carga el código de las compañías aéreas
+     */
+    private static void cargaCompanyias(){
+        String ubicacionArchivo = "datos/companyias.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(COMMA_DELIMITER);
+                nombreCompanyias.add(values[0]);
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+
+    private static void cargaConexionesYRiesgoImportado(){
+
+    }
 
     //TODO:Modificar para que cargue todos los datos llamando a este método
     public static void initCriterios(){
         cargaAeropuertosEntrada();
         cargaAeropuertosSalida();
+        cargaCompanyias();
     }
 }
