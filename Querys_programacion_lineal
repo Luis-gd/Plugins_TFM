@@ -19,7 +19,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
 WHERE c.countryName= 'Spain'
 AND not (f.flightIfinal = '')
 AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
-RETURN f.flightIfinal AS sir, entrada.airportName AS aeropuertoLlegada, salida.airportName AS aeropuertoSalida
+RETURN f.flightIfinal AS sir, entrada.airportName AS aeropuertoLlegada, salida.airportName AS aeropuertoSalida ORDER BY  entrada.airportName, salida.airportName
 
 Get_pasajeros_por_vuelo:
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
