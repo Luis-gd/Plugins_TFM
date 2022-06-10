@@ -12,6 +12,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +22,10 @@ import java.util.Map;
 public class Añadir {
 	@Context
 	public GraphDatabaseService db;
+
+	// -- Valores constantes --
+	private final static String alphaDef= "" + (1.0/(9*96));
+	private final static String betaDef = "" + (0.253/96);
 
 	/**
 	 * Requerido por Neo4J
@@ -542,6 +547,87 @@ public class Añadir {
 
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_REPORTE_PAÍS, true);
+		}
+	}
+
+	/**
+	 * Calcula y añade al vuelo con identificador <<idVuelo>>> los valores referentes al SIR (Susceptibles,
+	 * Infectados, Recuperados) al inicio y al final del vuelo.
+	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre aeropuerto y país.
+	 * @param idVuelo Hace referencia al identificador del vuelo del que calcular el SIR.
+	 * @param alphaValue Es el valor del índice de recuperación de la enfermedad.
+	 * @param betaValue Es el valor del índice de transmissión de la enfermedad.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Añadir#añadirTuristasVuelo}, la operación ETL {@link Añadir#añadirGastoTurístico(String)} o la operación
+	 * ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void calcularSIRVuelo(@Name("idVuelo") Long idVuelo,
+								 @Name(value = "alphaValue", defaultValue = alphaDef) Number alphaValue,
+								 @Name(value = "betaValue", defaultValue = betaDef) Number betaValue){
+
+		//TODO: limpieza código + organización -> funciona con vuelos existentes, al crear nuevos la query no devuelve nada, puede ser por relaciones?
+
+		Propiedades propiedades = new Propiedades(db);
+
+		double alpha = (Double) alphaValue;
+		double beta = (Double) betaValue;
+
+		if(propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)){
+			try(Transaction tx = db.beginTx()) {
+				double s0 = 0, i0 = 0, r0 = 0;
+				/* Consulta para obtener datos para calcular el SIR al inicio y final del vuelo */
+				try (Result res = tx.execute(
+						"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
+								"WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
+								"(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
+								"RETURN f.occupancyPercentage, f.seatsCapacity, duration.between(datetime(f.instantOfDeparture),datetime(f.instantOfArrival)).seconds, " +
+								"iz.population, r.confirmed, r.deaths, r.recovered"
+				)) {
+					List<String> columnas = res.columns();
+					boolean hasNext = res.hasNext();
+					while (res.hasNext()) {
+						Map<String, Object> row = res.next();
+						double occupancyPercentage = (Double) row.get(columnas.get(0));
+						double seatsCapacity = (Long) row.get(columnas.get(1));
+						double durationInSeconds = (Long) row.get(columnas.get(2));
+						double population = (Long) row.get(columnas.get(3));
+						double confirmed = (Long) row.get(columnas.get(4));
+						double deaths = (Long) row.get(columnas.get(5));
+						double recovered = (Long) row.get(columnas.get(6)) + deaths;
+
+						//Cálculo del SIR inicial
+						double flightOccupancy = seatsCapacity * (occupancyPercentage / 100);
+						double susceptible = population - (confirmed - recovered);
+						s0 = flightOccupancy * susceptible / population;
+						i0 = flightOccupancy * confirmed / population;
+						r0 = flightOccupancy * recovered / population;
+
+						double sFinal = s0;
+						double iFinal = i0;
+						double rFinal = r0;
+						
+						//Bucle para calcular el SIR final
+						for (int i = 0; i < ((durationInSeconds/60)/15); i++){
+							double sAux = sFinal;
+							double iAux = iFinal;
+							double rAux = rFinal;
+							sFinal = sAux-beta*sAux*iAux/flightOccupancy;
+							iFinal = iAux+beta*sAux*iAux/flightOccupancy-alpha*iAux;
+							rFinal = rAux+alpha*iAux;
+						}
+
+						// Query para guardar los valores SIR del vuelo calculados en la base de datos
+						tx.execute("MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + s0 + ", f.flightI0 = " + i0 +
+								",f.flightR0 = " + r0 + ", f.flightSfinal = " + sFinal + ", f.flightIfinal = " + iFinal + ",f.flightRfinal = " + rFinal);
+					}
+
+					tx.commit();
+				}
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+					"que añade conexiones faltantes entre aeropuertos y países antes de ejecutarla.");
 		}
 	}
 }
