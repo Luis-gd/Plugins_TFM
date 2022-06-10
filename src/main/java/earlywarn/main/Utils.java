@@ -80,6 +80,21 @@ public class Utils {
 	}
 
 	/**
+	 * Calcula la desviación (distancia) de cada elemento de la lista proporcionada con respecto al valor
+	 * indicado y luego calcula la media de esas desviaciones y la devuelve.
+	 * @param elementos Lista de elementos sobre los que calcular la desviación media
+	 * @param valor Valor con el que comparar cada elemento
+	 * @return Desviación media de los diferentes elementos de la lista con respecto al valor indicado
+	 */
+	public static double getDesviaciónMedia(List<Double> elementos, double valor) {
+		double ret = 0;
+		for (Double elem : elementos) {
+			ret += Math.abs(elem - valor);
+		}
+		return ret / elementos.size();
+	}
+
+	/**
 	 * Convierte una lista de nodos XML en una lista de instancias de Element, manteniendo solo los nodos de ese
 	 * tipo.
 	 * @param lista Lista de nodos a procesar

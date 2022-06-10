@@ -16,8 +16,8 @@ import java.util.TreeMap;
  * de pasajeros restantes.
  */
 public class HomogeneidadAeropuertos extends Criterio {
-	private final Map<String, Long> pasajerosPorAeropuertoInicial;
-	private final Map<String, Long> pasajerosPorAeropuertoActual;
+	protected final Map<String, Long> pasajerosPorAeropuertoInicial;
+	protected final Map<String, Long> pasajerosPorAeropuertoActual;
 	private final String idPaís;
 	private final RegistroAeropuertos aeropuertos;
 
@@ -55,11 +55,7 @@ public class HomogeneidadAeropuertos extends Criterio {
 			}
 		}
 
-		/*
-		 * Después calculamos la desviación típica de estos porcentajes y obtenemos su ratio con respecto a la
-		 * desviación máxima posible
-		 */
-		return 1 - Utils.getStd(porcentajes) / Utils.getStdMáxima(pasajerosPorAeropuertoInicial.size());
+		return getPorcentajeFinal(porcentajes);
 	}
 
 	@Override
@@ -91,5 +87,19 @@ public class HomogeneidadAeropuertos extends Criterio {
 					idLínea + "\", no está en la lista global de pasajeros por aeropuerto y será ignorado");
 			}
 		}
+	}
+
+	/**
+	 * Calcula el valor porcentual del criterio una vez que está calculada la lista con el porcentaje de pasajeros
+	 * restantes por cada aeropuerto
+	 * @param porcentajes Lista que contiene el porcentaje de pasajeros restantes para cada aeropuerto
+	 * @return Valor porcentual del criterio
+	 */
+	protected double getPorcentajeFinal(List<Double> porcentajes) {
+		/*
+		 * Calculamos la desviación típica de estos porcentajes y obtenemos su ratio con respecto a la
+		 * desviación máxima posible
+		 */
+		return 1 - Utils.getStd(porcentajes) / Utils.getStdMáxima(pasajerosPorAeropuertoInicial.size());
 	}
 }

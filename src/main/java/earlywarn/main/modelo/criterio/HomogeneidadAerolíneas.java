@@ -15,8 +15,8 @@ import java.util.TreeMap;
  * restantes.
  */
 public class HomogeneidadAerolíneas extends Criterio {
-	private final Map<String, Long> pasajerosPorAerolíneaInicial;
-	private final Map<String, Long> pasajerosPorAerolíneaActual;
+	protected final Map<String, Long> pasajerosPorAerolíneaInicial;
+	protected final Map<String, Long> pasajerosPorAerolíneaActual;
 
 	public HomogeneidadAerolíneas(Map<String, Long> pasajerosPorAerolíneaInicial) {
 		this.pasajerosPorAerolíneaInicial = pasajerosPorAerolíneaInicial;
@@ -49,11 +49,7 @@ public class HomogeneidadAerolíneas extends Criterio {
 			}
 		}
 
-		/*
-		 * Después calculamos la desviación típica de estos porcentajes y obtenemos su ratio con respecto a la
-		 * desviación máxima posible
-		 */
-		return 1 - Utils.getStd(porcentajes) / Utils.getStdMáxima(pasajerosPorAerolíneaInicial.size());
+		return getPorcentajeFinal(porcentajes);
 	}
 
 	@Override
@@ -76,5 +72,19 @@ public class HomogeneidadAerolíneas extends Criterio {
 					línea.id + "\", no está en la lista global de pasajeros por aerolínea y será ignorada");
 			}
 		}
+	}
+
+	/**
+	 * Calcula el valor porcentual del criterio una vez que está calculada la lista con el porcentaje de pasajeros
+	 * restantes por cada aerolínea
+	 * @param porcentajes Lista que contiene el porcentaje de pasajeros restantes para cada aerolínea
+	 * @return Valor porcentual del criterio
+	 */
+	protected double getPorcentajeFinal(List<Double> porcentajes) {
+		/*
+		 * Calculamos la desviación típica de estos porcentajes y obtenemos su ratio con respecto a la
+		 * desviación máxima posible
+		 */
+		return 1 - Utils.getStd(porcentajes) / Utils.getStdMáxima(pasajerosPorAerolíneaInicial.size());
 	}
 }

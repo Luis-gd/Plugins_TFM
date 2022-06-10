@@ -25,5 +25,13 @@ public enum IDCriterio {
 	 * Conectividad de la red de tráfico aéreo. Solo tiene en cuenta la parte de esta conectividad que se puede perder
 	 * al cerrar vuelos que entran al país actual.
 	 */
-	CONECTIVIDAD
+	CONECTIVIDAD,
+	/*
+	 * Versión lineal de HOMOGENEIDAD_AEROLÍNEAS
+	 */
+	HOMOGENEIDAD_AEROLÍNEAS_LINEAL,
+	/*
+	 * Versión lineal de HOMOGENEIDAD_AEROPUERTOS
+	 */
+	HOMOGENEIDAD_AEROPUERTOS_LINEAL
 }
