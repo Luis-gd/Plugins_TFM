@@ -11,13 +11,13 @@ import java.util.Map;
  * Versión lineal del cálculo de la homogeneidad sobre aeropuertos. En vez de usar la desviación típica para el cálculo,
  * tiene en cuenta la desviación en el porcentaje de pasajeros restantes con respecto a la media de todos
  * los aeropuertos.
+ * Este criterio tiene el mismo ID que su versión no lineal.
  */
 public class HomogeneidadAeropuertosLineal extends HomogeneidadAeropuertos {
 
 	public HomogeneidadAeropuertosLineal(Map<String, Long> pasajerosPorAeropuertoInicial, String idPaís,
 										 RegistroAeropuertos aeropuertos) {
 		super(pasajerosPorAeropuertoInicial, idPaís, aeropuertos);
-		id = IDCriterio.HOMOGENEIDAD_AEROPUERTOS_LINEAL;
 	}
 
 	@Override
