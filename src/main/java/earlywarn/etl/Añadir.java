@@ -566,7 +566,7 @@ public class Añadir {
 								 @Name(value = "alphaValue", defaultValue = alphaDef) Number alphaValue,
 								 @Name(value = "betaValue", defaultValue = betaDef) Number betaValue){
 
-		//TODO: limpieza código + organización -> funciona con vuelos existentes, al crear nuevos la query no devuelve nada, puede ser por relaciones?
+		//TODO: limpieza código + organización
 
 		Propiedades propiedades = new Propiedades(db);
 
