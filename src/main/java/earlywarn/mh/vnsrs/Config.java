@@ -2,6 +2,7 @@ package earlywarn.mh.vnsrs;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;
+import earlywarn.mh.vnsrs.restricción.Restricción;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -11,8 +12,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Clase que representa los datos de configuración para la metaheurística
@@ -30,6 +30,8 @@ public class Config {
 	public LocalDate díaFin;
 	// Pesos de los diferentes criterios
 	public Map<IDCriterio, Float> pesos;
+	// Restricciones a las soluciones factibles
+	public ListaRestricciones restricciones;
 
 	/**
 	 * Instancia la configuración
@@ -99,6 +101,17 @@ public class Config {
 					"la configuración del programa, no corresponde con ningún criterio.", e);
 			}
 			pesos.put(idCriterio, Float.parseFloat(elemCriterio.getTextContent()));
+		}
+
+		restricciones = new ListaRestricciones();
+		Element elemRestricciones = Utils.toLista(raíz.getElementsByTagName("restricciones")).get(0);
+		for (Element elemRestricción : Utils.toLista(elemRestricciones.getElementsByTagName("restricción"))) {
+			ListaParámetros parámetros = new ListaParámetros();
+			String idRestricción = elemRestricción.getAttribute("id");
+			for (Element elemParámetro : Utils.toLista(elemRestricción.getElementsByTagName("param"))) {
+				parámetros.añadir(elemParámetro.getAttribute("id"), elemParámetro.getTextContent());
+			}
+			restricciones.añadir(Restricción.crear(idRestricción, parámetros));
 		}
 	}
 }

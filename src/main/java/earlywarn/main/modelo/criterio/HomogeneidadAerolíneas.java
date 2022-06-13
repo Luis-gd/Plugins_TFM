@@ -34,22 +34,7 @@ public class HomogeneidadAerolíneas extends Criterio {
 
 	@Override
 	public double getPorcentaje() {
-		// Primero obtenemos una lista con el porcentaje de pasajeros restantes para cada aerolínea
-		List<Double> porcentajes = new ArrayList<>();
-		for (Map.Entry<String, Long> entrada : pasajerosPorAerolíneaInicial.entrySet()) {
-			String aerolínea = entrada.getKey();
-			Long valorInicial = entrada.getValue();
-			Long valorActual = pasajerosPorAerolíneaActual.get(aerolínea);
-
-			if (valorActual != null) {
-				porcentajes.add((double) valorActual / valorInicial);
-			} else {
-				throw new IllegalStateException("El número de pasajeros en la aerolínea \"" + aerolínea +
-					"\" no está en el mapa de pasajeros por aerolínea actual");
-			}
-		}
-
-		return getPorcentajeFinal(porcentajes);
+		return getPorcentajeFinal(getPorcentajes());
 	}
 
 	@Override
@@ -72,6 +57,44 @@ public class HomogeneidadAerolíneas extends Criterio {
 					línea.id + "\", no está en la lista global de pasajeros por aerolínea y será ignorada");
 			}
 		}
+	}
+
+	/**
+	 * @return Porcentaje de vuelos perdidos por la aerolínea que más vuelos ha perdido, o null si no hay aerolíneas
+	 * registradas.
+	 */
+	public Double getPérdidaMáxima() {
+		Double menor = null;
+		for (Double porcentaje : getPorcentajes()) {
+			if (menor == null || porcentaje < menor) {
+				menor = porcentaje;
+			}
+		}
+		if (menor == null) {
+			return menor;
+		} else {
+			return 1 - menor;
+		}
+	}
+
+	/**
+	 * @return Lista con el porcentaje de vuelos restantes para cada aerolínea
+	 */
+	private List<Double> getPorcentajes() {
+		List<Double> porcentajes = new ArrayList<>();
+		for (Map.Entry<String, Long> entrada : pasajerosPorAerolíneaInicial.entrySet()) {
+			String aerolínea = entrada.getKey();
+			Long valorInicial = entrada.getValue();
+			Long valorActual = pasajerosPorAerolíneaActual.get(aerolínea);
+
+			if (valorActual != null) {
+				porcentajes.add((double) valorActual / valorInicial);
+			} else {
+				throw new IllegalStateException("El número de pasajeros en la aerolínea \"" + aerolínea +
+					"\" no está en el mapa de pasajeros por aerolínea actual");
+			}
+		}
+		return porcentajes;
 	}
 
 	/**

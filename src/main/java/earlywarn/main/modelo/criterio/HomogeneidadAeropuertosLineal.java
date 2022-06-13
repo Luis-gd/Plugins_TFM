@@ -18,6 +18,7 @@ public class HomogeneidadAeropuertosLineal extends HomogeneidadAeropuertos {
 	public HomogeneidadAeropuertosLineal(Map<String, Long> pasajerosPorAeropuertoInicial, String idPaís,
 										 RegistroAeropuertos aeropuertos) {
 		super(pasajerosPorAeropuertoInicial, idPaís, aeropuertos);
+		id = IDCriterio.HOMOGENEIDAD_AEROPUERTOS_LINEAL;
 	}
 
 	@Override

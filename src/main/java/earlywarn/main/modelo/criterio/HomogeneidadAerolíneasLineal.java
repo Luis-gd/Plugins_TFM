@@ -16,6 +16,7 @@ public class HomogeneidadAerolíneasLineal extends HomogeneidadAerolíneas {
 
 	public HomogeneidadAerolíneasLineal(Map<String, Long> pasajerosPorAerolíneaInicial) {
 		super(pasajerosPorAerolíneaInicial);
+		id = IDCriterio.HOMOGENEIDAD_AEROLÍNEAS_LINEAL;
 	}
 
 	@Override

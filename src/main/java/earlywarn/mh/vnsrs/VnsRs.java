@@ -1,5 +1,6 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.definiciones.IDCriterio;
 import earlywarn.definiciones.IRecocidoSimulado;
 import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.definiciones.OperaciónLínea;
@@ -162,27 +163,16 @@ public class VnsRs implements IRecocidoSimulado {
 	 * Inicializa las variables necesarias para ejecutar el algoritmo
 	 */
 	private void init() {
+		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
 		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db)
-			.añadirCriterio(new RiesgoImportado(
-				consultas.getRiesgoPorPaís(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new NumPasajeros(
-				consultas.getPasajerosTotales(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new IngresosTurísticos(
-				consultas.getIngresosTurísticosTotales(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new HomogeneidadAerolíneas(
-				consultas.getPasajerosPorAerolínea(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new HomogeneidadAeropuertos(
-				consultas.getPasajerosPorAeropuerto(config.díaInicio, config.díaFin, config.país), config.país,
-				registroAeropuertos))
-			/*
-			 * Esto tarda 30s en ejecutar, así que de momento fijo el valor de conectividad para España entre
-			 * el 24/9/2020 y el 30/9/2020 (33837)
-			 * TODO: Restaurar código original
-			 */
-			/*.añadirCriterio(new Conectividad(
-				consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos))*/
-			.añadirCriterio(new Conectividad(33837, registroAeropuertos))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROLÍNEAS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROPUERTOS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.CONECTIVIDAD))
+			.añadirCriteriosRestricciones(config, fCriterios)
 			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();
 		estadísticas = new Estadísticas(log);
@@ -217,12 +207,18 @@ public class VnsRs implements IRecocidoSimulado {
 			gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación);
 			double nuevoFitness = gLíneas.getFitness();
 
+			// Verificar restricciones
+			boolean factible = config.restricciones.cumple(gLíneas.getCriterios());
+			if (!factible) {
+				nuevoFitness = rs.penalizarFitness(fitnessActual, nuevoFitness);
+			}
+
 			// Insertar un nuevo caso en la memoria indicando la operación realizada y si hubo una mejora en el fitness
 			gEntornos.registrarCasoX(
 				new CasoEntornoX(numAbiertas, entorno.operación == OperaciónLínea.ABRIR, nuevoFitness > fitnessActual));
 
 			// Comprobar si esta solución es el nuevo máximo global
-			if (nuevoFitness > fitnessMejorSolución) {
+			if (factible && nuevoFitness > fitnessMejorSolución) {
 				fitnessMejorSolución = nuevoFitness;
 				mejorSolución = gLíneas.getLíneasBool();
 				iteracionesSinMejora = 0;

@@ -21,7 +21,10 @@ public class FitnessPorPesos implements ICálculoFitness {
 	public double calcularFitness(Collection<Criterio> criterios) {
 		double total = 0;
 		for (Criterio criterio : criterios) {
-			total += getPesoCriterio(criterio.id) * criterio.getPorcentaje();
+			float peso = getPesoCriterio(criterio.id);
+			if (peso != 0) {
+				total += peso * criterio.getPorcentaje();
+			}
 		}
 		return total;
 	}

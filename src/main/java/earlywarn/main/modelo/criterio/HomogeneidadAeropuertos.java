@@ -40,22 +40,7 @@ public class HomogeneidadAeropuertos extends Criterio {
 
 	@Override
 	public double getPorcentaje() {
-		// Primero obtenemos una lista con el porcentaje de pasajeros restantes para cada aeropuerto
-		List<Double> porcentajes = new ArrayList<>();
-		for (Map.Entry<String, Long> entrada : pasajerosPorAeropuertoInicial.entrySet()) {
-			String aeropuerto = entrada.getKey();
-			Long valorInicial = entrada.getValue();
-			Long valorActual = pasajerosPorAeropuertoActual.get(aeropuerto);
-
-			if (valorActual != null) {
-				porcentajes.add((double) valorActual / valorInicial);
-			} else {
-				throw new IllegalStateException("El número de pasajeros en el aeropuerto \"" + aeropuerto +
-					"\" no está en el mapa de pasajeros por aeropuerto actual");
-			}
-		}
-
-		return getPorcentajeFinal(porcentajes);
+		return getPorcentajeFinal(getPorcentajes());
 	}
 
 	@Override
@@ -87,6 +72,44 @@ public class HomogeneidadAeropuertos extends Criterio {
 					idLínea + "\", no está en la lista global de pasajeros por aeropuerto y será ignorado");
 			}
 		}
+	}
+
+	/**
+	 * @return Porcentaje de vuelos perdidos por el aeropuerto que más vuelos ha perdido, o null si no hay aeropuertos
+	 * registrados.
+	 */
+	public Double getPérdidaMáxima() {
+		Double menor = null;
+		for (Double porcentaje : getPorcentajes()) {
+			if (menor == null || porcentaje < menor) {
+				menor = porcentaje;
+			}
+		}
+		if (menor == null) {
+			return menor;
+		} else {
+			return 1 - menor;
+		}
+	}
+
+	/**
+	 * @return Lista con el porcentaje de vuelos restantes para cada aeropuerto
+	 */
+	private List<Double> getPorcentajes() {
+		List<Double> porcentajes = new ArrayList<>();
+		for (Map.Entry<String, Long> entrada : pasajerosPorAeropuertoInicial.entrySet()) {
+			String aeropuerto = entrada.getKey();
+			Long valorInicial = entrada.getValue();
+			Long valorActual = pasajerosPorAeropuertoActual.get(aeropuerto);
+
+			if (valorActual != null) {
+				porcentajes.add((double) valorActual / valorInicial);
+			} else {
+				throw new IllegalStateException("El número de pasajeros en el aeropuerto \"" + aeropuerto +
+					"\" no está en el mapa de pasajeros por aeropuerto actual");
+			}
+		}
+		return porcentajes;
 	}
 
 	/**
