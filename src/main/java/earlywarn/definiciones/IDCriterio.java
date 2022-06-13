@@ -2,7 +2,8 @@ package earlywarn.definiciones;
 
 /**
  * Lista todos los criterios que se están usando para puntuar posibles soluciones al problema del cierre de líneas
- * aéreas
+ * aéreas. Cada criterio tiene asignado un ID de este enum. Un ID puede estar asignado a más de un criterio (por
+ * ejemplo, algunos criterios tienen una versión lineal que usa el mismo ID que la versión no lineal).
  */
 public enum IDCriterio {
 	// Riesgo importado total
@@ -13,25 +14,17 @@ public enum IDCriterio {
 	INGRESOS_TURÍSTICOS,
 	/*
 	 * Homogeneidad sobre aerolíneas al cancelar vuelos. Intenta que el porcentaje de vuelos que pierde cada aerolínea
-	 * sea lo más homogéneo posible
+	 * sea lo más homogéneo posible.
 	 */
 	HOMOGENEIDAD_AEROLÍNEAS,
 	/*
 	 * Homogeneidad sobre aeropuertos al cancelar vuelos. Intenta que el porcentaje de vuelos que pierde cada aeropuerto
-	 * sea lo más homogéneo posible
+	 * sea lo más homogéneo posible.
 	 */
 	HOMOGENEIDAD_AEROPUERTOS,
 	/*
 	 * Conectividad de la red de tráfico aéreo. Solo tiene en cuenta la parte de esta conectividad que se puede perder
 	 * al cerrar vuelos que entran al país actual.
 	 */
-	CONECTIVIDAD,
-	/*
-	 * Versión lineal de HOMOGENEIDAD_AEROLÍNEAS
-	 */
-	HOMOGENEIDAD_AEROLÍNEAS_LINEAL,
-	/*
-	 * Versión lineal de HOMOGENEIDAD_AEROPUERTOS
-	 */
-	HOMOGENEIDAD_AEROPUERTOS_LINEAL
+	CONECTIVIDAD
 }

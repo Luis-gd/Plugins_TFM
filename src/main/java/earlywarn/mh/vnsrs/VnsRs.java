@@ -183,7 +183,7 @@ public class VnsRs implements IRecocidoSimulado {
 			/*.añadirCriterio(new Conectividad(
 				consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos))*/
 			.añadirCriterio(new Conectividad(33837, registroAeropuertos))
-			.añadirCálculoFitness(new FitnessPorPesos())
+			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();
 		estadísticas = new Estadísticas(log);
 

@@ -1,5 +1,6 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -10,6 +11,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Clase que representa los datos de configuración para la metaheurística
@@ -25,6 +28,8 @@ public class Config {
 	// Rango de fechas sobre el que se está trabajando
 	public LocalDate díaInicio;
 	public LocalDate díaFin;
+	// Pesos de los diferentes criterios
+	public Map<IDCriterio, Float> pesos;
 
 	/**
 	 * Instancia la configuración
@@ -81,5 +86,19 @@ public class Config {
 		díaInicio = Utils.stringADate(elemDíaInicio.getTextContent());
 		Element elemDíaFin = Utils.toLista(raíz.getElementsByTagName("últimoDía")).get(0);
 		díaFin = Utils.stringADate(elemDíaFin.getTextContent());
+
+		pesos = new EnumMap<>(IDCriterio.class);
+		Element elemPesos = Utils.toLista(raíz.getElementsByTagName("pesos")).get(0);
+		for (Element elemCriterio : Utils.toLista(elemPesos.getElementsByTagName("criterio"))) {
+			String textoIDCriterio = elemCriterio.getAttribute("id");
+			IDCriterio idCriterio;
+			try {
+				idCriterio = IDCriterio.valueOf(textoIDCriterio);
+			} catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("El ID de criterio \"" + textoIDCriterio + "\", especificado en " +
+					"la configuración del programa, no corresponde con ningún criterio.", e);
+			}
+			pesos.put(idCriterio, Float.parseFloat(elemCriterio.getTextContent()));
+		}
 	}
 }
