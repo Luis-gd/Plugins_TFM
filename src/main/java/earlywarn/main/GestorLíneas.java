@@ -20,7 +20,7 @@ import java.util.*;
 public class GestorLíneas {
 	private final ConversorLíneas conversorLíneas;
 	// Lista de criterios almacenados, cada uno identificado por un valor de un enum
-	private final Map<IDCriterio, Criterio> criterios;
+	protected final Map<IDCriterio, Criterio> criterios;
 
 	// Mapa que almacena el estado de cada línea
 	private final Map<String, EstadoLínea> líneas;
@@ -201,5 +201,12 @@ public class GestorLíneas {
 			throw new IllegalOperationException("No se puede calcular el fitness de la solución si no se ha " +
 				"especificado un método de cálculo");
 		}
+	}
+
+	/**
+	 * @return Lista de criterios usados en el gestor
+	 */
+	public List<Criterio> getCriterios() {
+		return new ArrayList<>(criterios.values());
 	}
 }

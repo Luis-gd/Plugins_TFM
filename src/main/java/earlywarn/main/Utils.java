@@ -80,6 +80,21 @@ public class Utils {
 	}
 
 	/**
+	 * Calcula la desviación (distancia) de cada elemento de la lista proporcionada con respecto al valor
+	 * indicado y luego calcula la media de esas desviaciones y la devuelve.
+	 * @param elementos Lista de elementos sobre los que calcular la desviación media
+	 * @param valor Valor con el que comparar cada elemento
+	 * @return Desviación media de los diferentes elementos de la lista con respecto al valor indicado
+	 */
+	public static double getDesviaciónMedia(List<Double> elementos, double valor) {
+		double ret = 0;
+		for (Double elem : elementos) {
+			ret += Math.abs(elem - valor);
+		}
+		return ret / elementos.size();
+	}
+
+	/**
 	 * Convierte una lista de nodos XML en una lista de instancias de Element, manteniendo solo los nodos de ese
 	 * tipo.
 	 * @param lista Lista de nodos a procesar
@@ -99,6 +114,26 @@ public class Utils {
 
 	public static double log2(double valor) {
 		return Math.log(valor) / LN_2;
+	}
+
+	/**
+	 * Redondea el valor especificado a la potencia de 2 más cercana y devuelve el exponente de dicha potencia
+	 * @param valor Valor a redondear
+	 * @return Exponente de la potencia de dos más cercana al valor indicado
+	 */
+	public static int redondearAPotenciaDeDosExponente(float valor) {
+		int i = 0;
+		float distanciaPrevia = Float.MAX_VALUE;
+		while (true) {
+			int valorActual = (int) Math.pow(2, i);
+			float distancia = Math.abs(valor - valorActual);
+			if (distancia < distanciaPrevia) {
+				distanciaPrevia = distancia;
+				i++;
+			} else {
+				return i - 1;
+			}
+		}
 	}
 
 	/**
@@ -145,13 +180,17 @@ public class Utils {
 	}
 
 	/**
-	 * Devuelve una string que incluye el ID de todas las líneas en la lista de líneas indicada
+	 * Devuelve una string que incluye el ID de todas las líneas en la lista de líneas indicada. Cada ID se separa
+	 * con una coma.
 	 * @param líneas Lista de líneas a convertir
+	 * @param corchetes Si es true, la string que representa la lista se encerrará entre corchetes
 	 * @return String que incluye todas las líneas en la lista
 	 */
-	public static String listaLíneasAString(List<String> líneas) {
+	public static String listaLíneasAString(List<String> líneas, boolean corchetes) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("[");
+		if (corchetes) {
+			sb.append("[");
+		}
 		boolean primera = true;
 		for (String línea : líneas) {
 			if (primera) {
@@ -161,7 +200,9 @@ public class Utils {
 			}
 			sb.append(línea);
 		}
-		sb.append("]");
+		if (corchetes) {
+			sb.append("]");
+		}
 		return sb.toString();
 	}
 }

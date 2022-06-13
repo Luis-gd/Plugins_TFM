@@ -6,6 +6,11 @@ import java.util.Random;
  * Clase que implementa los método necesarios para ejecutar la metaheurística del recocido simulado
  */
 public class RecocidoSimulado {
+	/*
+	 * Determina la penalización en la probabilidad de aceptación de las soluciones infactibles.
+	 */
+	private static final float PENALIZACIÓN_PROBABILIDAD_ACEPTACIÓN = 0.5f;
+
 	// Iteración actual
 	public int iteración;
 	// Valor cacheado de la temperatura actual. Solo se recalcula cuando se cambia de fase.
@@ -48,8 +53,32 @@ public class RecocidoSimulado {
 		if (fitnessNueva > fitnessActual) {
 			return true;
 		} else {
-			double probabilidad = Math.exp((fitnessNueva - fitnessActual) / temperatura);
-			return rand.nextDouble() < probabilidad;
+			return rand.nextDouble() < probabilidadAceptación(fitnessActual, fitnessNueva);
 		}
+	}
+
+	/**
+	 * Obtiene una versión penalizada del fitness de una nueva solución infactible. Su fitness recibirá una
+	 * reducción de forma que la probabilidad de aceptación de la nueva solución será
+	 * {@link #PENALIZACIÓN_PROBABILIDAD_ACEPTACIÓN} veces la original.
+	 * @param fitnessActual Fitness de la solución actual
+	 * @param fitnessNueva Fitness de la nueva solución infactible
+	 * @return Versión reducida de {@code fitnessNueva}, de forma que la probabilidad de aceptación de la solución
+	 * infactible será {@link #PENALIZACIÓN_PROBABILIDAD_ACEPTACIÓN} veces la original.
+	 */
+	public double penalizarFitness(double fitnessActual, double fitnessNueva) {
+		double probabilidadObjetivo =
+			probabilidadAceptación(fitnessActual, fitnessNueva) * PENALIZACIÓN_PROBABILIDAD_ACEPTACIÓN;
+		return Math.log(probabilidadObjetivo) * temperatura + fitnessActual;
+	}
+
+	/**
+	 * Devuelve la probabilidad de aceptación de una nueva solución dado su fitness y el de la solución actual
+	 * @param fitnessActual Fitness de la solución actual
+	 * @param fitnessNueva Fitness de la nueva solución que se está considerando
+	 * @return Probabilidad de acpetación de la nueva solución
+	 */
+	private double probabilidadAceptación(double fitnessActual, double fitnessNueva) {
+		return Math.exp((fitnessNueva - fitnessActual) / temperatura);
 	}
 }

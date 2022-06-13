@@ -1,5 +1,6 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.definiciones.IDCriterio;
 import earlywarn.definiciones.IRecocidoSimulado;
 import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.definiciones.OperaciónLínea;
@@ -13,6 +14,11 @@ import earlywarn.main.modelo.criterio.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,9 +36,13 @@ public class VnsRs implements IRecocidoSimulado {
 	private final Consultas consultas;
 	private final List<String> líneas;
 	private final ConversorLíneas conversorLíneas;
+	private Estadísticas estadísticas;
 
-	// Número máximo de iteraciones. La ejecución siempre terminará si se alcanza. -1 si no hay límite.
-	private int iterMax;
+	/*
+	 * Número forzado de iteraciones a realizar. Si se fija, el algoritmo siempre terminará exactamente tras este
+	 * número de iteraciones, ignorando la condición de parada habitual. Si es < 0, no tiene efecto alguno.
+	 */
+	private int numFijoIteraciones;
 	// Número total de posibles soluciones aceptadas
 	private int solucionesAceptadas;
 	// Mejor solución encontrada hasta ahora (como array de booleanos) y su fitness
@@ -43,13 +53,11 @@ public class VnsRs implements IRecocidoSimulado {
 	// Número de iteraciones que hace que no se encuentra un nuevo óptimo global
 	private int iteracionesSinMejora;
 
-	// TODO: Estadísticas de la ejecución
-
 	public VnsRs(Config config, GraphDatabaseService db, Log log) {
 		this.db = db;
 		this.log = log;
 		this.config = config;
-		iterMax = Integer.MAX_VALUE;
+		numFijoIteraciones = -1;
 		registroAeropuertos = new RegistroAeropuertos(config.díaInicio, config.díaFin, db);
 		consultas = new Consultas(db);
 		líneas = consultas.getLíneas(config.díaInicio, config.díaFin, config.país);
@@ -77,15 +85,64 @@ public class VnsRs implements IRecocidoSimulado {
 		}
 		String mensaje = "Fin ejecución VNS + RS. Mejor solución (fitness " + fitnessMejorSolución + "):\n" +
 			"Líneas abiertas: " +
-			Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución)) +
+			Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución), true) +
 			"\nLíneas cerradas: " +
-			Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución)) + "\n";
+			Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución), true);
 		log.info(mensaje);
 	}
 
+	/**
+	 * Almacena la mejor solución encontrada en un fichero.
+	 * El fichero contendrá 3 líneas:
+	 * - La primera tendrá el valor de fitness de la solución
+	 * - La segunda tendrá los IDs de todas las líneas abiertas separados con comas
+	 * - La tercera tendrá los IDs de todas las líneas cerradas separadas con comas
+	 * Requiere que se haya ejecutado el algoritmo con anterioridad.
+	 * @param rutaFichero Ruta al fichero de salida
+	 * @throws IllegalOperationException Si la metaheurística aún no se ha ejecutado
+	 */
+	public void guardarResultado(String rutaFichero) {
+		if (mejorSolución == null) {
+			throw new IllegalOperationException("No se puede almacenar el resultado de la metaheurística si " +
+				"ésta no se ha ejecutado aún");
+		} else {
+			try {
+				Files.createDirectory(Paths.get(rutaFichero).getParent());
+			} catch (FileAlreadyExistsException e) {
+				// OK
+			} catch (IOException e) {
+				log.warn("No se ha podido crear el directorio para almacenar el resultado de la metaheurística.\n" + e);
+				return;
+			}
+
+			try (FileWriter fSalida = new FileWriter(rutaFichero)) {
+				fSalida.write(fitnessMejorSolución + "\n");
+				fSalida.write(Utils.listaLíneasAString(conversorLíneas.getAbiertas(mejorSolución), false) + "\n");
+				fSalida.write(Utils.listaLíneasAString(conversorLíneas.getCerradas(mejorSolución), false) + "\n");
+			} catch (IOException e) {
+				log.warn("No se ha podido guardar el resultado de la metaheurística.\n" + e);
+			}
+		}
+	}
+
+	/**
+	 * Almacena las estadísticas de la ejecución a un fichero CSV.
+	 * Requiere que se haya ejecutado el algoritmo con anterioridad.
+	 * @param rutaFichero Ruta al fichero de salida
+	 * @throws IllegalOperationException Si la metaheurística aún no se ha ejecutado
+	 */
+	public void guardarEstadísticas(String rutaFichero) {
+		if (estadísticas == null) {
+			throw new IllegalOperationException("No se puede almacenar las estadísticas de la metaheurística si " +
+				"ésta no se ha ejecutado aún");
+		} else {
+			estadísticas.toCsv(rutaFichero);
+		}
+	}
+
 	@Override
-	public float calcularPorcentajeAceptadas(float tInicial, int iterMax) {
-		this.iterMax = iterMax;
+	public float calcularPorcentajeAceptadas(float tInicial, int numIteraciones) {
+		numFijoIteraciones = numIteraciones;
 		/*
 		 * Creamos la instancia de recocido simulado con datos de configuración basados en los parámetros indicados en
 		 * lugar de usar los de la configuración. Alfa se fija a 1 para que la temperatura no disminuya.
@@ -99,36 +156,26 @@ public class VnsRs implements IRecocidoSimulado {
 		init();
 		_ejecutar();
 
-		return (float) solucionesAceptadas / iterMax;
+		return (float) solucionesAceptadas / numIteraciones;
 	}
 
 	/**
 	 * Inicializa las variables necesarias para ejecutar el algoritmo
 	 */
 	private void init() {
+		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
 		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db)
-			.añadirCriterio(new RiesgoImportado(
-				consultas.getRiesgoPorPaís(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new NumPasajeros(
-				consultas.getPasajerosTotales(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new IngresosTurísticos(
-				consultas.getIngresosTurísticosTotales(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new HomogeneidadAerolíneas(
-				consultas.getPasajerosPorAerolínea(config.díaInicio, config.díaFin, config.país)))
-			.añadirCriterio(new HomogeneidadAeropuertos(
-				consultas.getPasajerosPorAeropuerto(config.díaInicio, config.díaFin, config.país), config.país,
-				registroAeropuertos))
-			/*
-			 * Esto tarda 30s en ejecutar, así que de momento fijo el valor de conectividad para España entre
-			 * el 24/9/2020 y el 30/9/2020 (33837)
-			 * TODO: Restaurar código original
-			 */
-			/*.añadirCriterio(new Conectividad(
-				consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos))*/
-			.añadirCriterio(new Conectividad(33837, registroAeropuertos))
-			.añadirCálculoFitness(new FitnessPorPesos())
+			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROLÍNEAS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROPUERTOS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.CONECTIVIDAD))
+			.añadirCriteriosRestricciones(config, fCriterios)
+			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();
+		estadísticas = new Estadísticas(log);
 
 		solucionesAceptadas = 0;
 		mejorSolución = null;
@@ -145,6 +192,10 @@ public class VnsRs implements IRecocidoSimulado {
 		mejorSolución = gLíneas.getLíneasBool();
 		fitnessMejorSolución = fitnessActual;
 
+		// Registrar estadísticas del estado inicial
+		estadísticas.registrarIteración(new EstadísticasIteración(-1, gLíneas.getNumAbiertas(),
+			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
+
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
 			log.info("Inicio iter " + iter + ". Abiertas: " + gLíneas.getNumAbiertas() + ", fitness actual: " +
@@ -156,12 +207,18 @@ public class VnsRs implements IRecocidoSimulado {
 			gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación);
 			double nuevoFitness = gLíneas.getFitness();
 
+			// Verificar restricciones
+			boolean factible = config.restricciones.cumple(gLíneas.getCriterios());
+			if (!factible) {
+				nuevoFitness = rs.penalizarFitness(fitnessActual, nuevoFitness);
+			}
+
 			// Insertar un nuevo caso en la memoria indicando la operación realizada y si hubo una mejora en el fitness
 			gEntornos.registrarCasoX(
 				new CasoEntornoX(numAbiertas, entorno.operación == OperaciónLínea.ABRIR, nuevoFitness > fitnessActual));
 
 			// Comprobar si esta solución es el nuevo máximo global
-			if (nuevoFitness > fitnessMejorSolución) {
+			if (factible && nuevoFitness > fitnessMejorSolución) {
 				fitnessMejorSolución = nuevoFitness;
 				mejorSolución = gLíneas.getLíneasBool();
 				iteracionesSinMejora = 0;
@@ -179,6 +236,10 @@ public class VnsRs implements IRecocidoSimulado {
 				// Indicar que nos mantenemos en el mismo estado, es decir, no se ha variado ninguna línea
 				gEntornos.registrarEstadoY(new ArrayList<>());
 			}
+
+			// Registrar estadísticas de esta iteración
+			estadísticas.registrarIteración(new EstadísticasIteración(iter, gLíneas.getNumAbiertas(),
+				new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
 
 			iter++;
 			rs.sigIter();
@@ -210,6 +271,10 @@ public class VnsRs implements IRecocidoSimulado {
 	 * @return True si la ejecución debe continuar, false si se cumple la condición de parada.
 	 */
 	private boolean continuar() {
-		return iteracionesSinMejora < config.itParada && iter < iterMax;
+		if (numFijoIteraciones >= 0) {
+			return iter < numFijoIteraciones;
+		} else {
+			return iteracionesSinMejora < config.itParada;
+		}
 	}
 }
