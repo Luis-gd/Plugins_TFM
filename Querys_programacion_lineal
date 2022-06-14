@@ -64,9 +64,10 @@ Get_numeroDeVuelosEntrantesYSalientesPorAeropuertoConVuelosAEspanya: (Devuelve e
 los vuelos totales que tiene el aeropuerto de salida, la cantidad de esos vuelos que vienen a españa y la conectividad del aeropuerto de salida)
 MATCH (salida:Airport)-[]-(:AirportOperationDay)-[]->(vuelosSalientes:FLIGHT) 
 WHERE date('2020-09-24') <= date(vuelosSalientes.dateOfDeparture) <= date('2020-09-24')
-WITH salida, count(vuelosSalientes) as totalVuelosSalientes, salida.connectivity as conectividadSaliente
+AND salida.connectivity IS NOT NULL
+WITH salida, COUNT(vuelosSalientes) AS totalVuelosSalientes, salida.connectivity AS conectividadSaliente
 MATCH (salida)-[]-(:AirportOperationDay)-[]->(vuelosEntrantes:FLIGHT)-[]->(:AirportOperationDay)-[]-(llegada:Airport)-[]-(c:Country)
 WHERE date('2020-09-24') <= date(vuelosEntrantes.dateOfDeparture) <= date('2020-09-24')
 AND c.countryName = 'Spain'
-WITH salida, llegada, totalVuelosSalientes, conectividadSaliente, count(vuelosEntrantes) as totalVuelosEntrantes
+WITH salida, llegada, totalVuelosSalientes, conectividadSaliente, COUNT(vuelosEntrantes) AS totalVuelosEntrantes
 RETURN salida.airportName, llegada.airportName, totalVuelosEntrantes, totalVuelosSalientes,conectividadSaliente  ORDER BY llegada.airportName, salida.airportName
