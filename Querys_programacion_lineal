@@ -47,13 +47,18 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN DISTINCT f.operator ORDER BY f.operator
 
+//(Devuelve el nombre de la entrada y salida de una conexion, los vuelos totales que tiene el aeropuerto de salida,
+//la cantidad de esos vuelos que vienen a españa y la conectividad del aeropuerto de salida)
 Get_conectividad_por_aeropuerto:
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
-    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
-    WHERE c.countryName= 'Spain'
-    AND not (f.flightIfinal =  '') 
-    AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
-    RETURN  entrada.connectivity, entrada.airportName ORDER BY  entrada.airportName
+MATCH (salida:Airport)-[]-(:AirportOperationDay)-[]->(vuelosSalientes:FLIGHT)
+    WHERE date('2020-09-24') <= date(vuelosSalientes.dateOfDeparture) <= date('2020-09-24')
+    AND salida.connectivity IS NOT NULL
+    WITH salida, COUNT(vuelosSalientes) AS totalVuelosSalientes, salida.connectivity AS conectividadSaliente
+    MATCH (salida)-[]-(:AirportOperationDay)-[]->(vuelosEntrantes:FLIGHT)-[]->(:AirportOperationDay)-[]-(llegada:Airport)-[]-(c:Country)
+    WHERE date('2020-09-24') <= date(vuelosEntrantes.dateOfDeparture) <= date('2020-09-24')
+    AND c.countryName = 'Spain'
+    RETURN llegada.airportName, salida.airportName, COUNT(vuelosEntrantes) AS totalVuelosEntrantes, totalVuelosSalientes, conectividadSaliente
+    ORDER BY llegada.airportName, salida.airportName
 
 Get_gasto_por_vuelo:
 MATCH (c:Country)<-[]-(n:TuristExpense)<-[]-(c2:Country)
