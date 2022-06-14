@@ -60,12 +60,13 @@ MATCH (c:Country)<-[]-(n:TuristExpense)<-[]-(c2:Country)
     AND n.year=2020
     RETURN DISTINCT n.expense, c2.countryName ORDER BY c2.countryName
     
-Get_numeroDeVuelosEntrantesYSalientesPorAeropuertoConVuelosAEspanya: (Devuelve el nombre de la entrada y salida de una conexion, los vuelos totales que tiene el aeropuerto de salida y la cantidad de esos vuelos que vienen a españa)
+Get_numeroDeVuelosEntrantesYSalientesPorAeropuertoConVuelosAEspanya: (Devuelve el nombre de la entrada y salida de una conexion, 
+los vuelos totales que tiene el aeropuerto de salida, la cantidad de esos vuelos que vienen a españa y la conectividad del aeropuerto de salida)
 MATCH (salida:Airport)-[]-(:AirportOperationDay)-[]->(vuelosSalientes:FLIGHT) 
 WHERE date('2020-09-24') <= date(vuelosSalientes.dateOfDeparture) <= date('2020-09-24')
-WITH salida, count(vuelosSalientes) as totalVuelosSalientes
+WITH salida, count(vuelosSalientes) as totalVuelosSalientes, salida.connectivity as conectividadSaliente
 MATCH (salida)-[]-(:AirportOperationDay)-[]->(vuelosEntrantes:FLIGHT)-[]->(:AirportOperationDay)-[]-(llegada:Airport)-[]-(c:Country)
 WHERE date('2020-09-24') <= date(vuelosEntrantes.dateOfDeparture) <= date('2020-09-24')
 AND c.countryName = 'Spain'
-WITH salida, llegada, totalVuelosSalientes, count(vuelosEntrantes) as totalVuelosEntrantes
-RETURN salida.airportName, llegada.airportName, totalVuelosEntrantes, totalVuelosSalientes ORDER BY llegada.airportName, salida.airportName
+WITH salida, llegada, totalVuelosSalientes, conectividadSaliente, count(vuelosEntrantes) as totalVuelosEntrantes
+RETURN salida.airportName, llegada.airportName, totalVuelosEntrantes, totalVuelosSalientes,conectividadSaliente  ORDER BY llegada.airportName, salida.airportName
