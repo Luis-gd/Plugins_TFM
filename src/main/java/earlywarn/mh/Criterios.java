@@ -1,6 +1,8 @@
 package earlywarn.mh;
 
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -27,14 +29,20 @@ public class Criterios{
     final static int penalizacionRestriccion=1000000;
     //La solución con la que trabajamos, se modifica en evaluate fitness
     static boolean[] solucion;
-    //Contiene el nombre de los aeropuertos de entrada, en principio serán los de España
+    //Contiene el nombre de los aeropuertos de entrada no repetidos, en principio serán los de España
     static List<String> nombreAeropuertosEntradaEspanya = new ArrayList<>();
-    //Contiene el nombre de los aeropuertos de salida
+    //Contiene el nombre de los aeropuertos de salida no repetidos
     static List<String> nombreAeropuertosSalida = new ArrayList<>();
-    //Contiene el nombre de las compañías aéreas
+    //Contiene el nombre de las compañías aéreas no repetidos
     static List<String> nombreCompanyias = new ArrayList<>();
-    //Listado de vuelos que hay entre los aeropuertos, puede haber más de un vuelo entre los mismos aeropuertos
-    static List<conexion> listaVuelos = new ArrayList<>();
+    //Listado de vuelos que hay entre los aeropuertos, no hay repetidos
+    static List<Conexion> listaConexiones = new ArrayList<>();
+    //Valores de infectados del SIR en las conexiones
+    static Map<Conexion,Double> listaRiesgosEspanyoles = new HashMap<Conexion,Double>();
+    //Número de pasajeros en las conexiones
+    static Map<Conexion,Integer> listaPasajeros = new HashMap<Conexion,Integer>();
+    //Número de pasajeros en las conexiones dependiendo de la compañía
+    static Map<ConexionyCompanyia,Integer> listaPasajerosCompanyia = new HashMap<ConexionyCompanyia,Integer>();
     //Los caracteres que se utilizan para separar los CSV
     static String COMMA_DELIMITER=",";
 
@@ -200,6 +208,7 @@ public class Criterios{
         return 0;
     }
     //TODO: Pasar a función auxiliar el código compartido entre calculoConectividadDestinos y calculoHomogeneidadIngresosTurismoDestinos
+    //TODO: Cambiar como funciona la función de conectividad
     /**
      * Comprueba que la conectividad perdida en los destinos no sea mayor que un porcentaje, implementada como una restricción
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
@@ -251,10 +260,12 @@ public class Criterios{
         }
         return 0;
     }
+
     //TODO:Implementando carga de datos en CSV, más adelante funcionará con llamadas a Neo4j
 
     /**
-     * Función que carga los aeropuertos de entrada
+     * Función que carga los aeropuertos de entrada, estos valores no se repiten debido a que no hay duplicados
+     * en el csv
      */
     private static void cargaAeropuertosEntrada(){
         String ubicacionArchivo = "datos/aeropuertos_entradas.csv";
@@ -270,7 +281,7 @@ public class Criterios{
     }
 
     /**
-     * Función que carga los aeropuertos de salida
+     * Función que carga los aeropuertos de salida, estos valores no se repiten debido a que no hay duplicados en el csv
      */
     private static void cargaAeropuertosSalida(){
         String ubicacionArchivo = "datos/aeropuertos_salida.csv";
@@ -286,7 +297,8 @@ public class Criterios{
     }
 
     /**
-     * Función que carga el código de las compañías aéreas
+     * Función que carga el código de las compañías aéreas, estos valores no se repiten debido a que no hay duplicados
+     * en el csv
      */
     private static void cargaCompanyias(){
         String ubicacionArchivo = "datos/companyias.csv";
@@ -302,27 +314,105 @@ public class Criterios{
     }
 
     /**
-     * Función que carga todos los vuelos que se van a realizar ese día
+     * Función que carga todos los vuelos que se van a realizar ese día no se repiten
      */
+    //TODO: Comprobar el .contains funciona correctamente
     private static void cargaVuelos(){
         String ubicacionArchivo = "datos/sir.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
+            String[] values;
+            Conexion anyadir;
             while ((line = br.readLine()) != null) {
-                String[] values = line.split(COMMA_DELIMITER);
-                conexion anyadir = new conexion(values[1],values[2]);
-                listaVuelos.add(anyadir);
+                values = line.split(COMMA_DELIMITER);
+                anyadir = new Conexion(values[1],values[2]);
+                if(!listaConexiones.contains(anyadir)){
+                    listaConexiones.add(anyadir);
+                }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
     }
 
+    /**
+     * Función que carga los valores epidemiologicos en listaRiesgosEspanyoles
+     */
+    private static void cargaDatosSIR(){
+        String ubicacionArchivo = "datos/sir.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            String[] values;
+            Conexion indice;
+            while ((line = br.readLine()) != null) {
+                values = line.split(COMMA_DELIMITER);
+                indice = new Conexion(values[1],values[2]);
+                if(listaRiesgosEspanyoles.get(indice)!=null){
+                    listaRiesgosEspanyoles.put(indice,listaRiesgosEspanyoles.get(indice)+Double.parseDouble(values[0]));
+                }else{
+                    listaRiesgosEspanyoles.put(indice,Double.parseDouble(values[0]));
+                }
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+
+    /**
+     * Función que carga el número de pasajeros en una conexión
+     */
+    private static void cargaListaPasajeros(){
+        String ubicacionArchivo = "datos/pasajeros_por_vuelo.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            String[] values;
+            Conexion indice;
+            while ((line = br.readLine()) != null) {
+                values = line.split(COMMA_DELIMITER);
+                indice = new Conexion(values[1],values[2]);
+                if(listaPasajeros.get(indice)!=null){
+                    listaPasajeros.put(indice,listaPasajeros.get(indice)+Integer.parseInt(values[0]));
+                }else{
+                    listaPasajeros.put(indice,Integer.parseInt(values[0]));
+                }
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+
+    /**
+     * Función que carga el número de pasajeros en las conexiones distinguiendo entre compañías aéreas
+     */
+    private static void cargaListaPasajerosCompanyia(){
+        String ubicacionArchivo = "datos/pasajeros_por_vuelo.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            String[] values;
+            ConexionyCompanyia indice;
+            while ((line = br.readLine()) != null) {
+                values = line.split(COMMA_DELIMITER);
+                indice = new ConexionyCompanyia(new Conexion(values[2],values[3]),values[1]);
+                if(listaPasajerosCompanyia.get(indice)!=null){
+                    listaPasajerosCompanyia.put(indice,listaPasajerosCompanyia.get(indice)+Integer.parseInt(values[0]));
+                }else{
+                    listaPasajerosCompanyia.put(indice,Integer.parseInt(values[0]));
+                }
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+
+    //TODO: Comprobar si tengo que añadir ListaConexionesPorAeropuertoEspanyol o no, si se añaden solo número de vuelos
     //TODO:Modificar para que cargue todos los datos llamando a este método
     public static void initCriterios(){
         cargaAeropuertosEntrada();
         cargaAeropuertosSalida();
         cargaCompanyias();
         cargaVuelos();
+        cargaDatosSIR();
+        cargaListaPasajeros();
+        cargaListaPasajerosCompanyia();
     }
 }

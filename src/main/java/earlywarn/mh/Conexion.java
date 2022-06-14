@@ -1,11 +1,10 @@
 package earlywarn.mh;
 
-public class conexion{
-
+public class Conexion {
     public String entrada;
     public String salida;
 
-    conexion(String entrada, String salida){
+    Conexion(String entrada, String salida){
         this.entrada=entrada;
         this.salida=salida;
     }
