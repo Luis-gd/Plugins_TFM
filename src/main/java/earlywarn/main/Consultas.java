@@ -1,6 +1,7 @@
 package earlywarn.main;
 
 import earlywarn.definiciones.ETLOperationRequiredException;
+import earlywarn.definiciones.Globales;
 import earlywarn.definiciones.Propiedad;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.etl.Añadir;
@@ -641,7 +642,7 @@ public class Consultas {
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public List<Double> getSIRFinalPorVuelo(Number idVuelo, Number alphaValue, Number betaValue){
+	public List<Double> getSIRFinalPorVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult){
 		double alpha = (Double) alphaValue;
 		double beta = (Double) betaValue;
 		// Propiedades props = new Propiedades(db);
@@ -713,6 +714,24 @@ public class Consultas {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
 					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
 		}
+	}
+
+	/**
+	 * Devuelve el valor del índice de recuperación del virus (alpha) que se está usando por defecto en
+	 * el momento de la llamada a la función.
+	 * @return Valor decimal representativo del índice de recuperación del virus.
+	 */
+	public double getIndiceRecuperacionActual(){
+		return Globales.DEFAULT_ALPHA;
+	}
+
+	/**
+	 * Devuelve el valor del índice de transmisión del virus (beta) que se está usando por defecto en
+	 * el momento de la llamada a la función.
+	 * @return Valor decimal representativo del índice de transmisión del virus.
+	 */
+	public double getIndiceTransmisionActual(){
+		return Globales.DEFAULT_BETA;
 	}
 
 }

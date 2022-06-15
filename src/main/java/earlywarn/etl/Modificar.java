@@ -1,11 +1,13 @@
 package earlywarn.etl;
 
+import earlywarn.definiciones.Globales;
 import earlywarn.definiciones.Propiedad;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 /**
@@ -80,5 +82,23 @@ public class Modificar {
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS, true);
 		}
+	}
+
+	/**
+	 * Función para actualizar el valor de recuperación (alpha) del virus por defecto.
+	 * No hace cambios en la base de datos, sino en la variable global <<DEFAULT_ALPHA>>.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void actualizarIndiceRecuperacion(@Name("newAlpha") Number alpha){
+		Globales.updateAlpha((double) alpha);
+	}
+
+	/**
+	 * Función para actualizar el valor de transmisión (beta) del virus por defecto.
+	 * No hace cambios en la base de datos, sino en la variable global <<DEFAULT_BETA>.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void actualizarIndiceTransmision(@Name("newBeta") Number beta){
+		Globales.updateBeta((double) beta);
 	}
 }

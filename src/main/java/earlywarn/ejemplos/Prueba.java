@@ -2,6 +2,7 @@ package earlywarn.ejemplos;
 
 import java.util.List;
 
+import earlywarn.definiciones.Globales;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
 import earlywarn.definiciones.Propiedad;
@@ -18,10 +19,6 @@ import org.apache.commons.lang3.ArrayUtils;
 public class Prueba {
 	@Context
 	public GraphDatabaseService db;
-
-	// -- Valores constantes --
-	private final static String alphaDef= "" + (1.0/(9*96));
-	private final static String betaDef = "" + (0.253/96);
 
 	// -- Ejemplos genéricos --
 
@@ -133,10 +130,13 @@ public class Prueba {
 			"siendo el valor de infectados el riesgo del vuelo. Se usan los valores de los índices de transmisión (beta) y recuperación (alpha)" +
 			"por defecto si el usuario no los especifica. La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
 	public List<Double> getSIRFinalPorVuelo(@Name("idVuelo") Long idVuelo,
-											@Name(value = "alphaValue", defaultValue = alphaDef) Number alphaValue,
-											@Name(value = "betaValue", defaultValue = betaDef) Number betaValue) {
+											@Name("alphaValue") Number alphaValue,
+											@Name("betaValue") Number betaValue,
+											@Name("saveResult") Boolean saveResult) {
+		Number alpha = alphaValue.equals(-1) ? Globales.DEFAULT_ALPHA : alphaValue;
+		Number beta = betaValue.equals(-1) ? Globales.DEFAULT_BETA : betaValue;
 		Consultas consultas = new Consultas(db);
-		return consultas.getSIRFinalPorVuelo(idVuelo, alphaValue, betaValue);
+		return consultas.getSIRFinalPorVuelo(idVuelo, alpha, beta, saveResult);
 	}
 
 	@UserFunction
@@ -220,5 +220,20 @@ public class Prueba {
 	@Description("Prueba para Propiedades.setBool()")
 	public void propSetBool(@Name("nombreProp") String nombreProp, @Name("valor") boolean valor) {
 		new Propiedades(db).setBool(Propiedad.valueOf(nombreProp), valor);
+	}
+
+	// -- Valores --
+	@UserFunction
+	@Description("Devuelve el índice de recuperación que se está usando por defecto")
+	public double getIndiceRecuperacionActual(){
+		Consultas consultas = new Consultas(db);
+		return consultas.getIndiceRecuperacionActual();
+	}
+
+	@UserFunction
+	@Description("Devuelve el índice de transmisión que se está usando por defecto")
+	public double getIndiceTransmisionActual(){
+		Consultas consultas = new Consultas(db);
+		return consultas.getIndiceTransmisionActual();
 	}
 }

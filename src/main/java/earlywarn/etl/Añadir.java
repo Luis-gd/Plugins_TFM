@@ -23,9 +23,6 @@ public class Añadir {
 	@Context
 	public GraphDatabaseService db;
 
-	// -- Valores constantes --
-	private final static String alphaDef= "" + (1.0/(9*96));
-	private final static String betaDef = "" + (0.253/96);
 
 	/**
 	 * Requerido por Neo4J
@@ -563,10 +560,10 @@ public class Añadir {
 	 */
 	@Procedure(mode = Mode.WRITE)
 	public void calcularSIRVuelo(@Name("idVuelo") Long idVuelo,
-								 @Name(value = "alphaValue", defaultValue = alphaDef) Number alphaValue,
-								 @Name(value = "betaValue", defaultValue = betaDef) Number betaValue){
+								 @Name(value = "alphaValue") Number alphaValue,
+								 @Name(value = "betaValue") Number betaValue){
 
-		//TODO: limpieza código + organización
+		//TODO: comprobar alpha y beta por defecto
 
 		Propiedades propiedades = new Propiedades(db);
 
