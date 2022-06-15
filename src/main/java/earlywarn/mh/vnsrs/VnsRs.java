@@ -10,7 +10,6 @@ import earlywarn.main.GestorLíneasBuilder;
 import earlywarn.main.Utils;
 import earlywarn.main.modelo.FitnessPorPesos;
 import earlywarn.main.modelo.RegistroAeropuertos;
-import earlywarn.main.modelo.criterio.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
@@ -191,7 +190,7 @@ public class VnsRs implements IRecocidoSimulado {
 
 		// Registrar estadísticas del estado inicial
 		estadísticas.registrarIteración(new EstadísticasIteración(-1, gLíneas.getNumAbiertas(),
-			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
+			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución, 1));
 
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
@@ -221,6 +220,7 @@ public class VnsRs implements IRecocidoSimulado {
 			}
 
 			// Comprobar si aceptamos esta nueva solución o si nos quedamos con la anterior
+			double probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
 			if (rs.considerarSolución(fitnessActual, nuevoFitness)) {
 				fitnessActual = nuevoFitness;
 				solucionesAceptadas++;
@@ -233,7 +233,8 @@ public class VnsRs implements IRecocidoSimulado {
 
 			// Registrar estadísticas de esta iteración
 			estadísticas.registrarIteración(new EstadísticasIteración(iter, gLíneas.getNumAbiertas(),
-				new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
+				new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución,
+				probAceptación));
 
 			iter++;
 			rs.sigIter();

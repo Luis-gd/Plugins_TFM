@@ -78,7 +78,7 @@ public class RecocidoSimulado {
 	 * @param fitnessNueva Fitness de la nueva solución que se está considerando
 	 * @return Probabilidad de acpetación de la nueva solución
 	 */
-	private double probabilidadAceptación(double fitnessActual, double fitnessNueva) {
+	public double probabilidadAceptación(double fitnessActual, double fitnessNueva) {
 		return Math.exp((fitnessNueva - fitnessActual) / temperatura);
 	}
 }
