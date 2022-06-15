@@ -1,6 +1,8 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;
+import earlywarn.mh.vnsrs.restricción.Restricción;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -10,6 +12,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.*;
 
 /**
  * Clase que representa los datos de configuración para la metaheurística
@@ -25,6 +28,10 @@ public class Config {
 	// Rango de fechas sobre el que se está trabajando
 	public LocalDate díaInicio;
 	public LocalDate díaFin;
+	// Pesos de los diferentes criterios
+	public Map<IDCriterio, Float> pesos;
+	// Restricciones a las soluciones factibles
+	public ListaRestricciones restricciones;
 
 	/**
 	 * Instancia la configuración
@@ -63,6 +70,8 @@ public class Config {
 		configVNS.iteraciones = Integer.parseInt(elemIteraciones.getTextContent());
 		Element elemLíneasPorIt = Utils.toLista(elemEntornoY.getElementsByTagName("líneasPorIt")).get(0);
 		configVNS.líneasPorIt = Float.parseFloat(elemLíneasPorIt.getTextContent());
+		Element elemVariaciónMax = Utils.toLista(elemEntornoY.getElementsByTagName("variaciónMax")).get(0);
+		configVNS.variaciónMax = Float.parseFloat(elemVariaciónMax.getTextContent());
 
 		Element elemTInicial = Utils.toLista(raíz.getElementsByTagName("tInicial")).get(0);
 		configRS.tInicial = Float.parseFloat(elemTInicial.getTextContent());
@@ -79,5 +88,30 @@ public class Config {
 		díaInicio = Utils.stringADate(elemDíaInicio.getTextContent());
 		Element elemDíaFin = Utils.toLista(raíz.getElementsByTagName("últimoDía")).get(0);
 		díaFin = Utils.stringADate(elemDíaFin.getTextContent());
+
+		pesos = new EnumMap<>(IDCriterio.class);
+		Element elemPesos = Utils.toLista(raíz.getElementsByTagName("pesos")).get(0);
+		for (Element elemCriterio : Utils.toLista(elemPesos.getElementsByTagName("criterio"))) {
+			String textoIDCriterio = elemCriterio.getAttribute("id");
+			IDCriterio idCriterio;
+			try {
+				idCriterio = IDCriterio.valueOf(textoIDCriterio);
+			} catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("El ID de criterio \"" + textoIDCriterio + "\", especificado en " +
+					"la configuración del programa, no corresponde con ningún criterio.", e);
+			}
+			pesos.put(idCriterio, Float.parseFloat(elemCriterio.getTextContent()));
+		}
+
+		restricciones = new ListaRestricciones();
+		Element elemRestricciones = Utils.toLista(raíz.getElementsByTagName("restricciones")).get(0);
+		for (Element elemRestricción : Utils.toLista(elemRestricciones.getElementsByTagName("restricción"))) {
+			ListaParámetros parámetros = new ListaParámetros();
+			String idRestricción = elemRestricción.getAttribute("id");
+			for (Element elemParámetro : Utils.toLista(elemRestricción.getElementsByTagName("param"))) {
+				parámetros.añadir(elemParámetro.getAttribute("id"), elemParámetro.getTextContent());
+			}
+			restricciones.añadir(Restricción.crear(idRestricción, parámetros));
+		}
 	}
 }
