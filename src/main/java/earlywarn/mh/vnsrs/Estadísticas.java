@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class Estadísticas {
 	private final Log log;
-	private final List<EstadísticasIteración> listaEstadísticas;
+	public final List<EstadísticasIteración> listaEstadísticas;
 
 	public Estadísticas(Log log) {
 		this.log = log;

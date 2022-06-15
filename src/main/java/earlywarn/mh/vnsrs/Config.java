@@ -21,8 +21,13 @@ import java.util.*;
 public class Config {
 	public ConfigVNS configVNS;
 	public ConfigRS configRS;
-	// Parar la ejecución cuando transcurra este número de iteraciones sin una mejora en la función objetivo
+	/*
+	 * Parar la ejecución cuando transcurra este número de iteraciones sin una mejora significativa en
+	 * la función objetivo
+	 */
 	public int itParada;
+	// Porcentaje que debe haber mejorado el fitness para que una mejora se considere significativa
+	public float porcentMejora;
 	// País sobre el que se está trabajando
 	public String país;
 	// Rango de fechas sobre el que se está trabajando

@@ -50,8 +50,6 @@ public class VnsRs implements IRecocidoSimulado {
 	private double fitnessMejorSolución;
 	// Número de iteración actual
 	private int iter;
-	// Número de iteraciones que hace que no se encuentra un nuevo óptimo global
-	private int iteracionesSinMejora;
 
 	public VnsRs(Config config, GraphDatabaseService db, Log log) {
 		this.db = db;
@@ -181,7 +179,6 @@ public class VnsRs implements IRecocidoSimulado {
 		mejorSolución = null;
 		fitnessMejorSolución = -1;
 		iter = 0;
-		iteracionesSinMejora = 0;
 	}
 
 	/**
@@ -221,9 +218,6 @@ public class VnsRs implements IRecocidoSimulado {
 			if (factible && nuevoFitness > fitnessMejorSolución) {
 				fitnessMejorSolución = nuevoFitness;
 				mejorSolución = gLíneas.getLíneasBool();
-				iteracionesSinMejora = 0;
-			} else {
-				iteracionesSinMejora++;
 			}
 
 			// Comprobar si aceptamos esta nueva solución o si nos quedamos con la anterior
@@ -274,7 +268,18 @@ public class VnsRs implements IRecocidoSimulado {
 		if (numFijoIteraciones >= 0) {
 			return iter < numFijoIteraciones;
 		} else {
-			return iteracionesSinMejora < config.itParada;
+			if (iter < config.itParada) {
+				return true;
+			} else {
+				double fitnessHaceItParadaIteraciones =
+					estadísticas.listaEstadísticas.get(iter - config.itParada).fitnessMejor;
+				if (config.porcentMejora == 0) {
+					return fitnessMejorSolución > fitnessHaceItParadaIteraciones;
+				} else {
+					float porcentajeMejora = (float) (fitnessMejorSolución / fitnessHaceItParadaIteraciones);
+					return porcentajeMejora - 1 >= config.porcentMejora;
+				}
+			}
 		}
 	}
 }
