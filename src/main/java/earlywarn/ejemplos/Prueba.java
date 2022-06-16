@@ -3,6 +3,7 @@ package earlywarn.ejemplos;
 import java.util.List;
 
 import earlywarn.definiciones.Globales;
+import earlywarn.definiciones.OutputMap;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
 import earlywarn.definiciones.Propiedad;
@@ -12,6 +13,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.lang3.ArrayUtils;
@@ -125,18 +127,18 @@ public class Prueba {
 		return consultas.getSIRInicialPorVuelo(idVuelo);
 	}
 
-	@UserFunction
+	@Procedure(mode = Mode.WRITE)
 	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al final del vuelo con el identificador <<idVuelo>>, " +
 			"siendo el valor de infectados el riesgo del vuelo. Se usan los valores de los índices de transmisión (beta) y recuperación (alpha)" +
 			"por defecto si el usuario no los especifica. La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
-	public List<Double> getSIRFinalPorVuelo(@Name("idVuelo") Long idVuelo,
+	public Stream<OutputMap> getRiesgoVuelo(@Name("idVuelo") Long idVuelo,
 											@Name("alphaValue") Number alphaValue,
 											@Name("betaValue") Number betaValue,
 											@Name("saveResult") Boolean saveResult) {
-		Number alpha = alphaValue.equals(-1) ? Globales.DEFAULT_ALPHA : alphaValue;
-		Number beta = betaValue.equals(-1) ? Globales.DEFAULT_BETA : betaValue;
+		Number alpha = (double) alphaValue== -1 ? Globales.DEFAULT_ALPHA : alphaValue;
+		Number beta = (double) betaValue == -1 ? Globales.DEFAULT_BETA : betaValue;
 		Consultas consultas = new Consultas(db);
-		return consultas.getSIRFinalPorVuelo(idVuelo, alpha, beta, saveResult);
+		return Stream.of(new OutputMap(consultas.getRiesgoVuelo(idVuelo, alpha, beta, saveResult)));
 	}
 
 	@UserFunction
