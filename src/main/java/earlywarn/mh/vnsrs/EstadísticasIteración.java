@@ -45,7 +45,7 @@ public class EstadísticasIteración {
 	@Override
 	public String toString() {
 		return numIter + "," + numLíneasAbiertas + "," + entorno.getNumLíneasConSigno() + "," + temperatura + "," +
-			fitnessActual + "," + fitnessMejor + ", " + probAceptación;
+			fitnessActual + "," + fitnessMejor + "," + probAceptación;
 	}
 
 	/**

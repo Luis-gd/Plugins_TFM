@@ -85,14 +85,16 @@ public class Config {
 		Element elemItReducciónT = Utils.toLista(raíz.getElementsByTagName("itReducciónT")).get(0);
 		configRS.itReducciónT = Integer.parseInt(elemItReducciónT.getTextContent());
 
-		Element elemItParada = Utils.toLista(raíz.getElementsByTagName("itParada")).get(0);
-		itParada = Integer.parseInt(elemItParada.getTextContent());
 		Element elemPaís = Utils.toLista(raíz.getElementsByTagName("país")).get(0);
 		país = elemPaís.getTextContent();
 		Element elemDíaInicio = Utils.toLista(raíz.getElementsByTagName("primerDía")).get(0);
 		díaInicio = Utils.stringADate(elemDíaInicio.getTextContent());
 		Element elemDíaFin = Utils.toLista(raíz.getElementsByTagName("últimoDía")).get(0);
 		díaFin = Utils.stringADate(elemDíaFin.getTextContent());
+		Element elemItParada = Utils.toLista(raíz.getElementsByTagName("itParada")).get(0);
+		itParada = Integer.parseInt(elemItParada.getTextContent());
+		Element elemPorcentMejora = Utils.toLista(raíz.getElementsByTagName("porcentMejora")).get(0);
+		porcentMejora = Float.parseFloat(elemPorcentMejora.getTextContent());
 
 		pesos = new EnumMap<>(IDCriterio.class);
 		Element elemPesos = Utils.toLista(raíz.getElementsByTagName("pesos")).get(0);

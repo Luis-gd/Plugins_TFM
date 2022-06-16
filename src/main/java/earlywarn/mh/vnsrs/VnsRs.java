@@ -42,8 +42,10 @@ public class VnsRs implements IRecocidoSimulado {
 	 * número de iteraciones, ignorando la condición de parada habitual. Si es < 0, no tiene efecto alguno.
 	 */
 	private int numFijoIteraciones;
-	// Número total de posibles soluciones aceptadas
-	private int solucionesAceptadas;
+	// Número de soluciones consideradas que eran peor que la actual
+	private int solucionesPeores;
+	// Número de soluciones que eran peores que la actual y fueron aceptadas
+	private int solucionesPeoresAceptadas;
 	// Mejor solución encontrada hasta ahora (como array de booleanos) y su fitness
 	private boolean[] mejorSolución;
 	private double fitnessMejorSolución;
@@ -149,11 +151,12 @@ public class VnsRs implements IRecocidoSimulado {
 		configRS.alfa = 1;
 		configRS.itReducciónT = config.configRS.itReducciónT;
 		rs = new RecocidoSimulado(configRS);
+		config.configRS = configRS;
 
 		init();
 		_ejecutar();
 
-		return (float) solucionesAceptadas / numIteraciones;
+		return (float) solucionesPeoresAceptadas / solucionesPeores;
 	}
 
 	/**
@@ -174,7 +177,8 @@ public class VnsRs implements IRecocidoSimulado {
 			.build();
 		estadísticas = new Estadísticas(log);
 
-		solucionesAceptadas = 0;
+		solucionesPeores = 0;
+		solucionesPeoresAceptadas = 0;
 		mejorSolución = null;
 		fitnessMejorSolución = -1;
 		iter = 0;
@@ -219,12 +223,18 @@ public class VnsRs implements IRecocidoSimulado {
 				mejorSolución = gLíneas.getLíneasBool();
 			}
 
+			boolean esPeorSolución = nuevoFitness < fitnessActual;
+			if (esPeorSolución) {
+				solucionesPeores++;
+			}
 			// Comprobar si aceptamos esta nueva solución o si nos quedamos con la anterior
 			double probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
 			if (rs.considerarSolución(fitnessActual, nuevoFitness)) {
 				fitnessActual = nuevoFitness;
-				solucionesAceptadas++;
 				gEntornos.registrarEstadoY(líneasAVariar);
+				if (esPeorSolución) {
+					solucionesPeoresAceptadas++;
+				}
 			} else {
 				gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación.invertir());
 				// Indicar que nos mantenemos en el mismo estado, es decir, no se ha variado ninguna línea
