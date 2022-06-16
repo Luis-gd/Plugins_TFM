@@ -9,6 +9,9 @@ import java.util.*;
  * Clase que implementa los métodos correspondientes con la gestión de entornos de VNS
  */
 public class GestorEntornos {
+	// Constante por la que se multiplica el porcentaje de temperatura restante para el cálculo del entorno horizontal
+	private static final float MULT_PORCENT_TEMPERATURA_ENTORNO_X = 5.0f;
+
 	private final Random random;
 	private final ConfigVNS config;
 	// Temperatura inicial del RS
@@ -132,8 +135,9 @@ public class GestorEntornos {
 		 * En función del porcentaje de temperatura restante, se va transicionando de una elección completamente
 		 * aleatoria a una basada en la probabilidad antes calculada.
 		 */
-		double porcentTemperatura = temperaturaActual / temperaturaInicial;
-		double probabilidadFinal = 0.5 * porcentTemperatura + probabilidadAbrirCasos * (1 - porcentTemperatura);
+		double coeficienteTemperatura =
+			Math.min(1, temperaturaActual / temperaturaInicial * MULT_PORCENT_TEMPERATURA_ENTORNO_X);
+		double probabilidadFinal = 0.5 * coeficienteTemperatura + probabilidadAbrirCasos * (1 - coeficienteTemperatura);
 
 		if (random.nextDouble() < probabilidadFinal) {
 			return OperaciónLínea.ABRIR;
