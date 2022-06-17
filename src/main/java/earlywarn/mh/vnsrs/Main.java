@@ -3,8 +3,12 @@ package earlywarn.mh.vnsrs;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
+
+import java.io.*;
+import java.util.List;
 
 /**
  * Clase desde la que se ejecuta la metaheurística de recocido simulado + VNS
@@ -54,5 +58,29 @@ public class Main {
 		CalculadoraTInicial calculadora = new CalculadoraTInicial(vnsrs, log);
 		return ((Float) calculadora.determinarTInicial(PORCENTAJE_ACEPTACIÓN_INICIAL, TOLERANCIA_ACEPTACIÓN_INICIAL,
 			ITERACIONES_ACEPTACIÓN_INICIAL)).doubleValue();
+	}
+
+	/**
+	 * Calcula el fitness de una solución especificada en un fichero de entrada. El fichero debe contener una lista
+	 * con los identificadores de todas las líneas cerradas, separadas por comas y en formato IataOrigen-IataDestino.
+	 * @param rutaFichero Ruta al fichero que contiene la lista de línas, relativa a la carpeta "import"
+	 * @return Fitness de la solución indicada
+	 */
+	@SuppressWarnings("ProhibitedExceptionThrown")
+	@UserFunction
+	public Double getFitnessSolución(@Name("rutaFichero") String rutaFichero) {
+		Config config = new Config(RUTA_CONFIG);
+		VnsRs vnsrs = new VnsRs(config, db, log);
+
+		try (BufferedReader input = new BufferedReader(new FileReader("import/" + rutaFichero))) {
+			String líneasStr = input.readLine();
+			líneasStr = líneasStr.replace(", ", ",");
+			String[] líneas = líneasStr.split(",");
+			return vnsrs.calcularFitnessSolución(List.of(líneas));
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException("No se ha encontrado el fichero con la solución a evaluar", e);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

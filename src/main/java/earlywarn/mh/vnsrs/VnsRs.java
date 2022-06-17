@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Clase que implementa la metaheurística de recocido simulado + VNS
@@ -160,12 +161,40 @@ public class VnsRs implements IRecocidoSimulado {
 	}
 
 	/**
+	 * Devuelve el fitness de una solución cualquiera usando los pesos establecidos en el fichero de configuración.
+	 * También se logueará el porcentaje de cada criterio.
+	 * @param líneasCerradas Lista de líneas cerradas. Se asume que el resto estarán abiertas.
+	 * @return Fitness de la solución especificada
+	 */
+	public double calcularFitnessSolución(List<String> líneasCerradas) {
+		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
+		// TODO: Leer lista de criterios de la config
+		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
+			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROLÍNEAS_LINEAL))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROPUERTOS_LINEAL))
+			.añadirCriterio(fCriterios.criterio(IDCriterio.CONECTIVIDAD))
+			.añadirCriteriosRestricciones(config, fCriterios)
+			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
+			.build();
+
+		gLíneas.abrirCerrarLíneas(líneasCerradas, OperaciónLínea.CERRAR);
+		Map<IDCriterio, Double> porcentajeCriterios = gLíneas.getPorcentajeCriterios();
+		log.info("Porcentaje de cada criterio para la solución indicada:\n");
+		log.info(Utils.mapaAString(porcentajeCriterios));
+
+		return gLíneas.getFitness();
+	}
+
+	/**
 	 * Inicializa las variables necesarias para ejecutar el algoritmo
 	 */
 	private void init() {
 		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
-		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db)
+		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
 			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
 			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
 			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))

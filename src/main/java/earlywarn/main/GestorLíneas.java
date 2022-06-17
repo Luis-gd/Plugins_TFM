@@ -9,6 +9,7 @@ import earlywarn.main.modelo.Línea;
 import earlywarn.main.modelo.criterio.Criterio;
 import earlywarn.mh.vnsrs.ConversorLíneas;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.logging.Log;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -21,6 +22,7 @@ public class GestorLíneas {
 	private final ConversorLíneas conversorLíneas;
 	// Lista de criterios almacenados, cada uno identificado por un valor de un enum
 	protected final Map<IDCriterio, Criterio> criterios;
+	private final Log log;
 
 	// Mapa que almacena el estado de cada línea
 	private final Map<String, EstadoLínea> líneas;
@@ -41,9 +43,11 @@ public class GestorLíneas {
 	 * @param díaInicio Primer día a tener en cuenta a la hora de determinar las líneas sobre las que se va a trabajar
 	 * @param díaFin Último día a tener en cuenta a la hora de determinar las líneas sobre las que se va a trabajar
 	 * @param db Instancia de la base de datos
+	 * @param log Log de Neo4J
 	 */
 	protected GestorLíneas(List<String> líneas, ConversorLíneas conversorLíneas, LocalDate díaInicio,
-						   LocalDate díaFin, GraphDatabaseService db) {
+						   LocalDate díaFin, GraphDatabaseService db, Log log) {
+		this.log = log;
 		this.conversorLíneas = conversorLíneas;
 		this.líneas = new TreeMap<>();
 		líneasBool = new boolean[líneas.size()];
@@ -86,18 +90,23 @@ public class GestorLíneas {
 		boolean abrir = operación == OperaciónLínea.ABRIR;
 		for (String idLínea : líneas) {
 			EstadoLínea estadoLínea = this.líneas.get(idLínea);
-			if (estadoLínea.abierta != abrir) {
-				estadoLínea.abierta = !estadoLínea.abierta;
-				líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
-				// Recalcular los valores de todos los criteros
-				for (Criterio criterio : criterios.values()) {
-					criterio.recalcular(estadoLínea.línea, abrir);
-				}
+			if (estadoLínea == null) {
+				log.warn("No se puede variar el estado de la línea " + idLínea + " porque no está en " +
+					"la lista de líneas");
+			} else {
+				if (estadoLínea.abierta != abrir) {
+					estadoLínea.abierta = !estadoLínea.abierta;
+					líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
+					// Recalcular los valores de todos los criteros
+					for (Criterio criterio : criterios.values()) {
+						criterio.recalcular(estadoLínea.línea, abrir);
+					}
 
-				if (operación == OperaciónLínea.ABRIR) {
-					numAbiertas++;
-				} else {
-					numAbiertas--;
+					if (operación == OperaciónLínea.ABRIR) {
+						numAbiertas++;
+					} else {
+						numAbiertas--;
+					}
 				}
 			}
 		}
@@ -185,6 +194,18 @@ public class GestorLíneas {
 		} else {
 			throw new IllegalArgumentException("El criterio especificado no está incluido en este gestor");
 		}
+	}
+
+	/**
+	 * Devuelve el valor porcentual de todos los criterios registrados en el gestor.
+	 * @return Mapa con el valor porcentual de todos los criterios
+	 */
+	public Map<IDCriterio, Double> getPorcentajeCriterios() {
+		Map<IDCriterio, Double> ret = new EnumMap<>(IDCriterio.class);
+		for (Map.Entry<IDCriterio, Criterio> entrada : criterios.entrySet()) {
+			ret.put(entrada.getKey(), entrada.getValue().getPorcentaje());
+		}
+		return ret;
 	}
 
 	/**

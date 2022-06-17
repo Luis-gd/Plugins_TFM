@@ -8,6 +8,7 @@ import earlywarn.mh.vnsrs.ConversorLíneas;
 import earlywarn.mh.vnsrs.CriterioFactory;
 import earlywarn.mh.vnsrs.restricción.Restricción;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.logging.Log;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,8 +18,8 @@ import java.util.List;
  */
 public class GestorLíneasBuilder extends GestorLíneas {
 	public GestorLíneasBuilder(List<String> líneas, ConversorLíneas conversorLíneas, LocalDate díaInicio,
-							   LocalDate díaFin, GraphDatabaseService db) {
-		super(líneas, conversorLíneas, díaInicio, díaFin, db);
+							   LocalDate díaFin, GraphDatabaseService db, Log log) {
+		super(líneas, conversorLíneas, díaInicio, díaFin, db, log);
 	}
 
 	public GestorLíneasBuilder añadirCriterio(Criterio criterio) {

@@ -205,4 +205,18 @@ public class Utils {
 		}
 		return sb.toString();
 	}
+
+	/**
+	 * Devuelve una representación como string de los elementos del mapa indicado. Cada elemento se mostrará en
+	 * una línea.
+	 * @param mapa Mapa a mostrar
+	 * @return Representación del mapa indicado como string
+	 */
+	public static String mapaAString(Map<?, ?> mapa) {
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<?, ?> entrada : mapa.entrySet()) {
+			sb.append(entrada.getKey()).append(": ").append(entrada.getValue()).append("\n");
+		}
+		return sb.toString();
+	}
 }
