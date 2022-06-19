@@ -28,6 +28,19 @@ public class GestorLíneasBuilder extends GestorLíneas {
 	}
 
 	/**
+	 * Añade todos los criterios cuyo ID esté incluido en la lista especificada
+	 * @param criterios Lista con los IDs de todos los criterios a añadir
+	 * @param fCriterios Factoría de criterios que permita crear nuevos criterios dado únicamente su id
+	 * @return this
+	 */
+	public GestorLíneasBuilder añadirCriterios(List<IDCriterio> criterios, CriterioFactory fCriterios) {
+		for (IDCriterio c : criterios) {
+			_añadirCriterio(fCriterios.criterio(c));
+		}
+		return this;
+	}
+
+	/**
 	 * Añade todos los criterios necesarios para calcular las restricciones definidas en la configuración a la lista
 	 * de criterios a tener en cuenta.
 	 * A estos criterios se les asignará un peso de 0 si no estaban ya en la lista de pesos.

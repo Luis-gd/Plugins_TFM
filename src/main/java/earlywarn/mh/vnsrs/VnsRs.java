@@ -168,15 +168,8 @@ public class VnsRs implements IRecocidoSimulado {
 	 */
 	public double calcularFitnessSolución(List<String> líneasCerradas) {
 		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
-		// TODO: Leer lista de criterios de la config
 		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
-			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROLÍNEAS_LINEAL))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROPUERTOS_LINEAL))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.CONECTIVIDAD))
-			.añadirCriteriosRestricciones(config, fCriterios)
+			.añadirCriterios(config.criterios, fCriterios)
 			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();
 
@@ -195,12 +188,7 @@ public class VnsRs implements IRecocidoSimulado {
 		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
 		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
-			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROLÍNEAS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROPUERTOS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.CONECTIVIDAD))
+			.añadirCriterios(config.criterios, fCriterios)
 			.añadirCriteriosRestricciones(config, fCriterios)
 			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();

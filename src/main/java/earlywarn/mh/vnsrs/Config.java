@@ -33,6 +33,8 @@ public class Config {
 	// Rango de fechas sobre el que se está trabajando
 	public LocalDate díaInicio;
 	public LocalDate díaFin;
+	// Lista de criterios leídos del XML
+	public List<IDCriterio> criterios;
 	// Pesos de los diferentes criterios
 	public Map<IDCriterio, Float> pesos;
 	// Restricciones a las soluciones factibles
@@ -96,10 +98,12 @@ public class Config {
 		Element elemPorcentMejora = Utils.toLista(raíz.getElementsByTagName("porcentMejora")).get(0);
 		porcentMejora = Float.parseFloat(elemPorcentMejora.getTextContent());
 
+		criterios = new ArrayList<>();
 		pesos = new EnumMap<>(IDCriterio.class);
-		Element elemPesos = Utils.toLista(raíz.getElementsByTagName("pesos")).get(0);
-		for (Element elemCriterio : Utils.toLista(elemPesos.getElementsByTagName("criterio"))) {
+		Element elemCriterios = Utils.toLista(raíz.getElementsByTagName("criterios")).get(0);
+		for (Element elemCriterio : Utils.toLista(elemCriterios.getElementsByTagName("criterio"))) {
 			String textoIDCriterio = elemCriterio.getAttribute("id");
+			String textoPesoCriterio = elemCriterio.getAttribute("peso");
 			IDCriterio idCriterio;
 			try {
 				idCriterio = IDCriterio.valueOf(textoIDCriterio);
@@ -107,7 +111,10 @@ public class Config {
 				throw new IllegalArgumentException("El ID de criterio \"" + textoIDCriterio + "\", especificado en " +
 					"la configuración del programa, no corresponde con ningún criterio.", e);
 			}
-			pesos.put(idCriterio, Float.parseFloat(elemCriterio.getTextContent()));
+			criterios.add(idCriterio);
+			if (!textoPesoCriterio.isEmpty()) {
+				pesos.put(idCriterio, Float.parseFloat(textoPesoCriterio));
+			}
 		}
 
 		restricciones = new ListaRestricciones();
