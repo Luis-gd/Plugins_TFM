@@ -61,6 +61,12 @@ public class Config {
 
 		Element elemItCambioEntorno = Utils.toLista(raíz.getElementsByTagName("itCambioEntorno")).get(0);
 		configVNS.itCambioEntorno = Integer.parseInt(elemItCambioEntorno.getTextContent());
+
+		Element elemItCambioEntornoXComplejo = Utils.toLista(raíz.getElementsByTagName("cambioEntornoXComplejo")).get(0);
+		configVNS.cambioEntornoXComplejo = Boolean.parseBoolean(elemItCambioEntornoXComplejo.getTextContent());
+		Element elemItCambioEntornoYComplejo = Utils.toLista(raíz.getElementsByTagName("cambioEntornoYComplejo")).get(0);
+		configVNS.cambioEntornoYComplejo = Boolean.parseBoolean(elemItCambioEntornoYComplejo.getTextContent());
+
 		Element elemTamañoMemoriaX = Utils.toLista(raíz.getElementsByTagName("tamañoMemoriaX")).get(0);
 		configVNS.tamañoMemoriaX = Float.parseFloat(elemTamañoMemoriaX.getTextContent());
 		Element elemDistanciaMemoriaX = Utils.toLista(raíz.getElementsByTagName("distanciaMemoriaX")).get(0);

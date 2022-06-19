@@ -10,6 +10,7 @@ import earlywarn.main.GestorLíneasBuilder;
 import earlywarn.main.Utils;
 import earlywarn.main.modelo.FitnessPorPesos;
 import earlywarn.main.modelo.RegistroAeropuertos;
+import earlywarn.mh.vnsrs.entornos.GestorEntornos;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
@@ -230,9 +231,11 @@ public class VnsRs implements IRecocidoSimulado {
 				nuevoFitness = rs.penalizarFitness(fitnessActual, nuevoFitness);
 			}
 
-			// Insertar un nuevo caso en la memoria indicando la operación realizada y si hubo una mejora en el fitness
-			gEntornos.registrarCasoX(
-				new CasoEntornoX(numAbiertas, entorno.operación == OperaciónLínea.ABRIR, nuevoFitness > fitnessActual));
+			/*
+			 * Registrar la nueva solución considerada en el gestor de entornos para que pueda usarse en el cálculo
+			 * de entornos si fuera necesario
+			 */
+			gEntornos.registrarNuevaSolución(numAbiertas, entorno.operación, nuevoFitness, fitnessActual);
 
 			// Comprobar si esta solución es el nuevo máximo global
 			if (factible && nuevoFitness > fitnessMejorSolución) {
@@ -248,14 +251,14 @@ public class VnsRs implements IRecocidoSimulado {
 			double probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
 			if (rs.considerarSolución(fitnessActual, nuevoFitness)) {
 				fitnessActual = nuevoFitness;
-				gEntornos.registrarEstadoY(líneasAVariar);
+				gEntornos.registrarNuevaPosición(líneasAVariar);
 				if (esPeorSolución) {
 					solucionesPeoresAceptadas++;
 				}
 			} else {
 				gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación.invertir());
 				// Indicar que nos mantenemos en el mismo estado, es decir, no se ha variado ninguna línea
-				gEntornos.registrarEstadoY(new ArrayList<>());
+				gEntornos.registrarNuevaPosición(new ArrayList<>());
 			}
 
 			// Registrar estadísticas de esta iteración
