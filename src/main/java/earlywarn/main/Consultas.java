@@ -706,33 +706,57 @@ public class Consultas {
 	}
 
 	/**
-	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador <<idAerpuerto>> entre las fechas de inicio
-	 * y fin indicadas.
+	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador <<idAerpuerto>> en la fecha indicada.
 	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
-	 * @param fechaInicio Primer día a tener en cuenta
-	 * @param fechaFin Último día a tener en cuenta
+	 * @param fecha Fecha del día del que recuperar el riesgo.
 	 * @return Valor decimal representativo del riesgo del aeropuerto.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public double getRiesgoAeropuerto(String idAeropuerto, LocalDate fechaInicio, LocalDate fechaFin){
-		String fechaInicioStr = fechaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-		String fechaFinStr = fechaFin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+	public TreeMap<String,Double> getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
+		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
+		TreeMap<String ,Double> ret = new TreeMap<String,Double>();
+		double accumulatedRisk = 0;
+		List<Long> idVuelos = new ArrayList<>();
 
 		if(propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)){
 			try(Transaction tx = db.beginTx()) {
-				try (Result res = tx.execute(
-						"MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay)<-[]-" +
-								"(f:FLIGHT) WHERE date(\"" + fechaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + fechaFinStr +
-								"\") RETURN sum(f.flightIfinal)"
-				)) {
-					Map<String, Object> row = res.next();
-					return Utils.resultadoADouble(row.get(res.columns().get(0)));
+				try(Result res = tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay)" +
+						"<-[]-(f:FLIGHT) WHERE f.dateOfDeparture=date(\"" + fechaStr + "\") RETURN f.flightId")){
+					List<String> columnas = res.columns();
+					while (res.hasNext()) {
+						idVuelos.add((Long) res.next().get(columnas.get(0)));
+					}
+					System.out.println("Hola");
+				}
+				for(Long id : idVuelos){ //TODO: id not correct format
+					try(Result r = tx.execute("MATCH (f:FLIGHT{flightId:" + id + "}) RETURN f.flightSinicial, f.flightIinicial, " +
+							"f.flightRinicial, f.flightSfinal, f.flightIfinal, f.flightRfinal, f.alphaValue, f.betaValue")){
+						if(r != null) { // SIR already calculated
+							List<String> columnas = r.columns();
+							while(r.hasNext()){
+								Map<String, Object> row = r.next();
+								ret.put(Long.toString(id), (Double) row.get(columnas.get(4)));
+								accumulatedRisk += (Double) row.get(columnas.get(4));
+								if(saveResult){
+									//call save function
+								}
+							}
+						} else { // Need to calculate SIR
+							Map<String,Double> calculatedSIR = getRiesgoVuelo(id, -1.0, -1.0, false);
+							ret.put(Long.toString(id), calculatedSIR.get("I_final"));
+							accumulatedRisk += calculatedSIR.get("I_final");
+							if(saveResult){//call save function
+							}
+						}
+					}
 				}
 			}
+			ret.put("TOTAL AIRPORT RISK", accumulatedRisk);
+			return ret;
 		} else  {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
 					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");

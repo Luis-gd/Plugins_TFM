@@ -141,14 +141,14 @@ public class Prueba {
 		return Stream.of(new OutputMap(consultas.getRiesgoVuelo(idVuelo, alpha, beta, saveResult)));
 	}
 
-	@UserFunction
-	@Description("Calcula el riesgo acumulado hasta la fecha del aeropuerto con identificador <<idAeropuerto>>. Devuelve un valor decimal que" +
-			"representa el riesgo")
-	public double getRiesgoAeropuerto(@Name("idAeropuerto") String idAeropuerto,
-									  @Name("fechaInicio") LocalDate fechaInicio,
-									  @Name("fechaFin") LocalDate fechaFin) {
+	@Procedure(mode = Mode.WRITE)
+	@Description("Calcula el riesgo acumulado del aeropuerto con identificador <<idAeropuerto>> en la fecha indicada." +
+			"Devuelve un valor decimal que representa el riesgo y una matriz indicando el riesgo aportado por cada vuelo.")
+	public Stream<OutputMap> getRiesgoAeropuerto(@Name("idAeropuerto") String idAeropuerto,
+									  @Name("fechaInicio") LocalDate fecha,
+									  @Name("saveResult") Boolean saveResult) {
 		Consultas consultas = new Consultas(db);
-		return consultas.getRiesgoAeropuerto(idAeropuerto, fechaInicio, fechaFin);
+		return Stream.of(new OutputMap(consultas.getRiesgoAeropuerto(idAeropuerto, fecha, saveResult)));
 	}
 
 	// -- Líneas --
