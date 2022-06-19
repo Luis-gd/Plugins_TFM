@@ -1,7 +1,7 @@
 package earlywarn.mh.vnsrs.entornos;
 
 import earlywarn.main.Utils;
-import earlywarn.mh.vnsrs.ConfigVNS;
+import earlywarn.mh.vnsrs.config.ConfigVNS;
 
 import java.util.List;
 

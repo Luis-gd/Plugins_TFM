@@ -1,5 +1,7 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.mh.vnsrs.entornos.EntornoVNS;
+
 /**
  * Almacena las estadísticas de una sola iteración
  */

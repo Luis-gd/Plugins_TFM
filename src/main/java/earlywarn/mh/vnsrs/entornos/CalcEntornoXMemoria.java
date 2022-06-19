@@ -1,10 +1,7 @@
 package earlywarn.mh.vnsrs.entornos;
 
 import earlywarn.definiciones.OperaciónLínea;
-import earlywarn.mh.vnsrs.CasoEntornoX;
-import earlywarn.mh.vnsrs.ConfigVNS;
-import earlywarn.mh.vnsrs.ConversorLíneas;
-import earlywarn.mh.vnsrs.MemoriaCasosX;
+import earlywarn.mh.vnsrs.config.ConfigVNS;
 
 import java.util.List;
 import java.util.Random;

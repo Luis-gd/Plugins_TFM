@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.entornos;
 
 /**
  * Representa una entrada en la memoria de últimas posiciones usada en los cambios de entorno verticales

@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.config;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;

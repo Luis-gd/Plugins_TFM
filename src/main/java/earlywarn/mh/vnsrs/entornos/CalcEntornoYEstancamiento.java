@@ -1,9 +1,8 @@
 package earlywarn.mh.vnsrs.entornos;
 
 import earlywarn.main.Utils;
-import earlywarn.mh.vnsrs.ConfigVNS;
+import earlywarn.mh.vnsrs.config.ConfigVNS;
 import earlywarn.mh.vnsrs.ConversorLíneas;
-import earlywarn.mh.vnsrs.MemoriaEstadosY;
 
 import java.util.ArrayList;
 import java.util.List;

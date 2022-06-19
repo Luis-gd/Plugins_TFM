@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.entornos;
 
 import earlywarn.definiciones.OperaciónLínea;
 

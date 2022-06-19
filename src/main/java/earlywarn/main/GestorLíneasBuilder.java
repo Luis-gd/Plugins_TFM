@@ -3,7 +3,7 @@ package earlywarn.main;
 import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
-import earlywarn.mh.vnsrs.Config;
+import earlywarn.mh.vnsrs.config.Config;
 import earlywarn.mh.vnsrs.ConversorLíneas;
 import earlywarn.mh.vnsrs.CriterioFactory;
 import earlywarn.mh.vnsrs.restricción.Restricción;

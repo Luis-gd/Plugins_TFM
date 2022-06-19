@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.config;
 
 import java.util.Map;
 import java.util.TreeMap;

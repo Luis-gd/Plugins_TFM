@@ -1,5 +1,7 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.mh.vnsrs.config.ConfigRS;
+
 import java.util.Random;
 
 /**

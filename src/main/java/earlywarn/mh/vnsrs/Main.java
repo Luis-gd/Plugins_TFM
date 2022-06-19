@@ -1,5 +1,6 @@
 package earlywarn.mh.vnsrs;
 
+import earlywarn.mh.vnsrs.config.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;

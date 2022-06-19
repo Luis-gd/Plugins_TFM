@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.config;
 
 /**
  * Clase que almacena los valores necesarios para configurar RS
