@@ -67,23 +67,24 @@ public class Config {
 		Element elemItCambioEntornoYComplejo = Utils.toLista(raíz.getElementsByTagName("cambioEntornoYComplejo")).get(0);
 		configVNS.cambioEntornoYComplejo = Boolean.parseBoolean(elemItCambioEntornoYComplejo.getTextContent());
 
-		Element elemTamañoMemoriaX = Utils.toLista(raíz.getElementsByTagName("tamañoMemoriaX")).get(0);
+		Element elemEntornoXComplejo = Utils.toLista(raíz.getElementsByTagName("entornoXComplejo")).get(0);
+		Element elemTamañoMemoriaX = Utils.toLista(elemEntornoXComplejo.getElementsByTagName("tamañoMemoriaX")).get(0);
 		configVNS.tamañoMemoriaX = Float.parseFloat(elemTamañoMemoriaX.getTextContent());
-		Element elemDistanciaMemoriaX = Utils.toLista(raíz.getElementsByTagName("distanciaMemoriaX")).get(0);
+		Element elemDistanciaMemoriaX = Utils.toLista(elemEntornoXComplejo.getElementsByTagName("distanciaMemoriaX")).get(0);
 		configVNS.distanciaMemoriaX = Float.parseFloat(elemDistanciaMemoriaX.getTextContent());
 
-		Element elemEntornoY = Utils.toLista(raíz.getElementsByTagName("entornoY")).get(0);
-		Element elemMaxPorcentLíneas = Utils.toLista(elemEntornoY.getElementsByTagName("maxPorcentLíneas")).get(0);
+		Element elemEntornoYComplejo = Utils.toLista(raíz.getElementsByTagName("entornoYComplejo")).get(0);
+		Element elemMaxPorcentLíneas = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("maxPorcentLíneas")).get(0);
 		configVNS.maxPorcentLíneas = Float.parseFloat(elemMaxPorcentLíneas.getTextContent());
-		Element elemNumComprobaciones = Utils.toLista(elemEntornoY.getElementsByTagName("numComprobaciones")).get(0);
+		Element elemNumComprobaciones = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("numComprobaciones")).get(0);
 		configVNS.numComprobaciones = Integer.parseInt(elemNumComprobaciones.getTextContent());
-		Element elemPorcentLíneas = Utils.toLista(elemEntornoY.getElementsByTagName("porcentLíneas")).get(0);
+		Element elemPorcentLíneas = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("porcentLíneas")).get(0);
 		configVNS.porcentLíneas = Float.parseFloat(elemPorcentLíneas.getTextContent());
-		Element elemIteraciones = Utils.toLista(elemEntornoY.getElementsByTagName("iteraciones")).get(0);
+		Element elemIteraciones = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("iteraciones")).get(0);
 		configVNS.iteraciones = Integer.parseInt(elemIteraciones.getTextContent());
-		Element elemLíneasPorIt = Utils.toLista(elemEntornoY.getElementsByTagName("líneasPorIt")).get(0);
+		Element elemLíneasPorIt = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("líneasPorIt")).get(0);
 		configVNS.líneasPorIt = Float.parseFloat(elemLíneasPorIt.getTextContent());
-		Element elemVariaciónMax = Utils.toLista(elemEntornoY.getElementsByTagName("variaciónMax")).get(0);
+		Element elemVariaciónMax = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("variaciónMax")).get(0);
 		configVNS.variaciónMax = Float.parseFloat(elemVariaciónMax.getTextContent());
 
 		Element elemTInicial = Utils.toLista(raíz.getElementsByTagName("tInicial")).get(0);
