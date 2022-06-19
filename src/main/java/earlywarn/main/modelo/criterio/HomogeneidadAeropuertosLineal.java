@@ -28,6 +28,6 @@ public class HomogeneidadAeropuertosLineal extends HomogeneidadAeropuertos {
 		 * con respecto a esta media calculada.
 		 */
 		double pasajerosRestantesMedio = Utils.getMedia(porcentajes);
-		return Utils.getDesviaciónMedia(porcentajes, pasajerosRestantesMedio);
+		return 1 - Utils.getDesviaciónMedia(porcentajes, pasajerosRestantesMedio);
 	}
 }

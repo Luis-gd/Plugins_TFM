@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.restricción;
 
 /**
  * Identificadores de las posibles restricciones que pueden imponerse a las soluciones del algoritmo VNS-RS.

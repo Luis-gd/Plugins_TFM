@@ -1,4 +1,7 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.entornos;
+
+import earlywarn.mh.vnsrs.ConversorLíneas;
+import earlywarn.mh.vnsrs.config.ConfigVNS;
 
 import java.util.*;
 

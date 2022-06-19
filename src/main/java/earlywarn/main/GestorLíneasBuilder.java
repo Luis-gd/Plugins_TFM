@@ -3,11 +3,12 @@ package earlywarn.main;
 import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
-import earlywarn.mh.vnsrs.Config;
+import earlywarn.mh.vnsrs.config.Config;
 import earlywarn.mh.vnsrs.ConversorLíneas;
 import earlywarn.mh.vnsrs.CriterioFactory;
 import earlywarn.mh.vnsrs.restricción.Restricción;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.logging.Log;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,12 +18,25 @@ import java.util.List;
  */
 public class GestorLíneasBuilder extends GestorLíneas {
 	public GestorLíneasBuilder(List<String> líneas, ConversorLíneas conversorLíneas, LocalDate díaInicio,
-							   LocalDate díaFin, GraphDatabaseService db) {
-		super(líneas, conversorLíneas, díaInicio, díaFin, db);
+							   LocalDate díaFin, GraphDatabaseService db, Log log) {
+		super(líneas, conversorLíneas, díaInicio, díaFin, db, log);
 	}
 
 	public GestorLíneasBuilder añadirCriterio(Criterio criterio) {
 		_añadirCriterio(criterio);
+		return this;
+	}
+
+	/**
+	 * Añade todos los criterios cuyo ID esté incluido en la lista especificada
+	 * @param criterios Lista con los IDs de todos los criterios a añadir
+	 * @param fCriterios Factoría de criterios que permita crear nuevos criterios dado únicamente su id
+	 * @return this
+	 */
+	public GestorLíneasBuilder añadirCriterios(List<IDCriterio> criterios, CriterioFactory fCriterios) {
+		for (IDCriterio c : criterios) {
+			_añadirCriterio(fCriterios.criterio(c));
+		}
 		return this;
 	}
 

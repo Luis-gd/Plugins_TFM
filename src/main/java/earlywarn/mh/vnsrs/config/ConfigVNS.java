@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.config;
 
 import earlywarn.main.Utils;
 
@@ -16,6 +16,11 @@ public class ConfigVNS {
 
 	// Cada cuántas iteraciones se debería re-evaluar si es necesario un cambio de entorno
 	public int itCambioEntorno;
+
+	// Si usar o no los cambios de entorno complejos
+	public boolean cambioEntornoXComplejo;
+	public boolean cambioEntornoYComplejo;
+
 	/*
 	 * Factor de tamaño de la memoria usada para el cambio de entorno horizontal (abrir o cerrar líneas). El valor
 	 * final se obtiene multiplicando por el número de líneas.
