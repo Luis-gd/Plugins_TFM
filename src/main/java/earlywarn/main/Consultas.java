@@ -730,9 +730,8 @@ public class Consultas {
 					while (res.hasNext()) {
 						idVuelos.add((Long) res.next().get(columnas.get(0)));
 					}
-					System.out.println("Hola");
 				}
-				for(Long id : idVuelos){ //TODO: id not correct format
+				for(Long id : idVuelos){
 					try(Result r = tx.execute("MATCH (f:FLIGHT{flightId:" + id + "}) RETURN f.flightSinicial, f.flightIinicial, " +
 							"f.flightRinicial, f.flightSfinal, f.flightIfinal, f.flightRfinal, f.alphaValue, f.betaValue")){
 						if(r != null) { // SIR already calculated
@@ -741,19 +740,19 @@ public class Consultas {
 								Map<String, Object> row = r.next();
 								ret.put(Long.toString(id), (Double) row.get(columnas.get(4)));
 								accumulatedRisk += (Double) row.get(columnas.get(4));
-								if(saveResult){
-									//call save function
-								}
 							}
 						} else { // Need to calculate SIR
 							Map<String,Double> calculatedSIR = getRiesgoVuelo(id, -1.0, -1.0, false);
 							ret.put(Long.toString(id), calculatedSIR.get("I_final"));
 							accumulatedRisk += calculatedSIR.get("I_final");
-							if(saveResult){//call save function
-							}
+						}
+						if(saveResult){
+							tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay{key:\"" +
+									idAeropuerto + "@" + fechaStr + "\"}) SET aod.totalImportedRisk = " + accumulatedRisk);
 						}
 					}
 				}
+				tx.commit();
 			}
 			ret.put("TOTAL AIRPORT RISK", accumulatedRisk);
 			return ret;
