@@ -10,7 +10,10 @@ import earlywarn.main.GestorLíneasBuilder;
 import earlywarn.main.Utils;
 import earlywarn.main.modelo.FitnessPorPesos;
 import earlywarn.main.modelo.RegistroAeropuertos;
-import earlywarn.main.modelo.criterio.*;
+import earlywarn.mh.vnsrs.config.Config;
+import earlywarn.mh.vnsrs.config.ConfigRS;
+import earlywarn.mh.vnsrs.entornos.EntornoVNS;
+import earlywarn.mh.vnsrs.entornos.GestorEntornos;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
@@ -21,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Clase que implementa la metaheurística de recocido simulado + VNS
@@ -43,15 +47,15 @@ public class VnsRs implements IRecocidoSimulado {
 	 * número de iteraciones, ignorando la condición de parada habitual. Si es < 0, no tiene efecto alguno.
 	 */
 	private int numFijoIteraciones;
-	// Número total de posibles soluciones aceptadas
-	private int solucionesAceptadas;
+	// Número de soluciones consideradas que eran peor que la actual
+	private int solucionesPeores;
+	// Número de soluciones que eran peores que la actual y fueron aceptadas
+	private int solucionesPeoresAceptadas;
 	// Mejor solución encontrada hasta ahora (como array de booleanos) y su fitness
 	private boolean[] mejorSolución;
 	private double fitnessMejorSolución;
 	// Número de iteración actual
 	private int iter;
-	// Número de iteraciones que hace que no se encuentra un nuevo óptimo global
-	private int iteracionesSinMejora;
 
 	public VnsRs(Config config, GraphDatabaseService db, Log log) {
 		this.db = db;
@@ -152,11 +156,33 @@ public class VnsRs implements IRecocidoSimulado {
 		configRS.alfa = 1;
 		configRS.itReducciónT = config.configRS.itReducciónT;
 		rs = new RecocidoSimulado(configRS);
+		config.configRS = configRS;
 
 		init();
 		_ejecutar();
 
-		return (float) solucionesAceptadas / numIteraciones;
+		return (float) solucionesPeoresAceptadas / solucionesPeores;
+	}
+
+	/**
+	 * Devuelve el fitness de una solución cualquiera usando los pesos establecidos en el fichero de configuración.
+	 * También se logueará el porcentaje de cada criterio.
+	 * @param líneasCerradas Lista de líneas cerradas. Se asume que el resto estarán abiertas.
+	 * @return Fitness de la solución especificada
+	 */
+	public double calcularFitnessSolución(List<String> líneasCerradas) {
+		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
+		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
+			.añadirCriterios(config.criterios, fCriterios)
+			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
+			.build();
+
+		gLíneas.abrirCerrarLíneas(líneasCerradas, OperaciónLínea.CERRAR);
+		Map<IDCriterio, Double> porcentajeCriterios = gLíneas.getPorcentajeCriterios();
+		log.info("Porcentaje de cada criterio para la solución indicada:\n");
+		log.info(Utils.mapaAString(porcentajeCriterios));
+
+		return gLíneas.getFitness();
 	}
 
 	/**
@@ -165,23 +191,18 @@ public class VnsRs implements IRecocidoSimulado {
 	private void init() {
 		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
-		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db)
-			.añadirCriterio(fCriterios.criterio(IDCriterio.RIESGO_IMPORTADO))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.NÚMERO_PASAJEROS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.INGRESOS_TURÍSTICOS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROLÍNEAS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.HOMOGENEIDAD_AEROPUERTOS))
-			.añadirCriterio(fCriterios.criterio(IDCriterio.CONECTIVIDAD))
+		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
+			.añadirCriterios(config.criterios, fCriterios)
 			.añadirCriteriosRestricciones(config, fCriterios)
 			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();
 		estadísticas = new Estadísticas(log);
 
-		solucionesAceptadas = 0;
+		solucionesPeores = 0;
+		solucionesPeoresAceptadas = 0;
 		mejorSolución = null;
 		fitnessMejorSolución = -1;
 		iter = 0;
-		iteracionesSinMejora = 0;
 	}
 
 	/**
@@ -194,7 +215,7 @@ public class VnsRs implements IRecocidoSimulado {
 
 		// Registrar estadísticas del estado inicial
 		estadísticas.registrarIteración(new EstadísticasIteración(-1, gLíneas.getNumAbiertas(),
-			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
+			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución, 1));
 
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
@@ -213,33 +234,40 @@ public class VnsRs implements IRecocidoSimulado {
 				nuevoFitness = rs.penalizarFitness(fitnessActual, nuevoFitness);
 			}
 
-			// Insertar un nuevo caso en la memoria indicando la operación realizada y si hubo una mejora en el fitness
-			gEntornos.registrarCasoX(
-				new CasoEntornoX(numAbiertas, entorno.operación == OperaciónLínea.ABRIR, nuevoFitness > fitnessActual));
+			/*
+			 * Registrar la nueva solución considerada en el gestor de entornos para que pueda usarse en el cálculo
+			 * de entornos si fuera necesario
+			 */
+			gEntornos.registrarNuevaSolución(numAbiertas, entorno.operación, nuevoFitness, fitnessActual);
 
 			// Comprobar si esta solución es el nuevo máximo global
 			if (factible && nuevoFitness > fitnessMejorSolución) {
 				fitnessMejorSolución = nuevoFitness;
 				mejorSolución = gLíneas.getLíneasBool();
-				iteracionesSinMejora = 0;
-			} else {
-				iteracionesSinMejora++;
 			}
 
+			boolean esPeorSolución = nuevoFitness < fitnessActual;
+			if (esPeorSolución) {
+				solucionesPeores++;
+			}
 			// Comprobar si aceptamos esta nueva solución o si nos quedamos con la anterior
+			double probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
 			if (rs.considerarSolución(fitnessActual, nuevoFitness)) {
 				fitnessActual = nuevoFitness;
-				solucionesAceptadas++;
-				gEntornos.registrarEstadoY(líneasAVariar);
+				gEntornos.registrarNuevaPosición(líneasAVariar);
+				if (esPeorSolución) {
+					solucionesPeoresAceptadas++;
+				}
 			} else {
 				gLíneas.abrirCerrarLíneas(líneasAVariar, entorno.operación.invertir());
 				// Indicar que nos mantenemos en el mismo estado, es decir, no se ha variado ninguna línea
-				gEntornos.registrarEstadoY(new ArrayList<>());
+				gEntornos.registrarNuevaPosición(new ArrayList<>());
 			}
 
 			// Registrar estadísticas de esta iteración
 			estadísticas.registrarIteración(new EstadísticasIteración(iter, gLíneas.getNumAbiertas(),
-				new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución));
+				new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución,
+				probAceptación));
 
 			iter++;
 			rs.sigIter();
@@ -274,7 +302,18 @@ public class VnsRs implements IRecocidoSimulado {
 		if (numFijoIteraciones >= 0) {
 			return iter < numFijoIteraciones;
 		} else {
-			return iteracionesSinMejora < config.itParada;
+			if (iter < config.itParada) {
+				return true;
+			} else {
+				double fitnessHaceItParadaIteraciones =
+					estadísticas.listaEstadísticas.get(iter - config.itParada).fitnessMejor;
+				if (config.porcentMejora == 0) {
+					return fitnessMejorSolución > fitnessHaceItParadaIteraciones;
+				} else {
+					float porcentajeMejora = (float) (fitnessMejorSolución / fitnessHaceItParadaIteraciones);
+					return porcentajeMejora - 1 >= config.porcentMejora;
+				}
+			}
 		}
 	}
 }

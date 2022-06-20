@@ -1,4 +1,4 @@
-package earlywarn.mh.vnsrs;
+package earlywarn.mh.vnsrs.config;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;
@@ -21,13 +21,20 @@ import java.util.*;
 public class Config {
 	public ConfigVNS configVNS;
 	public ConfigRS configRS;
-	// Parar la ejecución cuando transcurra este número de iteraciones sin una mejora en la función objetivo
+	/*
+	 * Parar la ejecución cuando transcurra este número de iteraciones sin una mejora significativa en
+	 * la función objetivo
+	 */
 	public int itParada;
+	// Porcentaje que debe haber mejorado el fitness para que una mejora se considere significativa
+	public float porcentMejora;
 	// País sobre el que se está trabajando
 	public String país;
 	// Rango de fechas sobre el que se está trabajando
 	public LocalDate díaInicio;
 	public LocalDate díaFin;
+	// Lista de criterios leídos del XML
+	public List<IDCriterio> criterios;
 	// Pesos de los diferentes criterios
 	public Map<IDCriterio, Float> pesos;
 	// Restricciones a las soluciones factibles
@@ -54,23 +61,30 @@ public class Config {
 
 		Element elemItCambioEntorno = Utils.toLista(raíz.getElementsByTagName("itCambioEntorno")).get(0);
 		configVNS.itCambioEntorno = Integer.parseInt(elemItCambioEntorno.getTextContent());
-		Element elemTamañoMemoriaX = Utils.toLista(raíz.getElementsByTagName("tamañoMemoriaX")).get(0);
+
+		Element elemItCambioEntornoXComplejo = Utils.toLista(raíz.getElementsByTagName("cambioEntornoXComplejo")).get(0);
+		configVNS.cambioEntornoXComplejo = Boolean.parseBoolean(elemItCambioEntornoXComplejo.getTextContent());
+		Element elemItCambioEntornoYComplejo = Utils.toLista(raíz.getElementsByTagName("cambioEntornoYComplejo")).get(0);
+		configVNS.cambioEntornoYComplejo = Boolean.parseBoolean(elemItCambioEntornoYComplejo.getTextContent());
+
+		Element elemEntornoXComplejo = Utils.toLista(raíz.getElementsByTagName("entornoXComplejo")).get(0);
+		Element elemTamañoMemoriaX = Utils.toLista(elemEntornoXComplejo.getElementsByTagName("tamañoMemoriaX")).get(0);
 		configVNS.tamañoMemoriaX = Float.parseFloat(elemTamañoMemoriaX.getTextContent());
-		Element elemDistanciaMemoriaX = Utils.toLista(raíz.getElementsByTagName("distanciaMemoriaX")).get(0);
+		Element elemDistanciaMemoriaX = Utils.toLista(elemEntornoXComplejo.getElementsByTagName("distanciaMemoriaX")).get(0);
 		configVNS.distanciaMemoriaX = Float.parseFloat(elemDistanciaMemoriaX.getTextContent());
 
-		Element elemEntornoY = Utils.toLista(raíz.getElementsByTagName("entornoY")).get(0);
-		Element elemMaxPorcentLíneas = Utils.toLista(elemEntornoY.getElementsByTagName("maxPorcentLíneas")).get(0);
+		Element elemEntornoYComplejo = Utils.toLista(raíz.getElementsByTagName("entornoYComplejo")).get(0);
+		Element elemMaxPorcentLíneas = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("maxPorcentLíneas")).get(0);
 		configVNS.maxPorcentLíneas = Float.parseFloat(elemMaxPorcentLíneas.getTextContent());
-		Element elemNumComprobaciones = Utils.toLista(elemEntornoY.getElementsByTagName("numComprobaciones")).get(0);
+		Element elemNumComprobaciones = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("numComprobaciones")).get(0);
 		configVNS.numComprobaciones = Integer.parseInt(elemNumComprobaciones.getTextContent());
-		Element elemPorcentLíneas = Utils.toLista(elemEntornoY.getElementsByTagName("porcentLíneas")).get(0);
+		Element elemPorcentLíneas = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("porcentLíneas")).get(0);
 		configVNS.porcentLíneas = Float.parseFloat(elemPorcentLíneas.getTextContent());
-		Element elemIteraciones = Utils.toLista(elemEntornoY.getElementsByTagName("iteraciones")).get(0);
+		Element elemIteraciones = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("iteraciones")).get(0);
 		configVNS.iteraciones = Integer.parseInt(elemIteraciones.getTextContent());
-		Element elemLíneasPorIt = Utils.toLista(elemEntornoY.getElementsByTagName("líneasPorIt")).get(0);
+		Element elemLíneasPorIt = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("líneasPorIt")).get(0);
 		configVNS.líneasPorIt = Float.parseFloat(elemLíneasPorIt.getTextContent());
-		Element elemVariaciónMax = Utils.toLista(elemEntornoY.getElementsByTagName("variaciónMax")).get(0);
+		Element elemVariaciónMax = Utils.toLista(elemEntornoYComplejo.getElementsByTagName("variaciónMax")).get(0);
 		configVNS.variaciónMax = Float.parseFloat(elemVariaciónMax.getTextContent());
 
 		Element elemTInicial = Utils.toLista(raíz.getElementsByTagName("tInicial")).get(0);
@@ -80,19 +94,23 @@ public class Config {
 		Element elemItReducciónT = Utils.toLista(raíz.getElementsByTagName("itReducciónT")).get(0);
 		configRS.itReducciónT = Integer.parseInt(elemItReducciónT.getTextContent());
 
-		Element elemItParada = Utils.toLista(raíz.getElementsByTagName("itParada")).get(0);
-		itParada = Integer.parseInt(elemItParada.getTextContent());
 		Element elemPaís = Utils.toLista(raíz.getElementsByTagName("país")).get(0);
 		país = elemPaís.getTextContent();
 		Element elemDíaInicio = Utils.toLista(raíz.getElementsByTagName("primerDía")).get(0);
 		díaInicio = Utils.stringADate(elemDíaInicio.getTextContent());
 		Element elemDíaFin = Utils.toLista(raíz.getElementsByTagName("últimoDía")).get(0);
 		díaFin = Utils.stringADate(elemDíaFin.getTextContent());
+		Element elemItParada = Utils.toLista(raíz.getElementsByTagName("itParada")).get(0);
+		itParada = Integer.parseInt(elemItParada.getTextContent());
+		Element elemPorcentMejora = Utils.toLista(raíz.getElementsByTagName("porcentMejora")).get(0);
+		porcentMejora = Float.parseFloat(elemPorcentMejora.getTextContent());
 
+		criterios = new ArrayList<>();
 		pesos = new EnumMap<>(IDCriterio.class);
-		Element elemPesos = Utils.toLista(raíz.getElementsByTagName("pesos")).get(0);
-		for (Element elemCriterio : Utils.toLista(elemPesos.getElementsByTagName("criterio"))) {
+		Element elemCriterios = Utils.toLista(raíz.getElementsByTagName("criterios")).get(0);
+		for (Element elemCriterio : Utils.toLista(elemCriterios.getElementsByTagName("criterio"))) {
 			String textoIDCriterio = elemCriterio.getAttribute("id");
+			String textoPesoCriterio = elemCriterio.getAttribute("peso");
 			IDCriterio idCriterio;
 			try {
 				idCriterio = IDCriterio.valueOf(textoIDCriterio);
@@ -100,7 +118,10 @@ public class Config {
 				throw new IllegalArgumentException("El ID de criterio \"" + textoIDCriterio + "\", especificado en " +
 					"la configuración del programa, no corresponde con ningún criterio.", e);
 			}
-			pesos.put(idCriterio, Float.parseFloat(elemCriterio.getTextContent()));
+			criterios.add(idCriterio);
+			if (!textoPesoCriterio.isEmpty()) {
+				pesos.put(idCriterio, Float.parseFloat(textoPesoCriterio));
+			}
 		}
 
 		restricciones = new ListaRestricciones();

@@ -2,8 +2,7 @@ package earlywarn.mh.vnsrs.restricción;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
-import earlywarn.mh.vnsrs.IDRestricción;
-import earlywarn.mh.vnsrs.ListaParámetros;
+import earlywarn.mh.vnsrs.config.ListaParámetros;
 
 import java.util.List;
 

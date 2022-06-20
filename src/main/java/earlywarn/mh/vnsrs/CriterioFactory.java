@@ -4,6 +4,7 @@ import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Consultas;
 import earlywarn.main.modelo.RegistroAeropuertos;
 import earlywarn.main.modelo.criterio.*;
+import earlywarn.mh.vnsrs.config.Config;
 
 /**
  * Clase que permite crear instancias de criterios mediante la configuración del algoritmo VNS-RS
