@@ -41,6 +41,8 @@ public class Criterios{
     static Map<Conexion,Double> listaRiesgosEspanyoles = new HashMap<Conexion,Double>();
     //Número de pasajeros en las conexiones
     static Map<Conexion,Integer> listaPasajeros = new HashMap<Conexion,Integer>();
+    //Dinero que ganan los destinos asociados a su conexión
+    static Map<Conexion,Double> listaDineroTurismoConexion = new HashMap<Conexion,Double>();
     //Número de pasajeros en las conexiones dependiendo de la compañía
     static Map<ConexionyCompanyia,Integer> listaPasajerosCompanyia = new HashMap<ConexionyCompanyia,Integer>();
     //Los caracteres que se utilizan para separar los CSV
@@ -404,6 +406,50 @@ public class Criterios{
         }
     }
 
+    /**
+     * Función que carga el dinero por turismo a cada una de las conexiones
+     */
+    private static void cargaDineroVuelos(){
+        String ubicacionArchivo = "datos/dinero_por_vuelo.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            String[] values;
+            Conexion indice;
+            while ((line = br.readLine()) != null) {
+                values = line.split(COMMA_DELIMITER);
+                indice = new Conexion(values[1],values[2]);
+                if(listaDineroTurismoConexion.get(indice)!=null){
+                    listaDineroTurismoConexion.put(indice,listaDineroTurismoConexion.get(indice)+Double.parseDouble(values[0]));
+                }else{
+                    listaDineroTurismoConexion.put(indice,Double.parseDouble(values[0]));
+                }
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+    /*
+    private static void cargaDineroVuelos(){
+        String ubicacionArchivo = "datos/dinero_por_vuelo.csv";
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            String[] values;
+            Conexion indice;
+            while ((line = br.readLine()) != null) {
+                values = line.split(COMMA_DELIMITER);
+                indice = new Conexion(values[1],values[2]);
+                if(listaDineroTurismoConexion.get(indice)!=null){
+                    listaDineroTurismoConexion.put(indice,listaDineroTurismoConexion.get(indice)+Double.parseDouble(values[0]));
+                }else{
+                    listaDineroTurismoConexion.put(indice,Double.parseDouble(values[0]));
+                }
+            }
+        }catch (Exception e){
+            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+        }
+    }
+     */
+
     //TODO: Comprobar si tengo que añadir ListaConexionesPorAeropuertoEspanyol o no, si se añaden solo número de vuelos
     //TODO:Modificar para que cargue todos los datos llamando a este método
     public static void initCriterios(){
@@ -414,5 +460,6 @@ public class Criterios{
         cargaDatosSIR();
         cargaListaPasajeros();
         cargaListaPasajerosCompanyia();
+        cargaDineroVuelos();
     }
 }

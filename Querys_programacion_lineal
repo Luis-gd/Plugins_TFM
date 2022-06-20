@@ -3,6 +3,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
+    AND not (salida.iata = '')
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN DISTINCT  salida.airportName  ORDER BY salida.airportName
     
@@ -11,39 +12,48 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
+    AND not (entrada.iata = '')
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN DISTINCT  entrada.airportName  ORDER BY entrada.airportName
 
 Get_sir:
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
--[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
-WHERE c.countryName= 'Spain'
-AND not (f.flightIfinal = '')
-AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
-RETURN f.flightIfinal AS sir, entrada.airportName AS aeropuertoLlegada, salida.airportName AS aeropuertoSalida
-ORDER BY  entrada.airportName, salida.airportName
+    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
+    WHERE c.countryName= 'Spain'
+    AND not (f.flightIfinal = '')
+    AND not (salida.iata = '')
+    AND not (entrada.iata = '')
+    AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
+    RETURN f.flightIfinal AS sir, entrada.airportName AS aeropuertoLlegada, salida.airportName AS aeropuertoSalida
+    ORDER BY  entrada.airportName, salida.airportName
 
 Get_pasajeros_por_vuelo:
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
-    AND not (f.flightIfinal =  '') 
+    AND not (f.flightIfinal =  '')
+    AND not (salida.iata = '')
+    AND not (entrada.iata = '')
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
-    RETURN round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName 
+    RETURN round(f.occupancyPercentage * f.seatsCapacity/100), entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName
 
 Get_pasajeros_por_vuelo_y_companyias:
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
+    AND not (salida.iata = '')
+    AND not (entrada.iata = '')
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN round(f.occupancyPercentage * f.seatsCapacity/100), f.operator, entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName
-    
+
 Get_companyias:    
 MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal = '')
+    AND not (salida.iata = '')
+    AND not (entrada.iata = '')
     AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
     RETURN DISTINCT f.operator ORDER BY f.operator
 
@@ -53,16 +63,21 @@ Get_conectividad_por_aeropuerto:
 MATCH (salida:Airport)-[]-(:AirportOperationDay)-[]->(vuelosSalientes:FLIGHT)
     WHERE date('2020-09-24') <= date(vuelosSalientes.dateOfDeparture) <= date('2020-09-24')
     AND salida.connectivity IS NOT NULL
+    AND not (salida.iata = '')
     WITH salida, COUNT(vuelosSalientes) AS totalVuelosSalientes, salida.connectivity AS conectividadSaliente
     MATCH (salida)-[]-(:AirportOperationDay)-[]->(vuelosEntrantes:FLIGHT)-[]->(:AirportOperationDay)-[]-(llegada:Airport)-[]-(c:Country)
     WHERE date('2020-09-24') <= date(vuelosEntrantes.dateOfDeparture) <= date('2020-09-24')
     AND c.countryName = 'Spain'
+    AND not (llegada.iata = '')
     RETURN llegada.airportName, salida.airportName, COUNT(vuelosEntrantes) AS totalVuelosEntrantes, totalVuelosSalientes, conectividadSaliente
     ORDER BY llegada.airportName, salida.airportName
 
-Get_gasto_por_vuelo:
-MATCH (c:Country)<-[]-(n:TuristExpense)<-[]-(c2:Country)
+Get_dinero_por_vuelo:
+MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+    -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
     WHERE c.countryName= 'Spain'
-    AND n.month=9
-    AND n.year=2020
-    RETURN DISTINCT n.expense, c2.countryName ORDER BY c2.countryName
+    AND not (f.flightIfinal =  '')
+    AND not (salida.iata = '')
+    AND not (entrada.iata = '')
+    AND date('2020-09-24') <= date(f.dateOfDeparture) <= date('2020-09-24')
+    RETURN f.incomeFromTurism, entrada.airportName, salida.airportName ORDER BY  entrada.airportName, salida.airportName
