@@ -67,9 +67,8 @@ public class PSOImplementation {
 
     }
 
-    /*
     public static void main(String[] args) {
-        PSOImplementation p = new PSOImplementation();
+        //PSOImplementation p = new PSOImplementation();
+        Criterios.initCriterios();
     }
-    */
 }

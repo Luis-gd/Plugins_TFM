@@ -43,6 +43,10 @@ public class Criterios{
     static Map<Conexion,Integer> listaPasajeros = new HashMap<Conexion,Integer>();
     //Dinero que ganan los destinos asociados a su conexión
     static Map<Conexion,Double> listaDineroTurismoConexion = new HashMap<Conexion,Double>();
+    //Conectividad de los aeropuertos salida hacia aeropuertos españoles
+    static Map<String,Double> listaConectividadAeropuerto = new HashMap<String,Double>();
+    //Conectividad de los aeropuertos salida hacia aeropuertos españoles
+    static Map<Conexion,Integer> listaNumeroVuelosConexion = new HashMap<Conexion,Integer>();
     //Número de pasajeros en las conexiones dependiendo de la compañía
     static Map<ConexionyCompanyia,Integer> listaPasajerosCompanyia = new HashMap<ConexionyCompanyia,Integer>();
     //Los caracteres que se utilizan para separar los CSV
@@ -122,6 +126,7 @@ public class Criterios{
         return 0;
     }
 
+    //TODO: Modificar para que no se comparen los vuelos con compañía aérea UNKNNOWN
     /**
      * Se comprueba la homogeneidad de perdida de pasajeros entre distintas compañías aéreas, para ello hacemos la desviación
      * media de los pasajeros perdidos por cada compañía y vemos si esta debajo de un porcentaje, implementado como restricción
@@ -267,56 +272,67 @@ public class Criterios{
 
     /**
      * Función que carga los aeropuertos de entrada, estos valores no se repiten debido a que no hay duplicados
-     * en el csv
+     * en el csv. Se da por hecho que la primera línea no contiene datos y por tanto nos la saltamos.
      */
     private static void cargaAeropuertosEntrada(){
         String ubicacionArchivo = "datos/aeropuertos_entradas.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(COMMA_DELIMITER);
-                nombreAeropuertosEntradaEspanya.add(values[0]);
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    String[] values = line.split(COMMA_DELIMITER);
+                    nombreAeropuertosEntradaEspanya.add(values[0]);
+                }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
+        //System.out.println("Aeropuertos de entrada"+nombreAeropuertosEntradaEspanya);
     }
 
     /**
-     * Función que carga los aeropuertos de salida, estos valores no se repiten debido a que no hay duplicados en el csv
+     * Función que carga los aeropuertos de salida, estos valores no se repiten debido a que no hay duplicados en el
+     * csv. Se da por hecho que la primera línea no contiene datos y por tanto nos la saltamos.
      */
     private static void cargaAeropuertosSalida(){
         String ubicacionArchivo = "datos/aeropuertos_salida.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(COMMA_DELIMITER);
-                nombreAeropuertosSalida.add(values[0]);
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    String[] values = line.split(COMMA_DELIMITER);
+                    nombreAeropuertosSalida.add(values[0]);
+                }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
+        //System.out.println("Aeropuertos de salida"+nombreAeropuertosSalida);
     }
 
     /**
      * Función que carga el código de las compañías aéreas, estos valores no se repiten debido a que no hay duplicados
-     * en el csv
+     * en el csv. Se da por hecho que la primera línea no contiene datos y por tanto nos la saltamos.
      */
     private static void cargaCompanyias(){
         String ubicacionArchivo = "datos/companyias.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(COMMA_DELIMITER);
-                nombreCompanyias.add(values[0]);
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    String[] values = line.split(COMMA_DELIMITER);
+                    nombreCompanyias.add(values[0]);
+                }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
+        //System.out.println("Compañías aéreas"+nombreCompanyias);
     }
 
     /**
-     * Función que carga todos los vuelos que se van a realizar ese día no se repiten
+     * Función que carga todos los vuelos que se van a realizar ese día no se repiten. Se da por hecho que la primera
+     * línea no contiene datos y por tanto nos la saltamos.
      */
     //TODO: Comprobar el .contains funciona correctamente
     private static void cargaVuelos(){
@@ -325,20 +341,29 @@ public class Criterios{
             String line;
             String[] values;
             Conexion anyadir;
-            while ((line = br.readLine()) != null) {
-                values = line.split(COMMA_DELIMITER);
-                anyadir = new Conexion(values[1],values[2]);
-                if(!listaConexiones.contains(anyadir)){
-                    listaConexiones.add(anyadir);
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    values = line.split(COMMA_DELIMITER);
+                    anyadir = new Conexion(values[1], values[2]);
+                    if (!listaConexiones.contains(anyadir)) {
+                        listaConexiones.add(anyadir);
+                    }
                 }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
+        /*System.out.println("Conexiones(entrada,salida):");
+        for(int i=0;i<listaConexiones.size();i++){
+            System.out.print("("+listaConexiones.get(i).entrada+","+listaConexiones.get(i).salida+") ");
+        }
+        System.out.println("Número de conexiones: "+listaConexiones.size());
+         */
     }
 
     /**
-     * Función que carga los valores epidemiologicos en listaRiesgosEspanyoles
+     * Función que carga los valores epidemiologicos en listaRiesgosEspanyoles. Se da por hecho que la primera línea no
+     * contiene datos y por tanto nos la saltamos.
      */
     private static void cargaDatosSIR(){
         String ubicacionArchivo = "datos/sir.csv";
@@ -346,59 +371,78 @@ public class Criterios{
             String line;
             String[] values;
             Conexion indice;
-            while ((line = br.readLine()) != null) {
-                values = line.split(COMMA_DELIMITER);
-                indice = new Conexion(values[1],values[2]);
-                if(listaRiesgosEspanyoles.get(indice)!=null){
-                    listaRiesgosEspanyoles.put(indice,listaRiesgosEspanyoles.get(indice)+Double.parseDouble(values[0]));
-                }else{
-                    listaRiesgosEspanyoles.put(indice,Double.parseDouble(values[0]));
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    values = line.split(COMMA_DELIMITER);
+                    indice = new Conexion(values[1], values[2]);
+                    if (listaRiesgosEspanyoles.get(indice) != null) {
+                        listaRiesgosEspanyoles.put(indice, listaRiesgosEspanyoles.get(indice) + Double.parseDouble(values[0]));
+                    } else {
+                        listaRiesgosEspanyoles.put(indice, Double.parseDouble(values[0]));
+                    }
                 }
+
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
+        /*
+        System.out.println("Número infectados de las conexiones: "+listaRiesgosEspanyoles);
+        System.out.println("Número de conexiones: "+listaRiesgosEspanyoles.size());
+        Conexion bruh = new Conexion("ACE","DUB");
+        System.out.println("Valor conexión(ACE,DUB): "+listaRiesgosEspanyoles.get(bruh));
+         */
     }
 
     /**
-     * Función que carga el número de pasajeros en una conexión
+     * Función que carga el número de pasajeros en una conexión. Se da por hecho que la primera línea no contiene datos
+     * y por tanto nos la saltamos.
      */
     private static void cargaListaPasajeros(){
-        String ubicacionArchivo = "datos/pasajeros_por_vuelo.csv";
+        String ubicacionArchivo = "datos/pasajerosPorVuelo.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
             String[] values;
             Conexion indice;
-            while ((line = br.readLine()) != null) {
-                values = line.split(COMMA_DELIMITER);
-                indice = new Conexion(values[1],values[2]);
-                if(listaPasajeros.get(indice)!=null){
-                    listaPasajeros.put(indice,listaPasajeros.get(indice)+Integer.parseInt(values[0]));
-                }else{
-                    listaPasajeros.put(indice,Integer.parseInt(values[0]));
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    values = line.split(COMMA_DELIMITER);
+                    indice = new Conexion(values[1], values[2]);
+                    if (listaPasajeros.get(indice) != null) {
+                        listaPasajeros.put(indice, listaPasajeros.get(indice) + Integer.parseInt(values[0]));
+                    } else {
+                        listaPasajeros.put(indice, Integer.parseInt(values[0]));
+                    }
                 }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
+        System.out.println("Número pasajeros en las conexiones: "+listaPasajeros);
+        System.out.println("Número de conexiones: "+listaPasajeros.size());
+        Conexion bruh = new Conexion("ACE","LPA");
+        System.out.println("Número pasajeros en conexión(ACE,LPA): "+listaPasajeros.get(bruh));
     }
 
     /**
-     * Función que carga el número de pasajeros en las conexiones distinguiendo entre compañías aéreas
+     * Función que carga el número de pasajeros en las conexiones distinguiendo entre compañías aéreas. Se da por hecho
+     * que la primera línea no contiene datos y por tanto nos la saltamos.
      */
     private static void cargaListaPasajerosCompanyia(){
-        String ubicacionArchivo = "datos/pasajeros_por_vuelo.csv";
+        String ubicacionArchivo = "datos/pasajeros_por_vuelo_y_companyias.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
             String[] values;
             ConexionyCompanyia indice;
-            while ((line = br.readLine()) != null) {
-                values = line.split(COMMA_DELIMITER);
-                indice = new ConexionyCompanyia(new Conexion(values[2],values[3]),values[1]);
-                if(listaPasajerosCompanyia.get(indice)!=null){
-                    listaPasajerosCompanyia.put(indice,listaPasajerosCompanyia.get(indice)+Integer.parseInt(values[0]));
-                }else{
-                    listaPasajerosCompanyia.put(indice,Integer.parseInt(values[0]));
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    values = line.split(COMMA_DELIMITER);
+                    indice = new ConexionyCompanyia(new Conexion(values[2], values[3]), values[1]);
+                    if (listaPasajerosCompanyia.get(indice) != null) {
+                        listaPasajerosCompanyia.put(indice, listaPasajerosCompanyia.get(indice) + Integer.parseInt(values[0]));
+                    } else {
+                        listaPasajerosCompanyia.put(indice, Integer.parseInt(values[0]));
+                    }
                 }
             }
         }catch (Exception e){
@@ -407,48 +451,72 @@ public class Criterios{
     }
 
     /**
-     * Función que carga el dinero por turismo a cada una de las conexiones
+     * Función que carga el dinero por turismo a cada una de las conexiones. Se da por hecho que la primera línea no
+     * contiene datos y por tanto nos la saltamos.
      */
-    private static void cargaDineroVuelos(){
+    private static void cargaDineroVuelos() {
         String ubicacionArchivo = "datos/dinero_por_vuelo.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
             String[] values;
             Conexion indice;
-            while ((line = br.readLine()) != null) {
-                values = line.split(COMMA_DELIMITER);
-                indice = new Conexion(values[1],values[2]);
-                if(listaDineroTurismoConexion.get(indice)!=null){
-                    listaDineroTurismoConexion.put(indice,listaDineroTurismoConexion.get(indice)+Double.parseDouble(values[0]));
-                }else{
-                    listaDineroTurismoConexion.put(indice,Double.parseDouble(values[0]));
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    values = line.split(COMMA_DELIMITER);
+                    indice = new Conexion(values[1], values[2]);
+                    if (listaDineroTurismoConexion.get(indice) != null) {
+                        listaDineroTurismoConexion.put(indice, listaDineroTurismoConexion.get(indice) + Double.parseDouble(values[0]));
+                    } else {
+                        listaDineroTurismoConexion.put(indice, Double.parseDouble(values[0]));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("No se encuentra el archivo en " + ubicacionArchivo);
+        }
+        /*
+        System.out.println("Dinero ganado en las conexiones: "+listaDineroTurismoConexion);
+        System.out.println("Número de conexiones: "+listaDineroTurismoConexion.size());
+        Conexion bruh = new Conexion("ACE","LPA");
+        System.out.println("Valor conexión(ACE,LPA): "+listaDineroTurismoConexion.get(bruh));
+         */
+    }
+
+    /**
+     * Función que carga la conectividad de los aeropuertos de salida. Se da por hecho que la primera línea no contiene
+     * datos y por tanto nos la saltamos.
+     */
+    private static void cargaConectividad(){
+        String ubicacionArchivo = "datos/conectividad_por_aeropuerto.csv";
+        Map<String,Integer> numeroVuelosHaciaEspanya = new HashMap<String,Integer>();
+        Map<String,Integer> numeroVuelosHaciaFuera = new HashMap<String,Integer>();
+        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
+            String line;
+            String[] values;
+            Conexion indice;
+            if((line = br.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
+                    values = line.split(COMMA_DELIMITER);
+                    indice = new Conexion(values[0], values[1]);
+                    listaNumeroVuelosConexion.put(indice, Integer.parseInt(values[2]));
+                    if (numeroVuelosHaciaEspanya.get(values[1]) != null) {
+                        numeroVuelosHaciaEspanya.put(values[1], numeroVuelosHaciaEspanya.get(values[2]) + Integer.parseInt(values[2]));
+                    } else {
+                        numeroVuelosHaciaEspanya.put(values[1], Integer.parseInt(values[2]));
+                    }
+                    numeroVuelosHaciaFuera.put(values[1], Integer.parseInt(values[3]));
+                    listaConectividadAeropuerto.put(values[1], Double.parseDouble(values[4]));
+                }
+                for (int i = 0; i < nombreAeropuertosSalida.size(); i++) {
+                    String aeropuerto = nombreAeropuertosSalida.get(i);
+                    listaConectividadAeropuerto.put(aeropuerto, listaConectividadAeropuerto.get(aeropuerto) *
+                            numeroVuelosHaciaEspanya.get(aeropuerto) / numeroVuelosHaciaFuera.get(aeropuerto));
                 }
             }
         }catch (Exception e){
             System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
         }
     }
-    /*
-    private static void cargaDineroVuelos(){
-        String ubicacionArchivo = "datos/dinero_por_vuelo.csv";
-        try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
-            String line;
-            String[] values;
-            Conexion indice;
-            while ((line = br.readLine()) != null) {
-                values = line.split(COMMA_DELIMITER);
-                indice = new Conexion(values[1],values[2]);
-                if(listaDineroTurismoConexion.get(indice)!=null){
-                    listaDineroTurismoConexion.put(indice,listaDineroTurismoConexion.get(indice)+Double.parseDouble(values[0]));
-                }else{
-                    listaDineroTurismoConexion.put(indice,Double.parseDouble(values[0]));
-                }
-            }
-        }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
-        }
-    }
-     */
 
     //TODO: Comprobar si tengo que añadir ListaConexionesPorAeropuertoEspanyol o no, si se añaden solo número de vuelos
     //TODO:Modificar para que cargue todos los datos llamando a este método
@@ -461,5 +529,6 @@ public class Criterios{
         cargaListaPasajeros();
         cargaListaPasajerosCompanyia();
         cargaDineroVuelos();
+        cargaConectividad();
     }
 }
