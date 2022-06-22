@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public class CalcEntornoXMemoria implements ICalcEntornoX {
 	// Constante por la que se multiplica el porcentaje de temperatura restante para el cálculo del entorno horizontal
-	private static final float MULT_PORCENT_TEMPERATURA_ENTORNO_X = 5.0f;
+	private static final float MULT_PORCENT_TEMPERATURA_ENTORNO_X = 3.0f;
 
 	private final Random random;
 	private final ConfigVNS config;
@@ -20,7 +20,6 @@ public class CalcEntornoXMemoria implements ICalcEntornoX {
 	private final double temperaturaInicial;
 	// Número total de líneas
 	private final int numLíneas;
-
 
 	private final MemoriaCasosX casosX;
 
