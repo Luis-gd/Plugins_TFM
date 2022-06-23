@@ -209,6 +209,10 @@ public class VnsRs implements IRecocidoSimulado {
 	 * Ejecuta la metaheurística una vez que ésta está inicializada
 	 */
 	private void _ejecutar() {
+		if (!config.permitirInfactibles) {
+			asegurarSoluciónInicialFactible();
+		}
+
 		double fitnessActual = gLíneas.getFitness();
 		mejorSolución = gLíneas.getLíneasBool();
 		fitnessMejorSolución = fitnessActual;
@@ -251,8 +255,17 @@ public class VnsRs implements IRecocidoSimulado {
 				solucionesPeores++;
 			}
 			// Comprobar si aceptamos esta nueva solución o si nos quedamos con la anterior
-			double probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
-			if (rs.considerarSolución(fitnessActual, nuevoFitness)) {
+			double probAceptación;
+			boolean considerarSolución;
+			if (!factible && !config.permitirInfactibles) {
+				probAceptación = 0;
+				considerarSolución = false;
+			} else {
+				probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
+				considerarSolución = rs.considerarSolución(fitnessActual, nuevoFitness);
+			}
+
+			if (considerarSolución) {
 				fitnessActual = nuevoFitness;
 				gEntornos.registrarNuevaPosición(líneasAVariar);
 				if (esPeorSolución) {
@@ -314,6 +327,17 @@ public class VnsRs implements IRecocidoSimulado {
 					return porcentajeMejora - 1 >= config.porcentMejora;
 				}
 			}
+		}
+	}
+
+	/**
+	 * Comprueba si la solución inicial es factible, y en caso de que no lo sea, genera nuevas soluciones al azar
+	 * hasta encontrar una factible.
+	 */
+	private void asegurarSoluciónInicialFactible() {
+		while (!config.restricciones.cumple(gLíneas.getCriterios())) {
+			log.info("Descartada solución inicial con " + gLíneas.getNumAbiertas() + " líneas abiertas por ser infactible");
+			gLíneas.variarAlAzar();
 		}
 	}
 }

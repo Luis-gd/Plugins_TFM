@@ -39,6 +39,8 @@ public class Config {
 	public Map<IDCriterio, Float> pesos;
 	// Restricciones a las soluciones factibles
 	public ListaRestricciones restricciones;
+	// True para permitir considerar soluciones infactibles
+	public boolean permitirInfactibles;
 
 	/**
 	 * Instancia la configuración
@@ -134,5 +136,8 @@ public class Config {
 			}
 			restricciones.añadir(Restricción.crear(idRestricción, parámetros));
 		}
+
+		Element elemInfactibles = Utils.toLista(raíz.getElementsByTagName("permitirInfactibles")).get(0);
+		permitirInfactibles = Boolean.parseBoolean(elemInfactibles.getTextContent());
 	}
 }
