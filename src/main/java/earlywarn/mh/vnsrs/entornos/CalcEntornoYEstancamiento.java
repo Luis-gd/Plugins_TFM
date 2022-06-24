@@ -52,7 +52,7 @@ public class CalcEntornoYEstancamiento implements ICalcEntornoY {
 			double estancamiento = iteraciones / (config.getUmbralIt() * i);
 
 			// El valor de estancamiento se ajusta en función del % de temperatura restante
-			double estancamientoAjustado = estancamiento * temperaturaActual / temperaturaInicial;
+			double estancamientoAjustado = estancamiento * Math.min(1, Math.sqrt(temperaturaActual / temperaturaInicial));
 			// También se tiene en cuenta la velocidad de variación de líneas especificada por el usuario
 			estancamientoAjustado *= Utils.log2(config.líneasPorIt);
 

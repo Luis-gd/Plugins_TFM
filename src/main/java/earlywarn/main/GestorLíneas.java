@@ -23,6 +23,7 @@ public class GestorLíneas {
 	// Lista de criterios almacenados, cada uno identificado por un valor de un enum
 	protected final Map<IDCriterio, Criterio> criterios;
 	private final Log log;
+	private final Random random;
 
 	// Mapa que almacena el estado de cada línea
 	private final Map<String, EstadoLínea> líneas;
@@ -49,6 +50,7 @@ public class GestorLíneas {
 						   LocalDate díaFin, GraphDatabaseService db, Log log) {
 		this.log = log;
 		this.conversorLíneas = conversorLíneas;
+		random = new Random();
 		this.líneas = new TreeMap<>();
 		líneasBool = new boolean[líneas.size()];
 		criterios = new EnumMap<>(IDCriterio.class);
@@ -87,27 +89,26 @@ public class GestorLíneas {
 	 * @param operación Operación a realizar (apertura o cierre)
 	 */
 	public void abrirCerrarLíneas(List<String> líneas, OperaciónLínea operación) {
-		boolean abrir = operación == OperaciónLínea.ABRIR;
 		for (String idLínea : líneas) {
 			EstadoLínea estadoLínea = this.líneas.get(idLínea);
 			if (estadoLínea == null) {
 				log.warn("No se puede variar el estado de la línea " + idLínea + " porque no está en " +
 					"la lista de líneas");
 			} else {
-				if (estadoLínea.abierta != abrir) {
-					estadoLínea.abierta = !estadoLínea.abierta;
-					líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
-					// Recalcular los valores de todos los criteros
-					for (Criterio criterio : criterios.values()) {
-						criterio.recalcular(estadoLínea.línea, abrir);
-					}
+				cambiarEstadoLínea(estadoLínea, idLínea, operación);
+			}
+		}
+	}
 
-					if (operación == OperaciónLínea.ABRIR) {
-						numAbiertas++;
-					} else {
-						numAbiertas--;
-					}
-				}
+	/**
+	 * Varia el estado de cada una de las líneas en el gestor con una probabilidad del 50%
+	 */
+	public void variarAlAzar() {
+		for (Map.Entry<String, EstadoLínea> entrada : líneas.entrySet()) {
+			if (random.nextBoolean()) {
+				EstadoLínea estadoLínea = entrada.getValue();
+				OperaciónLínea operación = estadoLínea.abierta ? OperaciónLínea.CERRAR : OperaciónLínea.ABRIR;
+				cambiarEstadoLínea(estadoLínea, entrada.getKey(), operación);
 			}
 		}
 	}
@@ -229,5 +230,30 @@ public class GestorLíneas {
 	 */
 	public List<Criterio> getCriterios() {
 		return new ArrayList<>(criterios.values());
+	}
+
+	/**
+	 * Modifica el estado de una de las líneas almacenadas en el gestor, salvo que la línea ya esté en el estado
+	 * deseado.
+	 * @param estadoLínea Estado actual de la línea a modificar
+	 * @param idLínea ID de la línea a modificar
+	 * @param operación Operación a realizar sobre la línea
+	 */
+	private void cambiarEstadoLínea(EstadoLínea estadoLínea, String idLínea, OperaciónLínea operación) {
+		boolean abrir = operación == OperaciónLínea.ABRIR;
+		if (estadoLínea.abierta != abrir) {
+			estadoLínea.abierta = !estadoLínea.abierta;
+			líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
+			// Recalcular los valores de todos los criteros
+			for (Criterio criterio : criterios.values()) {
+				criterio.recalcular(estadoLínea.línea, abrir);
+			}
+
+			if (operación == OperaciónLínea.ABRIR) {
+				numAbiertas++;
+			} else {
+				numAbiertas--;
+			}
+		}
 	}
 }

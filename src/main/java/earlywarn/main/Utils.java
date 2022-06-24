@@ -117,7 +117,9 @@ public class Utils {
 	}
 
 	/**
-	 * Redondea el valor especificado a la potencia de 2 más cercana y devuelve el exponente de dicha potencia
+	 * Redondea el valor especificado a la potencia de 2 más cercana y devuelve el exponente de dicha potencia.
+	 * Nótese que este cálculo no es lo mismo que round(log2(valor)), ya que en ese caso primero se calcula el
+	 * exponente y luego se redondea.
 	 * @param valor Valor a redondear
 	 * @return Exponente de la potencia de dos más cercana al valor indicado
 	 */
