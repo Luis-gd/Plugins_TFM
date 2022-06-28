@@ -34,8 +34,8 @@ public class Criterios{
     final static double pesosEconomicos = 0.2;
     //Valor del peso asociado los objetivos sociales, en el caso de que no se usen como restricción
     final static double pesosSociales = 0.2;
-    //La solución con la que trabajamos, se modifica en evaluate fitness
-    static boolean[] solucion;
+    //La solución con la que trabajamos (Si es 1 la conexión está abierta, si es 0 cerrada), se modifica en evaluate fitness
+    static List<Boolean> solucion = new ArrayList<>();
     //Contiene el nombre de los aeropuertos de entrada no repetidos, en principio serán los de España
     static List<String> nombreAeropuertosEntradaEspanya = new ArrayList<>();
     //Contiene el nombre de los aeropuertos de salida no repetidos
@@ -64,8 +64,13 @@ public class Criterios{
      * @param positions La posición de una partícula
      * @return Devuelve su fitness
      */
-    public static double evaluateFitness(boolean[] positions) {
-        solucion=positions;
+    //TODO: Cambiar solucion, de momento todo a 1 probando cosas
+    public static double evaluateFitness(List<Boolean> positions) {
+        //solucion=positions;
+        //De momento lo dejamos así debido a que el número de conexiones es 569
+        for(int i=0;i<569;i++){
+            solucion.add(true);
+        }
         return calculoRiesgoImportado()*pesosEpidemiologicos+calculoEconomicoPerdidaPasajeros()*pesosEconomicos/4+
                 calculoPerdidaIngresosDestinos()*pesosEconomicos/4+calculoHomogeneidadPasajerosAerolineas()*
                 pesosEconomicos/4+calculoHomogeneidadIngresosTurismoDestinos()*pesosEconomicos/4+
@@ -79,14 +84,15 @@ public class Criterios{
     //TODO: Comprobar las escalas de riesgo
     //TODO: Comprobar si debería estar en porcentaje para normalizar los distintos objetivos
     private static double calculoRiesgoImportado(){
-        double[] riesgoConexion=new double[numDimensions];
         double riesgo=0;
-        for(int i=0;i<numDimensions;i++){
-            if(solucion[i]){
-                riesgo=riesgo+riesgoConexion[i];
+        double riesgoTotal=0;
+        for(int i=0;i<listaConexiones.size();i++){
+            if(solucion.get(i)){
+                riesgo=riesgo+listaRiesgosEspanyoles.get(listaConexiones.get(i));
             }
+            riesgoTotal=riesgoTotal+listaRiesgosEspanyoles.get(listaConexiones.get(i));
         }
-        return riesgo;
+        return riesgo/riesgoTotal;
     }
 
     /**
@@ -95,16 +101,21 @@ public class Criterios{
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
     private static double calculoEconomicoPerdidaPasajeros(){
-        int[] pasajerosConexion=new int[numDimensions];
         int totalPasajeros=0;
         int totalPasajerosConexiones=0;
-        for(int i=0;i<numDimensions;i++){
-            totalPasajeros=totalPasajeros+pasajerosConexion[i];
-            if(solucion[i]){
-                totalPasajerosConexiones=totalPasajerosConexiones+pasajerosConexion[i];
+        for(int i=0;i<listaConexiones.size();i++){
+            totalPasajeros=totalPasajeros+listaPasajeros.get(listaConexiones.get(i));
+            if(solucion.get(i)){
+                totalPasajerosConexiones=totalPasajerosConexiones+listaPasajeros.get(listaConexiones.get(i));
             }
         }
-        double porcentajePerdido=1-totalPasajerosConexiones/totalPasajeros;
+        double porcentajePerdido;
+        if(totalPasajeros!=0){
+            porcentajePerdido=1-(double)totalPasajerosConexiones/totalPasajeros;
+        }else{
+            porcentajePerdido=0;
+        }
+
         return porcentajePerdido;
         /*Usar esto si queremos restricción
         if(porcentajePerdido>maxPorcentajePasajerosPerdidos){
@@ -119,16 +130,20 @@ public class Criterios{
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
     private static double calculoPerdidaIngresosDestinos(){
-        int[] ingresosDestinoConexion=new int[numDimensions];
-        int totalIngresos=0;
-        int totalIngresosConexion=0;
-        for(int i=0;i<numDimensions;i++){
-            totalIngresos=totalIngresos+ingresosDestinoConexion[i];
-            if(solucion[i]){
-                totalIngresosConexion=totalIngresosConexion+ingresosDestinoConexion[i];
+        double totalIngresos=0;
+        double totalIngresosConexion=0;
+        for(int i=0;i<listaConexiones.size();i++){
+            totalIngresos=totalIngresos+listaDineroTurismoConexion.get(listaConexiones.get(i));
+            if(solucion.get(i)){
+                totalIngresosConexion=totalIngresosConexion+listaDineroTurismoConexion.get(listaConexiones.get(i));
             }
         }
-        double porcentajePerdido=1-totalIngresosConexion/totalIngresos;
+        double porcentajePerdido;
+        if(totalIngresos!=0){
+            porcentajePerdido=1-totalIngresosConexion/totalIngresos;
+        }else{
+            porcentajePerdido=0;
+        }
         return porcentajePerdido;
         /*Usar esto si queremos restricción
         if(porcentajePerdido>maxPorcentajeDineroPerdidoRegion){
@@ -146,28 +161,37 @@ public class Criterios{
      */
     private static double calculoHomogeneidadPasajerosAerolineas(){
         int i;
-        int[][] pasajerosConexion=new int[numDimensions][numCompanyias];
-        int[] totalPasajeros=new int[numCompanyias];
-        int[] totalPasajerosConexiones=new int[numCompanyias];
-        double[] porcentajePerdido = new double[numCompanyias];
+        //int[][] pasajerosConexion=new int[numDimensions][numCompanyias];
+        int[] totalPasajeros=new int[nombreCompanyias.size()];
+        int[] totalPasajerosConexiones=new int[nombreCompanyias.size()];
+        double[] porcentajePerdido = new double[nombreCompanyias.size()];
         double porcentajePerdidoMedia = 0.0;
         double porcentajePerdidoDesviacionMedia = 0.0;
-        for(int j=0;j<numCompanyias;j++){
-            for(i=0;i<numDimensions;i++){
-                totalPasajeros[j]=totalPasajeros[j]+pasajerosConexion[i][j];
-                if(solucion[i]){
-                    totalPasajerosConexiones[j]=totalPasajerosConexiones[j]+pasajerosConexion[i][j];
+        for(int j=0;j<nombreCompanyias.size();j++){
+            porcentajePerdido[j]=0.0;
+            for(i=0;i<listaConexiones.size();i++){
+                if(listaPasajerosCompanyia.get(new ConexionyCompanyia(listaConexiones.get(i),nombreCompanyias.get(j)))!=null){
+                    totalPasajeros[j]=totalPasajeros[j]+listaPasajerosCompanyia.get(new ConexionyCompanyia(
+                            listaConexiones.get(i),nombreCompanyias.get(j)));
+                    if(solucion.get(i)){
+                        totalPasajerosConexiones[j]=totalPasajerosConexiones[j]+listaPasajerosCompanyia.get(new
+                                ConexionyCompanyia(listaConexiones.get(i),nombreCompanyias.get(j)));
+                    }
                 }
             }
-            porcentajePerdido[j]=1-totalPasajerosConexiones[j]/totalPasajeros[j];
+            if(totalPasajeros[j]!=0){
+                porcentajePerdido[j]=1-(double)totalPasajerosConexiones[j]/totalPasajeros[j];
+            }else{
+                porcentajePerdido[j]=0;
+            }
             porcentajePerdidoMedia = porcentajePerdidoMedia + porcentajePerdido[j];
         }
-        porcentajePerdidoMedia = porcentajePerdidoMedia / numCompanyias;
-        for(i=0;i<numCompanyias;i++){
+        porcentajePerdidoMedia = porcentajePerdidoMedia / nombreCompanyias.size();
+        for(i=0;i<nombreCompanyias.size();i++){
             porcentajePerdidoDesviacionMedia = porcentajePerdidoDesviacionMedia +
                                                 Math.abs(porcentajePerdido[i]-porcentajePerdidoMedia);
         }
-        porcentajePerdidoDesviacionMedia = porcentajePerdidoDesviacionMedia / numCompanyias;
+        porcentajePerdidoDesviacionMedia = porcentajePerdidoDesviacionMedia / nombreCompanyias.size();
         return porcentajePerdidoDesviacionMedia;
         /*Usar esto si queremos restricción
         if(porcentajePerdidoDesviacionMedia>maxPorcentajeDesviacionMediaPasajerosPerdidosPorCompanyia) {
@@ -183,23 +207,23 @@ public class Criterios{
      * como restricción
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
-    private static int calculoHomogeneidadIngresosTurismoDestinos(){
+    private static double calculoHomogeneidadIngresosTurismoDestinos(){
         int[] numeroVuelos = new int[numDimensions];
         String[] aeropuertosEntradaRepetidos = new String[numDimensions];
         java.util.Map<String, Integer> numVuelosAeropuerto = new java.util.HashMap<>();
         java.util.Map<String, Integer> numVuelosAeropuertoConexiones = new java.util.HashMap<>();
-        List<Float> porcentajePerdido = new ArrayList<>();
-        float mediaPorcentajeVuelosPerdidos=0.0f;
-        float porcentajePerdidoDesviacionMedia = 0.0f;
+        List<Double> porcentajePerdido = new ArrayList<>();
+        double mediaPorcentajeVuelosPerdidos=0.0;
+        double porcentajePerdidoDesviacionMedia = 0.0;
         int i;
-        for(i=0;i<numDimensions;i++){
+        for(i=0;i<listaConexiones.size();i++){
             if(numVuelosAeropuerto.get(aeropuertosEntradaRepetidos[i])!=null){
                 numVuelosAeropuerto.put(aeropuertosEntradaRepetidos[i], numVuelosAeropuerto.get(aeropuertosEntradaRepetidos[i])+
                         numeroVuelos[i]);
             }else{
                 numVuelosAeropuerto.put(aeropuertosEntradaRepetidos[i], numeroVuelos[i]);
             }
-            if(solucion[i]){
+            if(solucion.get(i)){
                 if(numVuelosAeropuertoConexiones.get(aeropuertosEntradaRepetidos[i])!=null){
                     numVuelosAeropuertoConexiones.put(aeropuertosEntradaRepetidos[i],
                             numVuelosAeropuertoConexiones.get(aeropuertosEntradaRepetidos[i])+numeroVuelos[i]);
@@ -211,10 +235,10 @@ public class Criterios{
         i=0;
         for (String key:numVuelosAeropuerto.keySet()) {
             if(numVuelosAeropuertoConexiones.get(key)!=null){
-                porcentajePerdido.add((float)numVuelosAeropuertoConexiones.get(key)/numVuelosAeropuerto.get(key));
+                porcentajePerdido.add((double)numVuelosAeropuertoConexiones.get(key)/numVuelosAeropuerto.get(key));
                 mediaPorcentajeVuelosPerdidos=mediaPorcentajeVuelosPerdidos+porcentajePerdido.get(i);
             }else{
-                porcentajePerdido.add(0.0f);
+                porcentajePerdido.add(0.0);
             }
             i++;
         }
@@ -224,10 +248,13 @@ public class Criterios{
                                                 Math.abs(porcentajePerdido.get(i)-mediaPorcentajeVuelosPerdidos);
         }
         porcentajePerdidoDesviacionMedia = porcentajePerdidoDesviacionMedia / porcentajePerdido.size();
+        return porcentajePerdidoDesviacionMedia;
+        /*
         if(porcentajePerdidoDesviacionMedia>maxPorcentajeDesviacionMediaIngresosDestinos) {
             return penalizacionRestriccion;
         }
         return 0;
+         */
     }
     //TODO: Pasar a función auxiliar el código compartido entre calculoConectividadDestinos y calculoHomogeneidadIngresosTurismoDestinos
     //TODO: Cambiar como funciona la función de conectividad
@@ -376,6 +403,7 @@ public class Criterios{
         }
         System.out.println("Número de conexiones: "+listaConexiones.size());
          */
+        System.out.println("Número de conexiones: "+listaConexiones.size());
     }
 
     /**
@@ -565,5 +593,13 @@ public class Criterios{
         cargaListaPasajerosCompanyia();
         cargaDineroVuelos();
         cargaConectividad();
+        //TODO: Quitar esto, es solo para hacer pruebas
+        for(int i=0;i<listaConexiones.size();i++){
+            solucion.add(true);
+        }
+        System.out.println(calculoRiesgoImportado());
+        System.out.println(calculoEconomicoPerdidaPasajeros());
+        System.out.println(calculoPerdidaIngresosDestinos());
+        System.out.println(calculoHomogeneidadPasajerosAerolineas());
     }
 }

@@ -1,5 +1,7 @@
 package earlywarn.mh;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -35,19 +37,21 @@ public class PSOEngine {
      * con valores [0,1] y 1 respectivamente
      * @param particles The set of particles to initialize
      */
-    public void initParticles(Particle[] particles) {
+    public void initParticles(List<Particle> particles) {
         //For each particle
-        for (int i=0; i<particles.length;i++) {
-            boolean[] positions = new boolean[numDimensions];
-            double[] stickiness = new double[numDimensions];
+        for (int i=0; i<particles.size();i++) {
+            List<Boolean> positions = new ArrayList<>();
+            List<Double> stickiness = new ArrayList<>();
             for (int j=0; j<numDimensions; j++) {
-                positions[j] = generadorAleatorio.nextBoolean();
-                stickiness[j] = 1;
+                positions.add(generadorAleatorio.nextBoolean());
+                stickiness.add(1.0);
             }
             //Create the particle
-            particles[i] = new Particle(positions, stickiness);
+            particles.set(i,new Particle(positions, stickiness));
             //Set particles personal best to initialized values
-            particles[i].personalBest = particles[i].position.clone();
+            for(int j=0;j<particles.get(i).position.size();j++){
+                particles.get(i).personalBest.set(j,particles.get(i).position.get(j));
+            }
         }
     }
 
@@ -55,7 +59,7 @@ public class PSOEngine {
      * Method to update the velocities vector of a particle
      * @param particle The particle to update the velocity for
      */
-    public void updateFlippingProbability(Particle particle, boolean[] best) {
+    public void updateFlippingProbability(Particle particle, List<Boolean> best) {
 
         double[] StickinessProbability = new double[numDimensions];
         double[] differenceCognitiveTerm = new double[numDimensions];
@@ -63,17 +67,17 @@ public class PSOEngine {
 
         //Calculate stickiness probability and updates stickiness
         for (int i=0; i<numDimensions; i++) {
-            StickinessProbability[i]=Is*(1-particle.stickiness[i]);
-            particle.stickiness[i] = particle.stickiness[i] - linearDecayStickiness;
-            if(particle.stickiness[i]<0){
-                particle.stickiness[i] = 0;
+            StickinessProbability[i]=Is*(1-particle.stickiness.get(i));
+            particle.stickiness.set(i,particle.stickiness.get(i) - linearDecayStickiness);
+            if(particle.stickiness.get(i)<0){
+                particle.stickiness.set(i,0.0);
             }
         }
 
         //Calculate the cognitive component
         //Calculate personal best - current position using hamming distance
         for (int i=0; i<numDimensions; i++) {
-            if(particle.personalBest[i]!=particle.position[i]){
+            if(particle.personalBest.set(i,particle.position.get(i))){
                 differenceCognitiveTerm[i] = 1;
             }else{
                 differenceCognitiveTerm[i] = 0;
@@ -83,7 +87,7 @@ public class PSOEngine {
         //Calculate the social term
         //Calculate neighbourhood best - current position
         for (int i=0; i<numDimensions; i++) {
-            if(best[i]!=particle.position[i]){
+            if(best.get(i)!=particle.position.get(i)){
                 differenceSocialTerm[i] = 1;
             }else{
                 differenceSocialTerm[i] = 0;
@@ -92,7 +96,8 @@ public class PSOEngine {
 
         //Update particles flipping probability at all dimensions
         for (int i=0; i<numDimensions; i++) {
-            particle.flippingProbability[i] = StickinessProbability[i]+Ip*differenceCognitiveTerm[i]+Ig*differenceSocialTerm[i];
+            particle.flippingProbability.set(i,StickinessProbability[i]+Ip*differenceCognitiveTerm[i]+Ig*
+                    differenceSocialTerm[i]);
         }
     }
 
@@ -102,9 +107,9 @@ public class PSOEngine {
      */
     public void updatePosition(Particle particle) {
         for (int i=0; i<numDimensions; i++) {
-            if(generadorAleatorio.nextDouble()<particle.flippingProbability[i]){
-                particle.position[i]=!particle.position[i];
-                particle.stickiness[i]=1;
+            if(generadorAleatorio.nextDouble()<particle.flippingProbability.get(i)){
+                particle.position.set(i,!particle.position.get(i));
+                particle.stickiness.set(i,1.0);
             }
         }
     }
@@ -114,13 +119,16 @@ public class PSOEngine {
      * @param particles The collection of particles to determine the best from
      * @return The best (fittest) particle from the collection of particles
      */
-    public boolean[] findBest(Particle[] particles) {
-        boolean[] best = null;
+    public List<Boolean> findBest(List<Particle> particles) {
+        List<Boolean> best = new ArrayList<>();
         double bestFitness = Double.MAX_VALUE;
         for(int i=0; i<numParticles; i++) {
-            if (Criterios.evaluateFitness(particles[i].personalBest)<= bestFitness) {
-                bestFitness = Criterios.evaluateFitness(particles[i].personalBest);
-                best = particles[i].personalBest;
+            Particle actual = particles.get(i);
+            if (Criterios.evaluateFitness(actual.personalBest)<= bestFitness) {
+                bestFitness = Criterios.evaluateFitness(actual.personalBest);
+                for(int j=0;j<actual.personalBest.size();j++){
+                    best.set(j,actual.personalBest.get(j));
+                }
             }
         }
         return best;
