@@ -27,6 +27,13 @@ public class Criterios{
     //TODO: Calcular un valor correcto para la penalización
     //Valor que se añade a la función objetivo cuando una solución no cumple una restricción
     final static int penalizacionRestriccion=1000000;
+    //Valor del peso asociado los objetivos epidemiológicos, en el caso de que no se usen como restricción
+    final static double pesosEpidemiologicos = 0.6;
+    //Valor del peso asociado los objetivos económicos, en el caso de que no se usen como restricción, este valor se
+    //reparte entre los distintos objetivos
+    final static double pesosEconomicos = 0.2;
+    //Valor del peso asociado los objetivos sociales, en el caso de que no se usen como restricción
+    final static double pesosSociales = 0.2;
     //La solución con la que trabajamos, se modifica en evaluate fitness
     static boolean[] solucion;
     //Contiene el nombre de los aeropuertos de entrada no repetidos, en principio serán los de España
@@ -38,21 +45,19 @@ public class Criterios{
     //Listado de vuelos que hay entre los aeropuertos, no hay repetidos
     static List<Conexion> listaConexiones = new ArrayList<>();
     //Valores de infectados del SIR en las conexiones
-    static Map<Conexion,Double> listaRiesgosEspanyoles = new HashMap<Conexion,Double>();
+    static Map<Conexion,Double> listaRiesgosEspanyoles = new HashMap<>();
     //Número de pasajeros en las conexiones
-    static Map<Conexion,Integer> listaPasajeros = new HashMap<Conexion,Integer>();
+    static Map<Conexion,Integer> listaPasajeros = new HashMap<>();
     //Dinero que ganan los destinos asociados a su conexión
-    static Map<Conexion,Double> listaDineroTurismoConexion = new HashMap<Conexion,Double>();
+    static Map<Conexion,Double> listaDineroTurismoConexion = new HashMap<>();
     //Conectividad de los aeropuertos salida hacia aeropuertos españoles
-    static Map<String,Double> listaConectividadAeropuerto = new HashMap<String,Double>();
+    static Map<String,Double> listaConectividadAeropuerto = new HashMap<>();
     //Conectividad de los aeropuertos salida hacia aeropuertos españoles
-    static Map<Conexion,Integer> listaNumeroVuelosConexion = new HashMap<Conexion,Integer>();
+    static Map<Conexion,Integer> listaNumeroVuelosConexion = new HashMap<>();
     //Número de pasajeros en las conexiones dependiendo de la compañía
-    static Map<ConexionyCompanyia,Integer> listaPasajerosCompanyia = new HashMap<ConexionyCompanyia,Integer>();
+    static Map<ConexionyCompanyia,Integer> listaPasajerosCompanyia = new HashMap<>();
     //Los caracteres que se utilizan para separar los CSV
     static String COMMA_DELIMITER=",";
-
-    public float[] riesgoConexion;
 
     /**
      * Calcula el fitness de una partícula, comprueba todos los objetivos/restricciones
@@ -61,9 +66,10 @@ public class Criterios{
      */
     public static double evaluateFitness(boolean[] positions) {
         solucion=positions;
-        return calculoRiesgoImportado()+calculoEconomicoPerdidaPasajeros()+calculoPerdidaIngresosDestinos()+
-                calculoHomogeneidadPasajerosAerolineas()+calculoHomogeneidadIngresosTurismoDestinos()+
-                calculoConectividadDestinos();
+        return calculoRiesgoImportado()*pesosEpidemiologicos+calculoEconomicoPerdidaPasajeros()*pesosEconomicos/4+
+                calculoPerdidaIngresosDestinos()*pesosEconomicos/4+calculoHomogeneidadPasajerosAerolineas()*
+                pesosEconomicos/4+calculoHomogeneidadIngresosTurismoDestinos()*pesosEconomicos/4+
+                calculoConectividadDestinos()*pesosSociales;
     }
     //TODO: Hay que cargar todos los datos, ahora mismo los estoy dando por hecho, cada dimensión una conexión
     /**
@@ -72,9 +78,9 @@ public class Criterios{
      */
     //TODO: Comprobar las escalas de riesgo
     //TODO: Comprobar si debería estar en porcentaje para normalizar los distintos objetivos
-    private static float calculoRiesgoImportado(){
-        float[] riesgoConexion=new float[numDimensions];
-        float riesgo=0;
+    private static double calculoRiesgoImportado(){
+        double[] riesgoConexion=new double[numDimensions];
+        double riesgo=0;
         for(int i=0;i<numDimensions;i++){
             if(solucion[i]){
                 riesgo=riesgo+riesgoConexion[i];
@@ -88,7 +94,7 @@ public class Criterios{
      * implementado como una restricción
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
-    private static int calculoEconomicoPerdidaPasajeros(){
+    private static double calculoEconomicoPerdidaPasajeros(){
         int[] pasajerosConexion=new int[numDimensions];
         int totalPasajeros=0;
         int totalPasajerosConexiones=0;
@@ -98,18 +104,21 @@ public class Criterios{
                 totalPasajerosConexiones=totalPasajerosConexiones+pasajerosConexion[i];
             }
         }
-        float porcentajePerdido=1-(float)totalPasajerosConexiones/totalPasajeros;
+        double porcentajePerdido=1-totalPasajerosConexiones/totalPasajeros;
+        return porcentajePerdido;
+        /*Usar esto si queremos restricción
         if(porcentajePerdido>maxPorcentajePasajerosPerdidos){
             return penalizacionRestriccion;
         }
         return 0;
+         */
     }
 
     /**
      * Porcentaje de pérdida de ingresos por turismo en los destinos, implementado como una restricción
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
-    private static int calculoPerdidaIngresosDestinos(){
+    private static double calculoPerdidaIngresosDestinos(){
         int[] ingresosDestinoConexion=new int[numDimensions];
         int totalIngresos=0;
         int totalIngresosConexion=0;
@@ -119,11 +128,14 @@ public class Criterios{
                 totalIngresosConexion=totalIngresosConexion+ingresosDestinoConexion[i];
             }
         }
-        float porcentajePerdido=1-(float)totalIngresosConexion/totalIngresos;
+        double porcentajePerdido=1-totalIngresosConexion/totalIngresos;
+        return porcentajePerdido;
+        /*Usar esto si queremos restricción
         if(porcentajePerdido>maxPorcentajeDineroPerdidoRegion){
             return penalizacionRestriccion;
         }
         return 0;
+         */
     }
 
     //TODO: Modificar para que no se comparen los vuelos con compañía aérea UNKNNOWN
@@ -132,14 +144,14 @@ public class Criterios{
      * media de los pasajeros perdidos por cada compañía y vemos si esta debajo de un porcentaje, implementado como restricción
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
-    private static int calculoHomogeneidadPasajerosAerolineas(){
+    private static double calculoHomogeneidadPasajerosAerolineas(){
         int i;
         int[][] pasajerosConexion=new int[numDimensions][numCompanyias];
         int[] totalPasajeros=new int[numCompanyias];
         int[] totalPasajerosConexiones=new int[numCompanyias];
-        float[] porcentajePerdido = new float[numCompanyias];
-        float porcentajePerdidoMedia = 0.0f;
-        float porcentajePerdidoDesviacionMedia = 0.0f;
+        double[] porcentajePerdido = new double[numCompanyias];
+        double porcentajePerdidoMedia = 0.0;
+        double porcentajePerdidoDesviacionMedia = 0.0;
         for(int j=0;j<numCompanyias;j++){
             for(i=0;i<numDimensions;i++){
                 totalPasajeros[j]=totalPasajeros[j]+pasajerosConexion[i][j];
@@ -147,7 +159,7 @@ public class Criterios{
                     totalPasajerosConexiones[j]=totalPasajerosConexiones[j]+pasajerosConexion[i][j];
                 }
             }
-            porcentajePerdido[j]=1-(float)totalPasajerosConexiones[j]/totalPasajeros[j];
+            porcentajePerdido[j]=1-totalPasajerosConexiones[j]/totalPasajeros[j];
             porcentajePerdidoMedia = porcentajePerdidoMedia + porcentajePerdido[j];
         }
         porcentajePerdidoMedia = porcentajePerdidoMedia / numCompanyias;
@@ -156,10 +168,13 @@ public class Criterios{
                                                 Math.abs(porcentajePerdido[i]-porcentajePerdidoMedia);
         }
         porcentajePerdidoDesviacionMedia = porcentajePerdidoDesviacionMedia / numCompanyias;
+        return porcentajePerdidoDesviacionMedia;
+        /*Usar esto si queremos restricción
         if(porcentajePerdidoDesviacionMedia>maxPorcentajeDesviacionMediaPasajerosPerdidosPorCompanyia) {
             return penalizacionRestriccion;
         }
         return 0;
+         */
     }
 
     /**
@@ -221,6 +236,7 @@ public class Criterios{
      * @return Devuelve el valor de penalizaciónRestriccion si no se cumple la restricción, sino 0
      */
     private static int calculoConectividadDestinos(){
+        /*
         int[] numeroVuelos = new int[numDimensions];
         String[] aeropuertosEntradaRepetidos = new String[numDimensions];
         java.util.Map<String, Integer> conectividadAeropuerto = new java.util.HashMap<>();
@@ -265,6 +281,7 @@ public class Criterios{
         if(porcentajeConectividadPerdida>maxPorcentajeConectividadPerdida) {
             return penalizacionRestriccion;
         }
+        */
         return 0;
     }
 
@@ -278,14 +295,14 @@ public class Criterios{
         String ubicacionArchivo = "datos/aeropuertos_entradas.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(COMMA_DELIMITER);
                     nombreAeropuertosEntradaEspanya.add(values[0]);
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaAeropuertosEntrada: "+e);
         }
         //System.out.println("Aeropuertos de entrada"+nombreAeropuertosEntradaEspanya);
     }
@@ -298,14 +315,14 @@ public class Criterios{
         String ubicacionArchivo = "datos/aeropuertos_salida.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(COMMA_DELIMITER);
                     nombreAeropuertosSalida.add(values[0]);
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaAeropuertosSalida: "+e);
         }
         //System.out.println("Aeropuertos de salida"+nombreAeropuertosSalida);
     }
@@ -318,14 +335,14 @@ public class Criterios{
         String ubicacionArchivo = "datos/companyias.csv";
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(COMMA_DELIMITER);
                     nombreCompanyias.add(values[0]);
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaCompanyias: "+e);
         }
         //System.out.println("Compañías aéreas"+nombreCompanyias);
     }
@@ -341,7 +358,7 @@ public class Criterios{
             String line;
             String[] values;
             Conexion anyadir;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     values = line.split(COMMA_DELIMITER);
                     anyadir = new Conexion(values[1], values[2]);
@@ -351,7 +368,7 @@ public class Criterios{
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaVuelos: "+e);
         }
         /*System.out.println("Conexiones(entrada,salida):");
         for(int i=0;i<listaConexiones.size();i++){
@@ -371,7 +388,7 @@ public class Criterios{
             String line;
             String[] values;
             Conexion indice;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     values = line.split(COMMA_DELIMITER);
                     indice = new Conexion(values[1], values[2]);
@@ -384,14 +401,15 @@ public class Criterios{
 
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaDatosSIR: "+e);
         }
         /*
-        System.out.println("Número infectados de las conexiones: "+listaRiesgosEspanyoles);
+        //System.out.println("Número infectados de las conexiones: "+listaRiesgosEspanyoles);
         System.out.println("Número de conexiones: "+listaRiesgosEspanyoles.size());
         Conexion bruh = new Conexion("ACE","DUB");
         System.out.println("Valor conexión(ACE,DUB): "+listaRiesgosEspanyoles.get(bruh));
          */
+
     }
 
     /**
@@ -404,24 +422,26 @@ public class Criterios{
             String line;
             String[] values;
             Conexion indice;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     values = line.split(COMMA_DELIMITER);
                     indice = new Conexion(values[1], values[2]);
                     if (listaPasajeros.get(indice) != null) {
-                        listaPasajeros.put(indice, listaPasajeros.get(indice) + Integer.parseInt(values[0]));
+                        listaPasajeros.put(indice, listaPasajeros.get(indice) + (int)Double.parseDouble(values[0]));
                     } else {
-                        listaPasajeros.put(indice, Integer.parseInt(values[0]));
+                        listaPasajeros.put(indice, (int)Double.parseDouble(values[0]));
                     }
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaListaPasajeros: "+e);
         }
-        System.out.println("Número pasajeros en las conexiones: "+listaPasajeros);
+        /*
+        //System.out.println("Número pasajeros en las conexiones: "+listaPasajeros);
         System.out.println("Número de conexiones: "+listaPasajeros.size());
         Conexion bruh = new Conexion("ACE","LPA");
         System.out.println("Número pasajeros en conexión(ACE,LPA): "+listaPasajeros.get(bruh));
+         */
     }
 
     /**
@@ -434,20 +454,27 @@ public class Criterios{
             String line;
             String[] values;
             ConexionyCompanyia indice;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     values = line.split(COMMA_DELIMITER);
                     indice = new ConexionyCompanyia(new Conexion(values[2], values[3]), values[1]);
                     if (listaPasajerosCompanyia.get(indice) != null) {
-                        listaPasajerosCompanyia.put(indice, listaPasajerosCompanyia.get(indice) + Integer.parseInt(values[0]));
+                        listaPasajerosCompanyia.put(indice, listaPasajerosCompanyia.get(indice) +
+                                (int)Double.parseDouble(values[0]));
                     } else {
-                        listaPasajerosCompanyia.put(indice, Integer.parseInt(values[0]));
+                        listaPasajerosCompanyia.put(indice, (int)Double.parseDouble(values[0]));
                     }
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaListaPasajerosCompanyia: "+e);
         }
+        /*
+        System.out.println("Número pasajeros en las conexiones: "+listaPasajerosCompanyia);
+        System.out.println("Número de conexiones: "+listaPasajerosCompanyia.size());
+        ConexionyCompanyia bruh = new ConexionyCompanyia(new Conexion("ACE","LPA"), "CNF");
+        System.out.println("Número pasajeros en conexión(ACE,LPA): "+listaPasajerosCompanyia.get(bruh));
+         */
     }
 
     /**
@@ -460,7 +487,7 @@ public class Criterios{
             String line;
             String[] values;
             Conexion indice;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     values = line.split(COMMA_DELIMITER);
                     indice = new Conexion(values[1], values[2]);
@@ -472,7 +499,7 @@ public class Criterios{
                 }
             }
         } catch (Exception e) {
-            System.out.println("No se encuentra el archivo en " + ubicacionArchivo);
+            System.out.println("Excepción cargaDineroVuelos: "+e);
         }
         /*
         System.out.println("Dinero ganado en las conexiones: "+listaDineroTurismoConexion);
@@ -488,19 +515,19 @@ public class Criterios{
      */
     private static void cargaConectividad(){
         String ubicacionArchivo = "datos/conectividad_por_aeropuerto.csv";
-        Map<String,Integer> numeroVuelosHaciaEspanya = new HashMap<String,Integer>();
-        Map<String,Integer> numeroVuelosHaciaFuera = new HashMap<String,Integer>();
+        Map<String,Integer> numeroVuelosHaciaEspanya = new HashMap<>();
+        Map<String,Integer> numeroVuelosHaciaFuera = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(ubicacionArchivo))) {
             String line;
             String[] values;
             Conexion indice;
-            if((line = br.readLine()) != null) {
+            if((br.readLine()) != null) {
                 while ((line = br.readLine()) != null) {
                     values = line.split(COMMA_DELIMITER);
                     indice = new Conexion(values[0], values[1]);
                     listaNumeroVuelosConexion.put(indice, Integer.parseInt(values[2]));
                     if (numeroVuelosHaciaEspanya.get(values[1]) != null) {
-                        numeroVuelosHaciaEspanya.put(values[1], numeroVuelosHaciaEspanya.get(values[2]) + Integer.parseInt(values[2]));
+                        numeroVuelosHaciaEspanya.put(values[1], numeroVuelosHaciaEspanya.get(values[1]) + Integer.parseInt(values[2]));
                     } else {
                         numeroVuelosHaciaEspanya.put(values[1], Integer.parseInt(values[2]));
                     }
@@ -509,12 +536,20 @@ public class Criterios{
                 }
                 for (int i = 0; i < nombreAeropuertosSalida.size(); i++) {
                     String aeropuerto = nombreAeropuertosSalida.get(i);
-                    listaConectividadAeropuerto.put(aeropuerto, listaConectividadAeropuerto.get(aeropuerto) *
-                            numeroVuelosHaciaEspanya.get(aeropuerto) / numeroVuelosHaciaFuera.get(aeropuerto));
+                    if(listaConectividadAeropuerto.get(aeropuerto)!=null){
+                        listaConectividadAeropuerto.put(aeropuerto, listaConectividadAeropuerto.get(aeropuerto) *
+                                numeroVuelosHaciaEspanya.get(aeropuerto) / numeroVuelosHaciaFuera.get(aeropuerto));
+                    }else{
+                        listaConectividadAeropuerto.put(aeropuerto, 0.0);
+                    }
+                    /*
+                    System.out.println(aeropuerto);
+                    System.out.println(listaConectividadAeropuerto.get(aeropuerto));
+                     */
                 }
             }
         }catch (Exception e){
-            System.out.println("No se encuentra el archivo en "+ubicacionArchivo);
+            System.out.println("Excepción cargaConectividad: "+e);
         }
     }
 
