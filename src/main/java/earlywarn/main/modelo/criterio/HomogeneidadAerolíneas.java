@@ -2,7 +2,7 @@ package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 
 import java.util.ArrayList;
 import java.util.List;

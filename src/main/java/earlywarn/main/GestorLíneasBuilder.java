@@ -3,6 +3,8 @@ package earlywarn.main;
 import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
+import earlywarn.main.modelo.datoid.Línea;
+import earlywarn.main.modelo.datoid.RegistroDatoID;
 import earlywarn.mh.vnsrs.config.Config;
 import earlywarn.mh.vnsrs.ConversorLíneas;
 import earlywarn.mh.vnsrs.CriterioFactory;
@@ -17,9 +19,9 @@ import java.util.List;
  * Builder usado para inicializar un gestor de líneas con una serie de criterios
  */
 public class GestorLíneasBuilder extends GestorLíneas {
-	public GestorLíneasBuilder(List<String> líneas, ConversorLíneas conversorLíneas, LocalDate díaInicio,
-							   LocalDate díaFin, GraphDatabaseService db, Log log) {
-		super(líneas, conversorLíneas, díaInicio, díaFin, db, log);
+	public GestorLíneasBuilder(List<String> líneas, RegistroDatoID<Línea> registroLíneas,
+							   ConversorLíneas conversorLíneas, Log log) {
+		super(líneas, registroLíneas, conversorLíneas, log);
 	}
 
 	public GestorLíneasBuilder añadirCriterio(Criterio criterio) {

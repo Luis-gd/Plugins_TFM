@@ -1,7 +1,7 @@
 package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 
 /**
  * Representa un criterio usado durante la ejecución del programa. Tiene un valor inicial y otro actual (que cambia

@@ -1,7 +1,7 @@
 package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 
 /**
  * Representa el número de pasajeros que vuelan en la red de tráfico aéreo. Usado como aproximación para calcular las
