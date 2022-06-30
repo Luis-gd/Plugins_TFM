@@ -1,7 +1,7 @@
 package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 
 /**
  * Representa los ingresos por turismo derivados de los pasajeros que viajan en la red de tráfico aéreo

@@ -2,8 +2,9 @@ package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Utils;
-import earlywarn.main.modelo.Línea;
-import earlywarn.main.modelo.RegistroAeropuertos;
+import earlywarn.main.modelo.datoid.Aeropuerto;
+import earlywarn.main.modelo.datoid.Línea;
+import earlywarn.main.modelo.datoid.RegistroDatoID;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +20,10 @@ public class HomogeneidadAeropuertos extends Criterio {
 	protected final Map<String, Long> pasajerosPorAeropuertoInicial;
 	protected final Map<String, Long> pasajerosPorAeropuertoActual;
 	private final String idPaís;
-	private final RegistroAeropuertos aeropuertos;
+	private final RegistroDatoID<Aeropuerto> aeropuertos;
 
 	public HomogeneidadAeropuertos(Map<String, Long> pasajerosPorAeropuertoInicial, String idPaís,
-								   RegistroAeropuertos aeropuertos) {
+								   RegistroDatoID<Aeropuerto> aeropuertos) {
 		this.pasajerosPorAeropuertoInicial = pasajerosPorAeropuertoInicial;
 		pasajerosPorAeropuertoActual = new TreeMap<>(pasajerosPorAeropuertoInicial);
 		this.idPaís = idPaís;

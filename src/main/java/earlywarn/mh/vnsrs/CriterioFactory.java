@@ -2,8 +2,9 @@ package earlywarn.mh.vnsrs;
 
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.Consultas;
-import earlywarn.main.modelo.RegistroAeropuertos;
+import earlywarn.main.modelo.datoid.Aeropuerto;
 import earlywarn.main.modelo.criterio.*;
+import earlywarn.main.modelo.datoid.RegistroDatoID;
 import earlywarn.mh.vnsrs.config.Config;
 
 /**
@@ -12,7 +13,7 @@ import earlywarn.mh.vnsrs.config.Config;
 public class CriterioFactory {
 	private final Consultas consultas;
 	private final Config config;
-	private final RegistroAeropuertos registroAeropuertos;
+	private final RegistroDatoID<Aeropuerto> registroAeropuertos;
 
 	/**
 	 * Instancia la factoría
@@ -20,7 +21,7 @@ public class CriterioFactory {
 	 * @param config Configuración para la metaheurística de VNS-RS
 	 * @param registroAeropuertos Registro con los datos de aeropuertos
 	 */
-	public CriterioFactory(Consultas consultas, Config config, RegistroAeropuertos registroAeropuertos) {
+	public CriterioFactory(Consultas consultas, Config config, RegistroDatoID<Aeropuerto> registroAeropuertos) {
 		this.consultas = consultas;
 		this.config = config;
 		this.registroAeropuertos = registroAeropuertos;

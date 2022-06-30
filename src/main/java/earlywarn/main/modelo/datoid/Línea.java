@@ -1,4 +1,4 @@
-package earlywarn.main.modelo;
+package earlywarn.main.modelo.datoid;
 
 import earlywarn.definiciones.ETLOperationRequiredException;
 import earlywarn.definiciones.Propiedad;

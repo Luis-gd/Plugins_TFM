@@ -64,7 +64,7 @@ public class Main {
 	/**
 	 * Calcula el fitness de una solución especificada en un fichero de entrada. El fichero debe contener una lista
 	 * con los identificadores de todas las líneas cerradas, separadas por comas y en formato IataOrigen-IataDestino.
-	 * @param rutaFichero Ruta al fichero que contiene la lista de línas, relativa a la carpeta "import"
+	 * @param rutaFichero Ruta al fichero que contiene la lista de líneas, relativa a la carpeta "import"
 	 * @return Fitness de la solución indicada
 	 */
 	@SuppressWarnings("ProhibitedExceptionThrown")

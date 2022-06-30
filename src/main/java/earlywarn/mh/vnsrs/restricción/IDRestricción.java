@@ -45,13 +45,13 @@ public enum IDRestricción {
 	/*
 	 * Ninguna aerolínea puede perder más de un cierto umbral porcentual de vuelos
 	 * Parámetros:
-	 * 	min (float): Valor porcentual mínimo admitido (0-1)
+	 * 	max (float): Valor porcentual máximo admitido (0-1)
 	 */
 	PORCENT_VUELOS_PERDIDOS_AEROLÍNEAS,
 	/*
 	 * Ningún aeropuerto puede perder más de un cierto umbral porcentual de vuelos
 	 * Parámetros:
-	 * 	min (float): Valor porcentual mínimo admitido (0-1)
+	 * 	max (float): Valor porcentual máximo admitido (0-1)
 	 */
 	PORCENT_VUELOS_PERDIDOS_AEROPUERTOS,
 	/*
