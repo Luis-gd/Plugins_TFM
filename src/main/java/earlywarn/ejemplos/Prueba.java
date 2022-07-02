@@ -7,7 +7,7 @@ import earlywarn.definiciones.OutputMap;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.main.Consultas;
 import earlywarn.definiciones.Propiedad;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 import earlywarn.main.Propiedades;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.procedure.*;

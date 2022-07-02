@@ -1,9 +1,9 @@
 package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
-import earlywarn.main.modelo.Aeropuerto;
-import earlywarn.main.modelo.Línea;
-import earlywarn.main.modelo.RegistroAeropuertos;
+import earlywarn.main.modelo.datoid.Aeropuerto;
+import earlywarn.main.modelo.datoid.Línea;
+import earlywarn.main.modelo.datoid.RegistroDatoID;
 
 /**
  * Representa el grado de conectividad de todos los aeropuertos, usando como valores máximo y mínimo la conectividad
@@ -13,14 +13,14 @@ import earlywarn.main.modelo.RegistroAeropuertos;
 public class Conectividad extends Criterio {
 	private final int conectividadPaís;
 	private double conectividadPerdidaActual;
-	private final RegistroAeropuertos aeropuertos;
+	private final RegistroDatoID<Aeropuerto> aeropuertos;
 
 	/**
 	 * @param conectividadPaís Valor de conectividad que representan los vuelos hacia el país para el que se están
 	 *                         cerrando líneas
 	 * @param aeropuertos Registro de aeropuertos que permite acceder a los datos de los mismos
 	 */
-	public Conectividad(int conectividadPaís, RegistroAeropuertos aeropuertos) {
+	public Conectividad(int conectividadPaís, RegistroDatoID<Aeropuerto> aeropuertos) {
 		this.conectividadPaís = conectividadPaís;
 		conectividadPerdidaActual = 0;
 		this.aeropuertos = aeropuertos;

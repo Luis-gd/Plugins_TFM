@@ -9,7 +9,7 @@ import earlywarn.main.GestorLíneas;
 import earlywarn.main.GestorLíneasBuilder;
 import earlywarn.main.Utils;
 import earlywarn.main.modelo.FitnessPorPesos;
-import earlywarn.main.modelo.RegistroAeropuertos;
+import earlywarn.main.modelo.datoid.*;
 import earlywarn.mh.vnsrs.config.Config;
 import earlywarn.mh.vnsrs.config.ConfigRS;
 import earlywarn.mh.vnsrs.entornos.EntornoVNS;
@@ -30,13 +30,13 @@ import java.util.Map;
  * Clase que implementa la metaheurística de recocido simulado + VNS
  */
 public class VnsRs implements IRecocidoSimulado {
-	private final GraphDatabaseService db;
 	private final Log log;
 	private final Config config;
 	private RecocidoSimulado rs;
 	private GestorEntornos gEntornos;
 	private GestorLíneas gLíneas;
-	private final RegistroAeropuertos registroAeropuertos;
+	private final RegistroDatoID<Aeropuerto> registroAeropuertos;
+	private final RegistroDatoID<Línea> registroLíneas;
 	private final Consultas consultas;
 	private final List<String> líneas;
 	private final ConversorLíneas conversorLíneas;
@@ -58,11 +58,13 @@ public class VnsRs implements IRecocidoSimulado {
 	private int iter;
 
 	public VnsRs(Config config, GraphDatabaseService db, Log log) {
-		this.db = db;
 		this.log = log;
 		this.config = config;
 		numFijoIteraciones = -1;
-		registroAeropuertos = new RegistroAeropuertos(config.díaInicio, config.díaFin, db);
+		AeropuertoFactory fAeropuertos = new AeropuertoFactory(config.díaInicio, config.díaFin, db);
+		registroAeropuertos = new RegistroDatoID<>(fAeropuertos);
+		LíneaFactory fLíneas = new LíneaFactory(config.díaInicio, config.díaFin, db);
+		registroLíneas = new RegistroDatoID<>(fLíneas);
 		consultas = new Consultas(db);
 		líneas = consultas.getLíneas(config.díaInicio, config.díaFin, config.país);
 		conversorLíneas = new ConversorLíneas(líneas);
@@ -172,7 +174,7 @@ public class VnsRs implements IRecocidoSimulado {
 	 */
 	public double calcularFitnessSolución(List<String> líneasCerradas) {
 		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
-		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
+		gLíneas = new GestorLíneasBuilder(líneas, registroLíneas, conversorLíneas, log)
 			.añadirCriterios(config.criterios, fCriterios)
 			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))
 			.build();
@@ -191,7 +193,7 @@ public class VnsRs implements IRecocidoSimulado {
 	private void init() {
 		CriterioFactory fCriterios = new CriterioFactory(consultas, config, registroAeropuertos);
 		gEntornos = new GestorEntornos(config.configVNS, conversorLíneas, líneas.size(), config.configRS.tInicial);
-		gLíneas = new GestorLíneasBuilder(líneas, conversorLíneas, config.díaInicio, config.díaFin, db, log)
+		gLíneas = new GestorLíneasBuilder(líneas, registroLíneas, conversorLíneas, log)
 			.añadirCriterios(config.criterios, fCriterios)
 			.añadirCriteriosRestricciones(config, fCriterios)
 			.añadirCálculoFitness(new FitnessPorPesos(config.pesos))

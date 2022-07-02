@@ -1,7 +1,7 @@
 package earlywarn.main.modelo.criterio;
 
 import earlywarn.definiciones.IDCriterio;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 
 /**
  * Representa el riesgo importado total que llega a través de la red de tráfico aéreo

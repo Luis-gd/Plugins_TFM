@@ -4,14 +4,12 @@ import earlywarn.definiciones.ICálculoFitness;
 import earlywarn.definiciones.IDCriterio;
 import earlywarn.definiciones.IllegalOperationException;
 import earlywarn.definiciones.OperaciónLínea;
-import earlywarn.main.modelo.EstadoLínea;
-import earlywarn.main.modelo.Línea;
+import earlywarn.main.modelo.datoid.Línea;
 import earlywarn.main.modelo.criterio.Criterio;
+import earlywarn.main.modelo.datoid.RegistroDatoID;
 import earlywarn.mh.vnsrs.ConversorLíneas;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
-import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -24,9 +22,10 @@ public class GestorLíneas {
 	protected final Map<IDCriterio, Criterio> criterios;
 	private final Log log;
 	private final Random random;
+	private final RegistroDatoID<Línea> registroLíneas;
 
-	// Mapa que almacena el estado de cada línea
-	private final Map<String, EstadoLínea> líneas;
+	// Mapa que mapea el ID de cada línea con su estado actual (true = abierta, false = cerrada)
+	private final Map<String, Boolean> líneas;
 	// Array de booleanos que también almacena el estado de las líneas. Permite copiar una solución de forma rápida.
 	private final boolean[] líneasBool;
 	// Número de líneas actualmente abiertas
@@ -41,13 +40,11 @@ public class GestorLíneas {
 	 * @param líneas Lista con los IDs de todas las líneas. Debe haber sido creada con el mismo día de inicio y fin
 	 *               que los especificados a continuación.
 	 * @param conversorLíneas Conversor de líneas que permita obtener el ID numérico de una línea
-	 * @param díaInicio Primer día a tener en cuenta a la hora de determinar las líneas sobre las que se va a trabajar
-	 * @param díaFin Último día a tener en cuenta a la hora de determinar las líneas sobre las que se va a trabajar
-	 * @param db Instancia de la base de datos
+	 * @param registroLíneas Registro que permite acceder a los datos de las líneas
 	 * @param log Log de Neo4J
 	 */
-	protected GestorLíneas(List<String> líneas, ConversorLíneas conversorLíneas, LocalDate díaInicio,
-						   LocalDate díaFin, GraphDatabaseService db, Log log) {
+	protected GestorLíneas(List<String> líneas, RegistroDatoID<Línea> registroLíneas, ConversorLíneas conversorLíneas,
+						   Log log) {
 		this.log = log;
 		this.conversorLíneas = conversorLíneas;
 		random = new Random();
@@ -55,13 +52,13 @@ public class GestorLíneas {
 		líneasBool = new boolean[líneas.size()];
 		criterios = new EnumMap<>(IDCriterio.class);
 		for (String idLínea : líneas) {
-			EstadoLínea estadoLínea = new EstadoLínea(new Línea(idLínea, díaInicio, díaFin, db), true);
-			this.líneas.put(idLínea, estadoLínea);
+			this.líneas.put(idLínea, true);
 		}
 		for (int i = 0; i < líneas.size(); i++) {
 			líneasBool[i] = true;
 		}
 		numAbiertas = this.líneas.size();
+		this.registroLíneas = registroLíneas;
 	}
 
 	/**
@@ -90,13 +87,7 @@ public class GestorLíneas {
 	 */
 	public void abrirCerrarLíneas(List<String> líneas, OperaciónLínea operación) {
 		for (String idLínea : líneas) {
-			EstadoLínea estadoLínea = this.líneas.get(idLínea);
-			if (estadoLínea == null) {
-				log.warn("No se puede variar el estado de la línea " + idLínea + " porque no está en " +
-					"la lista de líneas");
-			} else {
-				cambiarEstadoLínea(estadoLínea, idLínea, operación);
-			}
+			cambiarEstadoLínea(idLínea, operación);
 		}
 	}
 
@@ -104,11 +95,10 @@ public class GestorLíneas {
 	 * Varia el estado de cada una de las líneas en el gestor con una probabilidad del 50%
 	 */
 	public void variarAlAzar() {
-		for (Map.Entry<String, EstadoLínea> entrada : líneas.entrySet()) {
+		for (Map.Entry<String, Boolean> entrada : líneas.entrySet()) {
 			if (random.nextBoolean()) {
-				EstadoLínea estadoLínea = entrada.getValue();
-				OperaciónLínea operación = estadoLínea.abierta ? OperaciónLínea.CERRAR : OperaciónLínea.ABRIR;
-				cambiarEstadoLínea(estadoLínea, entrada.getKey(), operación);
+				OperaciónLínea operación = entrada.getValue() ? OperaciónLínea.CERRAR : OperaciónLínea.ABRIR;
+				cambiarEstadoLínea(entrada.getKey(), operación);
 			}
 		}
 	}
@@ -161,17 +151,17 @@ public class GestorLíneas {
 		List<Integer> posicionesOrdenadas = new ArrayList<>(posiciones);
 		posicionesOrdenadas.sort(null);
 
-		Iterator<EstadoLínea> itLíneas = líneas.values().iterator();
+		Iterator<Map.Entry<String, Boolean>> itLíneas = líneas.entrySet().iterator();
 		// Lleva la cuenta de cuántas líneas hemos encontrado hasta ahora que estén en el estado que buscamos
 		int procesadas = 0;
 		for (Integer posActual : posicionesOrdenadas) {
 			boolean encontrada = false;
 			while (!encontrada) {
-				EstadoLínea entradaActual = itLíneas.next();
-				if (entradaActual.abierta == getAbiertas) {
+				Map.Entry<String, Boolean> entradaActual = itLíneas.next();
+				if (entradaActual.getValue() == getAbiertas) {
 					// Esta es la línea nº <procesadas> que está en el estado que buscamos
 					if (procesadas == posActual) {
-						ret.add(entradaActual.línea.id);
+						ret.add(entradaActual.getKey());
 						encontrada = true;
 					}
 					procesadas++;
@@ -235,25 +225,30 @@ public class GestorLíneas {
 	/**
 	 * Modifica el estado de una de las líneas almacenadas en el gestor, salvo que la línea ya esté en el estado
 	 * deseado.
-	 * @param estadoLínea Estado actual de la línea a modificar
 	 * @param idLínea ID de la línea a modificar
 	 * @param operación Operación a realizar sobre la línea
 	 */
-	private void cambiarEstadoLínea(EstadoLínea estadoLínea, String idLínea, OperaciónLínea operación) {
+	private void cambiarEstadoLínea(String idLínea, OperaciónLínea operación) {
 		boolean abrir = operación == OperaciónLínea.ABRIR;
-		if (estadoLínea.abierta != abrir) {
-			estadoLínea.abierta = !estadoLínea.abierta;
-			líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
-			// Recalcular los valores de todos los criteros
-			for (Criterio criterio : criterios.values()) {
-				criterio.recalcular(estadoLínea.línea, abrir);
-			}
+		Boolean abierta = líneas.get(idLínea);
+		if (abierta != null) {
+			if (abierta != abrir) {
+				líneas.put(idLínea, !abierta);
+				líneasBool[conversorLíneas.getIDNumérico(idLínea)] = abrir;
+				// Recalcular los valores de todos los criteros
+				for (Criterio criterio : criterios.values()) {
+					criterio.recalcular(registroLíneas.get(idLínea), abrir);
+				}
 
-			if (operación == OperaciónLínea.ABRIR) {
-				numAbiertas++;
-			} else {
-				numAbiertas--;
+				if (operación == OperaciónLínea.ABRIR) {
+					numAbiertas++;
+				} else {
+					numAbiertas--;
+				}
 			}
+		} else {
+			log.warn("No se puede variar el estado de la línea " + idLínea + " porque no está en " +
+				"la lista de líneas");
 		}
 	}
 }
