@@ -134,9 +134,9 @@ public class Prueba {
 	public Stream<OutputMap> getRiesgoVuelo(@Name("idVuelo") Long idVuelo,
 											@Name("alphaValue") Number alphaValue,
 											@Name("betaValue") Number betaValue,
-											@Name("saveResult") Boolean saveResult) {
-		Number alpha = (double) alphaValue== -1 ? Globales.DEFAULT_ALPHA : alphaValue;
-		Number beta = (double) betaValue == -1 ? Globales.DEFAULT_BETA : betaValue;
+											@Name("saveResult") Boolean saveResult) throws Exception {
+		Number alpha = (double) alphaValue == -1.0 ? Globales.default_alpha : alphaValue;
+		Number beta = (double) betaValue == -1.0 ? Globales.default_beta : betaValue;
 		Consultas consultas = new Consultas(db);
 		return Stream.of(new OutputMap(consultas.getRiesgoVuelo(idVuelo, alpha, beta, saveResult)));
 	}
@@ -146,7 +146,7 @@ public class Prueba {
 			"Devuelve un valor decimal que representa el riesgo y una matriz indicando el riesgo aportado por cada vuelo.")
 	public Stream<OutputMap> getRiesgoAeropuerto(@Name("idAeropuerto") String idAeropuerto,
 									  @Name("fechaInicio") LocalDate fecha,
-									  @Name("saveResult") Boolean saveResult) {
+									  @Name("saveResult") Boolean saveResult) throws Exception {
 		Consultas consultas = new Consultas(db);
 		return Stream.of(new OutputMap(consultas.getRiesgoAeropuerto(idAeropuerto, fecha, saveResult)));
 	}

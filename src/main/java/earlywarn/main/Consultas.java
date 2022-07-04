@@ -6,6 +6,7 @@ import earlywarn.definiciones.Propiedad;
 import earlywarn.definiciones.SentidoVuelo;
 import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
+import earlywarn.mh.CalculoSIR;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -651,18 +652,16 @@ public class Consultas {
 	 * @param alphaValue Valor referente al índice de recuperación del virus, alpha.
 	 * @param betaValue Valor referente al índice de transmisión del virus, beta.
 	 * @return Lista con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al final del vuelo.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL.
+	 * @throws Exception si el vuelo no existe.
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public TreeMap<String, Double> getRiesgoVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult){
+	public TreeMap<String, Double> getRiesgoVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult) throws Exception {
 		double alpha = (Double) alphaValue;
 		double beta = (Double) betaValue;
 		// Propiedades props = new Propiedades(db);
 		TreeMap<String, Double> ret = new TreeMap<>();
 		List<Double> initial = getSIRInicialPorVuelo(idVuelo);
-		double sFinal = initial.get(0);
-		double iFinal = initial.get(1);
-		double rFinal = initial.get(2);
 
 		try(Transaction tx = db.beginTx()){
 			try (Result res = tx.execute(
@@ -670,32 +669,16 @@ public class Consultas {
 							"datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
 			)) {
 				List<String> columnas = res.columns();
-				while (res.hasNext()) {
-					Map<String, Object> row = res.next();
-					double durationInSeconds = (Long) row.get(columnas.get(0));
-					double occupancyPercentage = (Double) row.get(columnas.get(1));
-					double seatsCapacity = (Long) row.get(columnas.get(2));
-					double flightOccupancy = seatsCapacity * (occupancyPercentage / 100);
+				Map<String, Object> row = res.next();
+				double durationInSeconds = (Long) row.get(columnas.get(0));
+				double occupancyPercentage = (Double) row.get(columnas.get(1));
+				double seatsCapacity = (Long) row.get(columnas.get(2));
+				double flightOccupancy = seatsCapacity * (occupancyPercentage / 100);
 
-					//Bucle para calcular el SIR final
-					for (int i = 0; i < ((durationInSeconds / 60) / 15); i++) {
-						double sAux = sFinal;
-						double iAux = iFinal;
-						double rAux = rFinal;
-						sFinal = sAux - beta * sAux * iAux / flightOccupancy;
-						iFinal = iAux + beta * sAux * iAux / flightOccupancy - alpha * iAux;
-						rFinal = rAux + alpha * iAux;
-					}
-					// Añadir datos de cálculo
-					ret.put("S_inicial", initial.get(0));
-					ret.put("I_inicial", initial.get(1));
-					ret.put("R_inicial", initial.get(2));
-					ret.put("S_final", sFinal);
-					ret.put("I_final", iFinal);
-					ret.put("R_final", rFinal);
-					ret.put("Alpha_recuperacion", (double) betaValue);
-					ret.put("Beta_transmision", (double) alphaValue);
-				}
+				//Llamada a función para calcular el SIR
+				ret = CalculoSIR.calcularRiesgoVuelo(initial.get(0), initial.get(1), initial.get(2), durationInSeconds, flightOccupancy, alpha, beta);
+			} catch(Exception e){
+				throw new Exception("El vuelo con identificador " + idVuelo + " no existe");
 			}
 		}
 		if(saveResult){
@@ -706,19 +689,20 @@ public class Consultas {
 	}
 
 	/**
-	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador <<idAerpuerto>> en la fecha indicada.
+	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador "idAeropuerto" en la fecha indicada.
 	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
 	 * @param fecha Fecha del día del que recuperar el riesgo.
 	 * @return Valor decimal representativo del riesgo del aeropuerto.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL.
+	 * @throws Exception si el aeropuerto o vuelo de la query no existe.
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public TreeMap<String,Double> getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
+	public TreeMap<String,Double> getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult) throws Exception {
 		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
-		TreeMap<String ,Double> ret = new TreeMap<String,Double>();
+		TreeMap<String ,Double> ret = new TreeMap<>();
 		double accumulatedRisk = 0;
 		List<Long> idVuelos = new ArrayList<>();
 
@@ -730,26 +714,30 @@ public class Consultas {
 					while (res.hasNext()) {
 						idVuelos.add((Long) res.next().get(columnas.get(0)));
 					}
+				} catch (Exception e){
+					throw new Exception("El aeropuerto con identificador " + idAeropuerto + " no existe");
 				}
-				for(Long id : idVuelos){
-					try(Result r = tx.execute("MATCH (f:FLIGHT{flightId:" + id + "}) RETURN f.flightSinicial, f.flightIinicial, " +
+				for(Long idVuelo : idVuelos){
+					try(Result r = tx.execute("MATCH (f:FLIGHT{flightId:" + idVuelo + "}) RETURN f.flightSinicial, f.flightIinicial, " +
 							"f.flightRinicial, f.flightSfinal, f.flightIfinal, f.flightRfinal, f.alphaValue, f.betaValue")){
 						if(r != null) { // SIR already calculated
 							List<String> columnas = r.columns();
 							while(r.hasNext()){
 								Map<String, Object> row = r.next();
-								ret.put(Long.toString(id), (Double) row.get(columnas.get(4)));
+								ret.put(Long.toString(idVuelo), (Double) row.get(columnas.get(4)));
 								accumulatedRisk += (Double) row.get(columnas.get(4));
 							}
-						} else { // Need to calculate SIR
-							Map<String,Double> calculatedSIR = getRiesgoVuelo(id, -1.0, -1.0, false);
-							ret.put(Long.toString(id), calculatedSIR.get("I_final"));
+						} else { // Call to SIR calculating function
+							Map<String,Double> calculatedSIR = getRiesgoVuelo(idVuelo, -1.0, -1.0, false);
+							ret.put(Long.toString(idVuelo), calculatedSIR.get("I_final"));
 							accumulatedRisk += calculatedSIR.get("I_final");
 						}
 						if(saveResult){
 							tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay{key:\"" +
 									idAeropuerto + "@" + fechaStr + "\"}) SET aod.totalImportedRisk = " + accumulatedRisk);
 						}
+					} catch (Exception e){
+						throw new Exception("El vuelo con identificador " + idVuelo + " no existe");
 					}
 				}
 				tx.commit();
@@ -768,7 +756,7 @@ public class Consultas {
 	 * @return Valor decimal representativo del índice de recuperación del virus.
 	 */
 	public double getIndiceRecuperacionActual(){
-		return Globales.DEFAULT_ALPHA;
+		return Globales.default_alpha;
 	}
 
 	/**
@@ -777,7 +765,7 @@ public class Consultas {
 	 * @return Valor decimal representativo del índice de transmisión del virus.
 	 */
 	public double getIndiceTransmisionActual(){
-		return Globales.DEFAULT_BETA;
+		return Globales.default_beta;
 	}
 
 }

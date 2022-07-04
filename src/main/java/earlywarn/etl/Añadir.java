@@ -12,8 +12,6 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import javax.xml.transform.sax.SAXResult;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -559,7 +557,7 @@ public class Añadir {
 	 */
 	@Procedure(mode = Mode.WRITE)
 	public void añadirRiesgoVuelo(@Name("idVuelo") Number idVuelo,
-								 @Name(value = "resultadoRiesgo") Map<String,Double> resultadoRiesgo){
+								 @Name("resultadoRiesgo") Map<String,Double> resultadoRiesgo){
 
 		Propiedades propiedades = new Propiedades(db);
 		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_inicial") + ", f.flightI0 = " +
