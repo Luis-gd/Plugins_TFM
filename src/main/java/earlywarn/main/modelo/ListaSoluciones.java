@@ -47,4 +47,8 @@ public class ListaSoluciones implements Iterable<List<String>> {
 	public Iterator<List<String>> iterator() {
 		return soluciones.iterator();
 	}
+
+	public int size() {
+		return soluciones.size();
+	}
 }
