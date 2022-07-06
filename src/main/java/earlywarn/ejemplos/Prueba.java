@@ -127,6 +127,7 @@ public class Prueba {
 		return (consultas.getSIRInicialPorVuelo(idVuelo)).getListaSIR();
 	}
 
+	@SuppressWarnings("FloatingPointEquality")
 	@Procedure(mode = Mode.WRITE)
 	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al final del vuelo con el identificador <<idVuelo>>, " +
 			"siendo el valor de infectados el riesgo del vuelo. Se usan los valores de los índices de transmisión (beta) y recuperación (alpha)" +
@@ -135,8 +136,8 @@ public class Prueba {
 											@Name("alphaValue") Number alphaValue,
 											@Name("betaValue") Number betaValue,
 											@Name("saveResult") Boolean saveResult){
-		Number alpha = (double) alphaValue == -1.0 ? Globales.default_alpha : alphaValue;
-		Number beta = (double) betaValue == -1.0 ? Globales.default_beta : betaValue;
+		Number alpha = (double) alphaValue == -1.0 ? Globales.defaultAlpha : alphaValue;
+		Number beta = (double) betaValue == -1.0 ? Globales.defaultBeta : betaValue;
 		Consultas consultas = new Consultas(db);
 		return Stream.of(new OutputMap((consultas.getRiesgoVuelo(idVuelo, alpha, beta, saveResult).getValoresSIRVuelo())));
 	}
@@ -228,12 +229,12 @@ public class Prueba {
 	@UserFunction
 	@Description("Devuelve el índice de recuperación que se está usando por defecto")
 	public double getIndiceRecuperacionActual(){
-		return Globales.default_alpha;
+		return Globales.defaultAlpha;
 	}
 
 	@UserFunction
 	@Description("Devuelve el índice de transmisión que se está usando por defecto")
 	public double getIndiceTransmisionActual(){
-		return Globales.default_beta;
+		return Globales.defaultBeta;
 	}
 }

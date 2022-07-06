@@ -4,8 +4,8 @@ import java.util.TreeMap;
 
 public class SIRAeropuerto {
 
-    static double riesgoTotalAeropuerto;
-    static TreeMap<String,Double> riesgoVuelos;
+    private static double riesgoTotalAeropuerto;
+    private static TreeMap<String,Double> riesgoVuelos;
 
     public SIRAeropuerto(){
         riesgoTotalAeropuerto = 0;

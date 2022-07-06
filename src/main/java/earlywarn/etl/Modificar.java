@@ -83,22 +83,4 @@ public class Modificar {
 			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS, true);
 		}
 	}
-
-	/**
-	 * Función para actualizar el valor de recuperación (alpha) del virus por defecto.
-	 * No hace cambios en la base de datos, sino en la variable global <<DEFAULT_ALPHA>>.
-	 */
-	@Procedure(mode = Mode.WRITE)
-	public void actualizarIndiceRecuperacion(@Name("newAlpha") Number alpha){
-		Globales.updateAlpha((double) alpha);
-	}
-
-	/**
-	 * Función para actualizar el valor de transmisión (beta) del virus por defecto.
-	 * No hace cambios en la base de datos, sino en la variable global <<DEFAULT_BETA>.
-	 */
-	@Procedure(mode = Mode.WRITE)
-	public void actualizarIndiceTransmision(@Name("newBeta") Number beta){
-		Globales.updateBeta((double) beta);
-	}
 }

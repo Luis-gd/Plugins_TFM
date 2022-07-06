@@ -4,15 +4,14 @@ import java.util.TreeMap;
 
 public class SIRVuelo {
 
-    static double sInicial;
-    static double iInicial;
-    static double rInicial;
-    static double sFinal;
-    static double iFinal;
-    static double rFinal;
-    static double alpha;
-    static double beta;
-    static double riesgoTotalAeropuerto;
+    private static double sInicial;
+    private static double iInicial;
+    private static double rInicial;
+    private static double sFinal;
+    private static double iFinal;
+    private static double rFinal;
+    private static double alpha;
+    private static double beta;
 
     public SIRVuelo(){
         sInicial = 0;

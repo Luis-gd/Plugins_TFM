@@ -9,9 +9,9 @@ import java.util.List;
 
 public class SIR {
 
-    static double susceptibles;
-    static double infectados;
-    static double recuperados;
+    private static double susceptibles;
+    private static double infectados;
+    private static double recuperados;
 
     public SIR(){
         susceptibles = 0;
