@@ -22,7 +22,6 @@ public class Añadir {
 	@Context
 	public GraphDatabaseService db;
 
-
 	/**
 	 * Requerido por Neo4J
 	 * @deprecated Este constructor no debe utilizarse. Usar {@link Añadir#Añadir(GraphDatabaseService)} en su lugar.

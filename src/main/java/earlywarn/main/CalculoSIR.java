@@ -1,10 +1,12 @@
 package earlywarn.main;
 
-import earlywarn.definiciones.SIRVuelo;
+import earlywarn.main.modelo.SIRVuelo;
 
 public class CalculoSIR {
 
-    public static SIRVuelo calcularRiesgoVuelo(double sInitial, double iInitial, double rInitial, double durationInSeconds, double seatsCapacity, double occupancyPercentage, double alpha, double beta){
+    public static SIRVuelo calcularRiesgoVuelo(double sInitial, double iInitial, double rInitial,
+                                               double durationInSeconds, double seatsCapacity,
+                                               double occupancyPercentage, double alpha, double beta) {
         SIRVuelo ret;
         double sFinal = sInitial;
         double iFinal = iInitial;

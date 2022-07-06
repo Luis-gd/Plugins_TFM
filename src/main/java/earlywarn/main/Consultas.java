@@ -1,9 +1,11 @@
 package earlywarn.main;
 
 import earlywarn.definiciones.*;
-import earlywarn.ejemplos.Prueba;
 import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
+import earlywarn.main.modelo.SIR;
+import earlywarn.main.modelo.SIRAeropuerto;
+import earlywarn.main.modelo.SIRVuelo;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -22,12 +24,11 @@ public class Consultas {
 	// Aerolínea que tienen asignada los vuelos de la BD para los que no se conoce quién opera el vuelo
 	public static final String AEROLÍNEA_DESCONOCIDA = "UNKNOWN";
 
-
 	/*
 	 * La instancia de la base de datos.
 	 * Debe ser obtenida usando la anotación @Context en un procedimiento o función
 	 */
-	private GraphDatabaseService db;
+	private final GraphDatabaseService db;
 
 	// Primer año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
 	private Integer primerAñoDatosTurismo;
@@ -49,7 +50,6 @@ public class Consultas {
 	/**
 	 * Devuelve el número de vuelos que entran y/o salen del aeropuerto indicado en el rango de días indicados.
 	 * Requiere que se haya llevado a cabo la operación ETL que convierte las relaciones entre Airport y AOD.
-	 *
 	 * @param idAeropuerto Código IATA del aeropuerto
 	 * @param díaInicio Primer día en el que buscar vuelos (inclusivo)
 	 * @param díaFin Último día en el que buscar vuelos (inclusivo)
@@ -238,7 +238,6 @@ public class Consultas {
 				"date antes de ejecutarla.");
 		}
 	}
-
 	/**
 	 * @see #getPasajerosTotales(LocalDate, LocalDate, String)
 	 */
@@ -292,7 +291,6 @@ public class Consultas {
 				"date antes de ejecutarla.");
 		}
 	}
-
 	/**
 	 * @see #getIngresosTurísticosTotales(LocalDate, LocalDate, String)
 	 */
@@ -304,7 +302,6 @@ public class Consultas {
 	 * Obtiene el valor total de conectividad entre todos los aeropuertos.
 	 * Requiere que se haya ejecutado la operación ETL que carga los datos de la conectividad de cada aeropuerto y la
 	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto.
-	 *
 	 * @return Conectividad total entre todos los aeropuertos
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
 	 * {@link Añadir#añadirConectividad(String)} o la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
@@ -315,15 +312,15 @@ public class Consultas {
 		if (propiedades.getBool(Propiedad.ETL_CONECTIVIDAD) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
-						"MATCH (a:Airport) RETURN sum(a.connectivity)")) {
+					"MATCH (a:Airport) RETURN sum(a.connectivity)")) {
 					Map<String, Object> row = res.next();
 					return Math.toIntExact((Long) row.get(res.columns().get(0)));
 				}
 			}
 		} else {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-					"que carga los datos de la conectividad de cada aeropuerto y la operación ETL que añade las relaciones " +
-					"faltantes entre aeropuerto y país antes de ejecutarla.");
+				"que carga los datos de la conectividad de cada aeropuerto y la operación ETL que añade las relaciones " +
+				"faltantes entre aeropuerto y país antes de ejecutarla.");
 		}
 	}
 
@@ -335,7 +332,6 @@ public class Consultas {
 	 * Requiere que se haya ejecutado la operación ETL que carga los datos de la conectividad de cada aeropuerto, la
 	 * operación ETL que añade las relaciones faltantes entre país y aeropuerto  y la operación ETL que
 	 * convierte las fechas de vuelos a tipo date.
-	 *
 	 * @param díaInicio Primer día a tener en cuenta
 	 * @param díaFin Último día a tener en cuenta
 	 * @param idPaís ID del país de destino. Solo se tendrán en cuenta los vuelos hacia este país
@@ -351,7 +347,7 @@ public class Consultas {
 		Propiedades propiedades = new Propiedades(db);
 
 		if (propiedades.getBool(Propiedad.ETL_CONECTIVIDAD) && propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)
-				&& propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
+		&& propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 					"MATCH (a:Airport)-[]-(:AirportOperationDay)-[]->(f:FLIGHT) " +
@@ -433,7 +429,6 @@ public class Consultas {
 
 		return ret;
 	}
-
 	/**
 	 * @see #getPasajerosPorAerolínea(LocalDate, LocalDate, String)
 	 */
@@ -450,7 +445,7 @@ public class Consultas {
 	 * @param díaInicio Primer día a tener en cuenta
 	 * @param díaFin Último día a tener en cuenta
 	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino y solo se devolverán
-	 * aeropuertos de este país. Si se deja en blanco, la restricción no se aplica.
+	 *               aeropuertos de este país. Si se deja en blanco, la restricción no se aplica.
 	 * @return Mapa que relaciona códigos IATA de aeropuertos con el número de pasajeros que viajan desde y hasta cada
 	 * uno en el rango de fechas indicado. No incluye aeropuertos con 0 pasajeros.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
@@ -515,7 +510,6 @@ public class Consultas {
 
 		return ret;
 	}
-
 	/**
 	 * @see #getPasajerosPorAeropuerto(LocalDate, LocalDate, String)
 	 */
@@ -583,13 +577,8 @@ public class Consultas {
 	/**
 	 * Devuelve una lista con los cálculos del SIR iniciales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
 	 * en este mismo orden.
-	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
-	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
-	 *
 	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR.
 	 * @return Clase con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al inicio del vuelo.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public SIR getSIRInicialPorVuelo(Number idVuelo) {
 		SIR ret = null;
@@ -627,30 +616,19 @@ public class Consultas {
 	/**
 	 * Calcula y añade al vuelo con identificador "idVuelo" los valores referentes al SIR (Susceptibles,
 	 * Infectados, Recuperados) al inicio y al final del vuelo.
-	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre aeropuerto y país.
 	 * @param idVuelo Hace referencia al identificador del vuelo del que calcular el SIR.
 	 * @param resultadoRiesgo Es el valor del índice de recuperación de la enfermedad.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la  operación
-	 * ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
 	 */
 	public void añadirRiesgoVuelo(Long idVuelo, Map<String,Double> resultadoRiesgo){
-
-		Propiedades propiedades = new Propiedades(db);
 		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_Inicial") + ", f.flightI0 = " +
 				resultadoRiesgo.get("I_Inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_Inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_Final") +
 				", f.flightIfinal = " + resultadoRiesgo.get("I_Final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_Final") +
 				", f.alphaValue = " + resultadoRiesgo.get("Alpha_Recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_Transmision");
 
-		if(propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)){
-			try(Transaction tx = db.beginTx()) {
-				// Query para guardar los valores SIR del vuelo calculados en la base de datos
-				tx.execute(consulta);
-
-				tx.commit();
-			}
-		} else {
-			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-					"que añade conexiones faltantes entre aeropuertos y países antes de ejecutarla.");
+		try(Transaction tx = db.beginTx()) {
+			// Query para guardar los valores SIR del vuelo calculados en la base de datos
+			tx.execute(consulta);
+			tx.commit();
 		}
 	}
 
@@ -658,15 +636,11 @@ public class Consultas {
 	 * Devuelve una lista con los cálculos del SIR finales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
 	 * en este mismo orden, haciendo el número de infectados referencia al RIESGO del vuelo, usando los valores de índice
 	 * de transmisión y recuperación especificados.
-	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
-	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR final.
 	 * @param alphaValue Valor referente al índice de recuperación del virus, alpha.
 	 * @param betaValue Valor referente al índice de transmisión del virus, beta.
 	 * @return Clase que contiene todos los valores usados para el cálculo SIR y el riesgo final del vuelo.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL.
 	 * @throws IllegalOperationException si el vuelo no existe.
-	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public SIRVuelo getRiesgoVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult){
 		double alpha = (Double) alphaValue;
@@ -695,7 +669,6 @@ public class Consultas {
 			}
 		}
 		if(saveResult){
-			Prueba prueba = new Prueba();
 			añadirRiesgoVuelo((Long) idVuelo,ret.getValoresSIRVuelo());
 		}
 		return ret;
@@ -703,14 +676,13 @@ public class Consultas {
 
 	/**
 	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador "idAeropuerto" en la fecha indicada.
-	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre país y aeropuerto y
-	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * Requiere que se haya ejecutado la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
 	 * @param fecha Fecha del día del que recuperar el riesgo.
 	 * @return Clase con el riesgo de todos los vuelos y el riesgo total del aeropuerto en el dia marcado.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Modificar#convertirFechasVuelos()}.
 	 * @throws IllegalOperationException si el aeropuerto o vuelo de la query no existe.
-	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public SIRAeropuerto getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
 		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -745,8 +717,7 @@ public class Consultas {
 								tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay{key:\"" +
 										idAeropuerto + "@" + fechaStr + "\"}) SET aod.totalImportedRisk = " + accumulatedRisk);
 							}
-						}
-						else {
+						} else {
 							throw new IllegalOperationException("El vuelo con identificador " + idVuelo + " no existe");
 						}
 					}
@@ -755,7 +726,7 @@ public class Consultas {
 			}
 			ret.setRiesgoTotal(accumulatedRisk);
 			return ret;
-		} else  {
+		} else {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
 					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
 		}

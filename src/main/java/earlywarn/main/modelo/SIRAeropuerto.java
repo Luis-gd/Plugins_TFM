@@ -1,4 +1,4 @@
-package earlywarn.definiciones;
+package earlywarn.main.modelo;
 
 import java.util.TreeMap;
 
