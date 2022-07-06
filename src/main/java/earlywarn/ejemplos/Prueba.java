@@ -127,6 +127,15 @@ public class Prueba {
 		return (consultas.getSIRInicialPorVuelo(idVuelo)).getListaSIR();
 	}
 
+	@Procedure(mode = Mode.WRITE)
+	@Description("Añade el riesgo importado del vuelo con identificador 'idVuelo' en la base de datos.")
+	public void añadirRiesgoVuelo(@Name("idVuelo") Number idVuelo,
+								  @Name("resultadoRiesgo") Map<String,Double> resultadoRiesgo){
+		Consultas consultas = new Consultas(db);
+		consultas.añadirRiesgoVuelo((long) idVuelo, resultadoRiesgo);
+	}
+
+
 	@SuppressWarnings("FloatingPointEquality")
 	@Procedure(mode = Mode.WRITE)
 	@Description("Calcula los valores del SIR (Susceptibles, Infectados y Recuperados) al final del vuelo con el identificador <<idVuelo>>, " +
@@ -150,6 +159,18 @@ public class Prueba {
 									  @Name("saveResult") Boolean saveResult){
 		Consultas consultas = new Consultas(db);
 		return Stream.of(new OutputMap((consultas.getRiesgoAeropuerto(idAeropuerto, fecha, saveResult).getRiesgoTotalAeropuerto())));
+	}
+
+	@Procedure(mode = Mode.WRITE)
+	@Description("Actualiza el índice de recuperación 'alpha' usado por defecto, guardada como variable global.")
+	public void actualizarIndiceRecuperacion(@Name("alphaValue") Number alpha){
+		Globales.updateAlpha((double) alpha);
+	}
+
+	@Procedure(mode = Mode.WRITE)
+	@Description("Actualiza el índice de transmisión 'beta' usado por defecto, guardada como variable global.")
+	public void actualizarIndiceTransmision(@Name("betaValue") Number beta){
+		Globales.updateBeta((double) beta);
 	}
 
 	// -- Líneas --

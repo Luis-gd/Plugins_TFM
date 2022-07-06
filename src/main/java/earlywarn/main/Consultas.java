@@ -1,15 +1,12 @@
 package earlywarn.main;
 
 import earlywarn.definiciones.*;
+import earlywarn.ejemplos.Prueba;
 import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.Name;
-import org.neo4j.procedure.Procedure;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -30,25 +27,16 @@ public class Consultas {
 	 * La instancia de la base de datos.
 	 * Debe ser obtenida usando la anotación @Context en un procedimiento o función
 	 */
-	@Context
-	public GraphDatabaseService db;
+	private GraphDatabaseService db;
 
 	// Primer año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
-	private static Integer primerAñoDatosTurismo;
+	private Integer primerAñoDatosTurismo;
 	// Último año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
-	private static Integer últimoAñoDatosTurismo;
+	private Integer últimoAñoDatosTurismo;
 	// Primer año del que se tienen datos de gasto turístico. Null si aún no se ha consultado la BD para obtener el valor.
-	private static Integer primerAñoDatosGastoTurístico;
+	private Integer primerAñoDatosGastoTurístico;
 	// Último año del que se tienen datos de gasto turístico. Null si aún no se ha consultado la BD para obtener el valor.
-	private static Integer últimoAñoDatosGastoTurístico;
-
-	/**
-	 * Requerido por Neo4J
-	 * @deprecated Este constructor no debe utilizarse. Usar {@link Consultas#Consultas(GraphDatabaseService)} en su lugar.
-	 */
-	@Deprecated
-	public Consultas() {
-	}
+	private Integer últimoAñoDatosGastoTurístico;
 
 	public Consultas(GraphDatabaseService db) {
 		this.db = db;
@@ -645,9 +633,7 @@ public class Consultas {
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la  operación
 	 * ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
 	 */
-	@Procedure(mode = Mode.WRITE)
-	public void añadirRiesgoVuelo(@Name("idVuelo") Number idVuelo,
-								  @Name("resultadoRiesgo") Map<String,Double> resultadoRiesgo){
+	public void añadirRiesgoVuelo(Long idVuelo, Map<String,Double> resultadoRiesgo){
 
 		Propiedades propiedades = new Propiedades(db);
 		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_inicial") + ", f.flightI0 = " +
@@ -709,7 +695,8 @@ public class Consultas {
 			}
 		}
 		if(saveResult){
-			añadirRiesgoVuelo(idVuelo,ret.getValoresSIRVuelo());
+			Prueba prueba = new Prueba();
+			prueba.añadirRiesgoVuelo(idVuelo,ret.getValoresSIRVuelo());
 		}
 		return ret;
 	}
@@ -728,7 +715,7 @@ public class Consultas {
 	public SIRAeropuerto getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
 		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
-		SIRAeropuerto ret = null;
+		SIRAeropuerto ret = new SIRAeropuerto();
 		double accumulatedRisk = 0;
 		List<Long> idVuelos = new ArrayList<>();
 
@@ -772,23 +759,5 @@ public class Consultas {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
 					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
 		}
-	}
-
-	/**
-	 * Función para actualizar el valor de recuperación (alpha) del virus por defecto.
-	 * No hace cambios en la base de datos, sino en la variable global {@link Globales#defaultAlpha}.
-	 */
-	@Procedure(mode = Mode.WRITE)
-	public void actualizarIndiceRecuperacion(@Name("newAlpha") Number alpha){
-		Globales.updateAlpha((double) alpha);
-	}
-
-	/**
-	 * Función para actualizar el valor de transmisión (beta) del virus por defecto.
-	 * No hace cambios en la base de datos, sino en la variable global {@link Globales#defaultBeta}.
-	 */
-	@Procedure(mode = Mode.WRITE)
-	public void actualizarIndiceTransmision(@Name("newBeta") Number beta){
-		Globales.updateBeta((double) beta);
 	}
 }

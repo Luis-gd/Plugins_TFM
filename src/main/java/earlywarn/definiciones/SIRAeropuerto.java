@@ -9,6 +9,7 @@ public class SIRAeropuerto {
 
     public SIRAeropuerto(){
         riesgoTotalAeropuerto = 0;
+        riesgoVuelos = new TreeMap<>();
     }
 
     public TreeMap<String,Double> getRiesgoTotalAeropuerto(){
