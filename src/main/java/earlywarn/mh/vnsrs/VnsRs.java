@@ -91,9 +91,9 @@ public class VnsRs implements IRecocidoSimulado {
 		}
 		String mensaje = "Fin ejecución VNS + RS. Mejor solución (fitness " + fitnessMejorSolución + "):\n" +
 			"Líneas abiertas: " +
-			Utils.listaToString(conversorLíneas.getAbiertas(mejorSolución), true) +
+			Utils.listaToString(conversorLíneas.getAbiertas(mejorSolución), true, true) +
 			"\nLíneas cerradas: " +
-			Utils.listaToString(conversorLíneas.getCerradas(mejorSolución), true);
+			Utils.listaToString(conversorLíneas.getCerradas(mejorSolución), true, true);
 		log.info(mensaje);
 	}
 
@@ -123,8 +123,8 @@ public class VnsRs implements IRecocidoSimulado {
 
 			try (FileWriter fSalida = new FileWriter(rutaFichero)) {
 				fSalida.write(fitnessMejorSolución + "\n");
-				fSalida.write(Utils.listaToString(conversorLíneas.getAbiertas(mejorSolución), false) + "\n");
-				fSalida.write(Utils.listaToString(conversorLíneas.getCerradas(mejorSolución), false) + "\n");
+				fSalida.write(Utils.listaToString(conversorLíneas.getAbiertas(mejorSolución), false, true) + "\n");
+				fSalida.write(Utils.listaToString(conversorLíneas.getCerradas(mejorSolución), false, true) + "\n");
 			} catch (IOException e) {
 				log.warn("No se ha podido guardar el resultado de la metaheurística.\n" + e);
 			}

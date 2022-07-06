@@ -75,7 +75,7 @@ public class Resultado {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 1; i <= numSoluciones; i++) {
 			if (i != 1) {
-				sb.append(", ");
+				sb.append(",");
 			}
 			sb.append("S").append(i);
 		}
@@ -111,7 +111,7 @@ public class Resultado {
 		try (FileWriter fSalida = new FileWriter(rutaFichero)) {
 			fSalida.write(cabeceraCsv);
 			for (List<?> listaActual : elementos) {
-				fSalida.write(Utils.listaToString(listaActual, false) + "\n");
+				fSalida.write(Utils.listaToString(listaActual, false, false) + "\n");
 			}
 		} catch (IOException e) {
 			log.warn("No se han podido guardar las estadísticas del análisis de sensibilidad.\n" + e);

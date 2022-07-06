@@ -186,9 +186,10 @@ public class Utils {
 	 * por comas. Opcionalmente se pueden incluir corchetes al inicio y al final de la lista.
 	 * @param lista Lista de elementos a convertir
 	 * @param corchetes Si es true, la string que representa la lista se encerrará entre corchetes
+	 * @param espacios Si es true, se insertará un espacio después de cada coma.
 	 * @return String que incluye todas las líneas en la lista
 	 */
-	public static String listaToString(List<?> lista, boolean corchetes) {
+	public static String listaToString(List<?> lista, boolean corchetes, boolean espacios) {
 		StringBuilder sb = new StringBuilder();
 		if (corchetes) {
 			sb.append("[");
@@ -198,7 +199,11 @@ public class Utils {
 			if (primero) {
 				primero = false;
 			} else {
-				sb.append(", ");
+				if (espacios) {
+					sb.append(", ");
+				} else {
+					sb.append(",");
+				}
 			}
 			sb.append(elemento);
 		}
