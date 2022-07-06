@@ -636,10 +636,10 @@ public class Consultas {
 	public void añadirRiesgoVuelo(Long idVuelo, Map<String,Double> resultadoRiesgo){
 
 		Propiedades propiedades = new Propiedades(db);
-		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_inicial") + ", f.flightI0 = " +
-				resultadoRiesgo.get("I_inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_final") +
-				", f.flightIfinal = " + resultadoRiesgo.get("I_final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_final") +
-				", f.alphaValue = " + resultadoRiesgo.get("Alpha_recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_transmision");
+		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_Inicial") + ", f.flightI0 = " +
+				resultadoRiesgo.get("I_Inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_Inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_Final") +
+				", f.flightIfinal = " + resultadoRiesgo.get("I_Final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_Final") +
+				", f.alphaValue = " + resultadoRiesgo.get("Alpha_Recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_Transmision");
 
 		if(propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)){
 			try(Transaction tx = db.beginTx()) {
@@ -696,7 +696,7 @@ public class Consultas {
 		}
 		if(saveResult){
 			Prueba prueba = new Prueba();
-			prueba.añadirRiesgoVuelo(idVuelo,ret.getValoresSIRVuelo());
+			añadirRiesgoVuelo((Long) idVuelo,ret.getValoresSIRVuelo());
 		}
 		return ret;
 	}

@@ -127,13 +127,13 @@ public class Prueba {
 		return (consultas.getSIRInicialPorVuelo(idVuelo)).getListaSIR();
 	}
 
-	@Procedure(mode = Mode.WRITE)
+	/*@Procedure(mode = Mode.WRITE)
 	@Description("Añade el riesgo importado del vuelo con identificador 'idVuelo' en la base de datos.")
 	public void añadirRiesgoVuelo(@Name("idVuelo") Number idVuelo,
 								  @Name("resultadoRiesgo") Map<String,Double> resultadoRiesgo){
 		Consultas consultas = new Consultas(db);
 		consultas.añadirRiesgoVuelo((long) idVuelo, resultadoRiesgo);
-	}
+	}*/
 
 
 	@SuppressWarnings("FloatingPointEquality")
