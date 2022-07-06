@@ -545,36 +545,4 @@ public class Añadir {
 			new Propiedades(db).setBool(Propiedad.ETL_REPORTE_PAÍS, true);
 		}
 	}
-
-	/**
-	 * Calcula y añade al vuelo con identificador <<idVuelo>>> los valores referentes al SIR (Susceptibles,
-	 * Infectados, Recuperados) al inicio y al final del vuelo.
-	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre aeropuerto y país.
-	 * @param idVuelo Hace referencia al identificador del vuelo del que calcular el SIR.
-	 * @param resultadoRiesgo Es el valor del índice de recuperación de la enfermedad.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la  operación
-	 * ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
-	 */
-	@Procedure(mode = Mode.WRITE)
-	public void añadirRiesgoVuelo(@Name("idVuelo") Number idVuelo,
-								 @Name("resultadoRiesgo") Map<String,Double> resultadoRiesgo){
-
-		Propiedades propiedades = new Propiedades(db);
-		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_inicial") + ", f.flightI0 = " +
-				resultadoRiesgo.get("I_inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_final") +
-				", f.flightIfinal = " + resultadoRiesgo.get("I_final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_final") +
-				", f.alphaValue = " + resultadoRiesgo.get("Alpha_recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_transmision");
-
-		if(propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)){
-			try(Transaction tx = db.beginTx()) {
-				// Query para guardar los valores SIR del vuelo calculados en la base de datos
-				tx.execute(consulta);
-
-				tx.commit();
-			}
-		} else {
-			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
-					"que añade conexiones faltantes entre aeropuertos y países antes de ejecutarla.");
-		}
-	}
 }

@@ -124,7 +124,7 @@ public class Prueba {
 			"La lista se devuelve en el siguiente orden: [Susceptibles, Infectados, Recuperados]")
 	public List<Double> getSIRInicialPorVuelo(@Name("idVuelo") Long idVuelo) {
 		Consultas consultas = new Consultas(db);
-		return consultas.getSIRInicialPorVuelo(idVuelo);
+		return (consultas.getSIRInicialPorVuelo(idVuelo)).getListaSIR();
 	}
 
 	@Procedure(mode = Mode.WRITE)
@@ -134,11 +134,11 @@ public class Prueba {
 	public Stream<OutputMap> getRiesgoVuelo(@Name("idVuelo") Long idVuelo,
 											@Name("alphaValue") Number alphaValue,
 											@Name("betaValue") Number betaValue,
-											@Name("saveResult") Boolean saveResult) throws Exception {
+											@Name("saveResult") Boolean saveResult){
 		Number alpha = (double) alphaValue == -1.0 ? Globales.default_alpha : alphaValue;
 		Number beta = (double) betaValue == -1.0 ? Globales.default_beta : betaValue;
 		Consultas consultas = new Consultas(db);
-		return Stream.of(new OutputMap(consultas.getRiesgoVuelo(idVuelo, alpha, beta, saveResult)));
+		return Stream.of(new OutputMap((consultas.getRiesgoVuelo(idVuelo, alpha, beta, saveResult).getValoresSIRVuelo())));
 	}
 
 	@Procedure(mode = Mode.WRITE)
@@ -146,9 +146,9 @@ public class Prueba {
 			"Devuelve un valor decimal que representa el riesgo y una matriz indicando el riesgo aportado por cada vuelo.")
 	public Stream<OutputMap> getRiesgoAeropuerto(@Name("idAeropuerto") String idAeropuerto,
 									  @Name("fechaInicio") LocalDate fecha,
-									  @Name("saveResult") Boolean saveResult) throws Exception {
+									  @Name("saveResult") Boolean saveResult){
 		Consultas consultas = new Consultas(db);
-		return Stream.of(new OutputMap(consultas.getRiesgoAeropuerto(idAeropuerto, fecha, saveResult)));
+		return Stream.of(new OutputMap((consultas.getRiesgoAeropuerto(idAeropuerto, fecha, saveResult).getRiesgoTotalAeropuerto())));
 	}
 
 	// -- Líneas --
@@ -228,14 +228,12 @@ public class Prueba {
 	@UserFunction
 	@Description("Devuelve el índice de recuperación que se está usando por defecto")
 	public double getIndiceRecuperacionActual(){
-		Consultas consultas = new Consultas(db);
-		return consultas.getIndiceRecuperacionActual();
+		return Globales.default_alpha;
 	}
 
 	@UserFunction
 	@Description("Devuelve el índice de transmisión que se está usando por defecto")
 	public double getIndiceTransmisionActual(){
-		Consultas consultas = new Consultas(db);
-		return consultas.getIndiceTransmisionActual();
+		return Globales.default_beta;
 	}
 }

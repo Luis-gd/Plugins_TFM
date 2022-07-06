@@ -1,15 +1,15 @@
 package earlywarn.main;
 
-import earlywarn.definiciones.ETLOperationRequiredException;
-import earlywarn.definiciones.Globales;
-import earlywarn.definiciones.Propiedad;
-import earlywarn.definiciones.SentidoVuelo;
+import earlywarn.definiciones.*;
 import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
-import earlywarn.mh.CalculoSIR;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -30,16 +30,25 @@ public class Consultas {
 	 * La instancia de la base de datos.
 	 * Debe ser obtenida usando la anotación @Context en un procedimiento o función
 	 */
-	private final GraphDatabaseService db;
+	@Context
+	public GraphDatabaseService db;
 
 	// Primer año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
-	private Integer primerAñoDatosTurismo;
+	private static Integer primerAñoDatosTurismo;
 	// Último año del que se tienen datos de turismo. Null si aún no se ha consultado la BD para obtener el valor.
-	private Integer últimoAñoDatosTurismo;
+	private static Integer últimoAñoDatosTurismo;
 	// Primer año del que se tienen datos de gasto turístico. Null si aún no se ha consultado la BD para obtener el valor.
-	private Integer primerAñoDatosGastoTurístico;
+	private static Integer primerAñoDatosGastoTurístico;
 	// Último año del que se tienen datos de gasto turístico. Null si aún no se ha consultado la BD para obtener el valor.
-	private Integer últimoAñoDatosGastoTurístico;
+	private static Integer últimoAñoDatosGastoTurístico;
+
+	/**
+	 * Requerido por Neo4J
+	 * @deprecated Este constructor no debe utilizarse. Usar {@link Consultas#Consultas(GraphDatabaseService)} en su lugar.
+	 */
+	@Deprecated
+	public Consultas() {
+	}
 
 	public Consultas(GraphDatabaseService db) {
 		this.db = db;
@@ -54,12 +63,12 @@ public class Consultas {
 	 * Requiere que se haya llevado a cabo la operación ETL que convierte las relaciones entre Airport y AOD.
 	 *
 	 * @param idAeropuerto Código IATA del aeropuerto
-	 * @param díaInicio    Primer día en el que buscar vuelos (inclusivo)
-	 * @param díaFin       Último día en el que buscar vuelos (inclusivo)
-	 * @param sentido      Sentido de los vuelos a considerar
+	 * @param díaInicio Primer día en el que buscar vuelos (inclusivo)
+	 * @param díaFin Último día en el que buscar vuelos (inclusivo)
+	 * @param sentido Sentido de los vuelos a considerar
 	 * @return Número de vuelos que salen del aeropuerto en el día indicado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Modificar#convertirRelacionesAOD()}.
+	 * {@link Modificar#convertirRelacionesAOD()}.
 	 */
 	public long getVuelosAeropuerto(String idAeropuerto, LocalDate díaInicio, LocalDate díaFin, SentidoVuelo sentido) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -69,10 +78,10 @@ public class Consultas {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 						"MATCH (a:Airport)-[o:OPERATES_ON]->(:AirportOperationDay)" +
-								sentido.operadorAODVuelo("") + "(f:FLIGHT) " +
-								"WHERE a.iata = \"" + idAeropuerto + "\" " +
-								"AND date(\"" + díaInicioStr + "\") <= o.date <= date(\"" + díaFinStr + "\") " +
-								"RETURN count(f)")) {
+						   sentido.operadorAODVuelo("") + "(f:FLIGHT) " +
+						   "WHERE a.iata = \"" + idAeropuerto + "\" " +
+						   "AND date(\"" + díaInicioStr + "\") <= o.date <= date(\"" + díaFinStr + "\") " +
+						   "RETURN count(f)")) {
 					Map<String, Object> row = res.next();
 					return (long) row.get(res.columns().get(0));
 				}
@@ -165,13 +174,13 @@ public class Consultas {
 	 * convierte las fechas de vuelos a tipo date.
 	 * Ejemplo: earlywarn.main.SIR_por_pais(date("2019-06-01"), date({year: 2019, month: 7, day: 1}), "Spain")
 	 *
-	 * @param idPaís    Identificador del país tal y como aparece en la base de datos
+	 * @param idPaís Identificador del país tal y como aparece en la base de datos
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
+	 * @param díaFin Último día a tener en cuenta
 	 * @return Valor del riesgo importado (SIR total) para el país indicado teniendo en cuenta todos los vuelos entrantes
 	 * en el periodo especificado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Modificar#borrarVuelosSinSIR()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Modificar#borrarVuelosSinSIR()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public Double getRiesgoPorPaís(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		// Las formas de escribir las fechas en neo4j son como entrada: date("2019-06-01") y date({year: 2019, month: 7}
@@ -184,10 +193,10 @@ public class Consultas {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 						"MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(:Airport)" +
-								"-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
-								"WHERE c.countryId=\"" + idPaís + "\" " +
-								"AND date(\"" + diaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + diaFinStr + "\")" +
-								"RETURN sum(f.flightIfinal)")) {
+						   "-[]->(:AirportOperationDay)<-[]-(f:FLIGHT) " +
+						   "WHERE c.countryId=\"" + idPaís + "\" " +
+						   "AND date(\"" + diaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + diaFinStr + "\")" +
+						   "RETURN sum(f.flightIfinal)")) {
 					Map<String, Object> row = res.next();
 					return Utils.resultadoADouble(row.get(res.columns().get(0)));
 				}
@@ -207,13 +216,13 @@ public class Consultas {
 	 * convierte las fechas de vuelos a tipo date.
 	 *
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
-	 * @param idPaís    Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
-	 *                  si se deja en blanco.
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
 	 * @return Número total de pasajeros en el rango de fechas indicado.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
-	 *                                       o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public int getPasajerosTotales(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -226,15 +235,15 @@ public class Consultas {
 				if (idPaís.isEmpty()) {
 					try (Result res = tx.execute(
 							"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= " +
-									"date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
+							   "date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
 						Map<String, Object> row = res.next();
 						return Math.toIntExact((Long) row.get(res.columns().get(0)));
 					}
 				} else {
 					try (Result res = tx.execute(
 							"MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
-									"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
-									"f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
+							   "WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+							   "f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.passengers)")) {
 						Map<String, Object> row = res.next();
 						return Math.toIntExact((Long) row.get(res.columns().get(0)));
 					}
@@ -262,13 +271,13 @@ public class Consultas {
 	 * convierte las fechas de vuelos a tipo date.
 	 *
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
-	 * @param idPaís    Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
-	 *                  si se deja en blanco.
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
 	 * @return Ingresos totales (en euros) entre todos los vuelos en el periodo indicado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#añadirIngresosVuelo(Boolean, Boolean)}, la operación ETL
-	 *                                       {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#añadirIngresosVuelo(Boolean, Boolean)}, la operación ETL
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public double getIngresosTurísticosTotales(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -281,15 +290,15 @@ public class Consultas {
 				if (idPaís.isEmpty()) {
 					try (Result res = tx.execute(
 							"MATCH (f:FLIGHT) WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= " +
-									"date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
+							   "date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
 						Map<String, Object> row = res.next();
 						return (double) row.get(res.columns().get(0));
 					}
 				} else {
 					try (Result res = tx.execute(
 							"MATCH (f:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)-[]-(c:Country) " +
-									"WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
-									"f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
+							   "WHERE c.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
+							   "f.dateOfDeparture <= date(\"" + díaFinStr + "\") RETURN sum(f.incomeFromTurism)")) {
 						Map<String, Object> row = res.next();
 						return Utils.resultadoADouble(row.get(res.columns().get(0)));
 					}
@@ -317,7 +326,7 @@ public class Consultas {
 	 *
 	 * @return Conectividad total entre todos los aeropuertos
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#añadirConectividad(String)} o la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 * {@link Añadir#añadirConectividad(String)} o la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
 	 */
 	public int getConectividadTotal() {
 		Propiedades propiedades = new Propiedades(db);
@@ -347,13 +356,13 @@ public class Consultas {
 	 * convierte las fechas de vuelos a tipo date.
 	 *
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
-	 * @param idPaís    ID del país de destino. Solo se tendrán en cuenta los vuelos hacia este país
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís ID del país de destino. Solo se tendrán en cuenta los vuelos hacia este país
 	 * @return Porcentaje de la conectividad total que depende de los vuelos al país indicado en el rango de fechas
 	 * indicado
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#añadirConectividad(String)}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
-	 *                                       o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#añadirConectividad(String)}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public int getConectividadPaís(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -365,14 +374,14 @@ public class Consultas {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 						"MATCH (a:Airport)-[]-(:AirportOperationDay)-[]->(f:FLIGHT) " +
-								"WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
-								"WITH a, count(f) as cf " +
-								"MATCH (a)-[]-(:AirportOperationDay)-[]->(f2:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)" +
-								"-[]-(c:Country) " +
-								"WHERE date(\"" + díaInicioStr + "\") <= f2.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
-								"AND c.countryId = \"" + idPaís + "\" " +
-								"WITH a, cf, count(f2) as cf2 " +
-								"RETURN sum(a.connectivity * cf2 / cf)")) {
+						   "WHERE date(\"" + díaInicioStr + "\") <= f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
+						   "WITH a, count(f) as cf " +
+						   "MATCH (a)-[]-(:AirportOperationDay)-[]->(f2:FLIGHT)-[]->(:AirportOperationDay)-[]-(:Airport)" +
+						   "-[]-(c:Country) " +
+						   "WHERE date(\"" + díaInicioStr + "\") <= f2.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
+						   "AND c.countryId = \"" + idPaís + "\" " +
+						   "WITH a, cf, count(f2) as cf2 " +
+						   "RETURN sum(a.connectivity * cf2 / cf)")) {
 					Map<String, Object> row = res.next();
 					return (int) Math.round(Utils.resultadoADouble(row.get(res.columns().get(0))));
 				}
@@ -394,14 +403,14 @@ public class Consultas {
 	 * fechas de los vuelos a tipo date.
 	 *
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
-	 * @param idPaís    Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
-	 *                  si se deja en blanco.
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino, o todos
+	 *               si se deja en blanco.
 	 * @return Mapa que relaciona códigos de aerolíneas con el número de pasajeros que viajan con cada una
 	 * en el rango de fechas indicado. No incluye aerolínas con 0 pasajeros.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
-	 *                                       o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public TreeMap<String, Long> getPasajerosPorAerolínea(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -460,14 +469,14 @@ public class Consultas {
 	 * fechas de los vuelos a tipo date.
 	 *
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
-	 * @param idPaís    Solo se tendrán en cuenta los vuelos que tienen este país como destino y solo se devolverán
-	 *                  aeropuertos de este país. Si se deja en blanco, la restricción no se aplica.
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino y solo se devolverán
+	 * aeropuertos de este país. Si se deja en blanco, la restricción no se aplica.
 	 * @return Mapa que relaciona códigos IATA de aeropuertos con el número de pasajeros que viajan desde y hasta cada
 	 * uno en el rango de fechas indicado. No incluye aeropuertos con 0 pasajeros.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
-	 *                                       o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#calcularNúmeroPasajeros()}, la operación ETL {@link Añadir#añadirConexionesAeropuertoPaís()}
+	 * o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public TreeMap<String, Long> getPasajerosPorAeropuerto(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -493,13 +502,13 @@ public class Consultas {
 						"WHERE c2.countryId = \"" + idPaís + "\" AND date(\"" + díaInicioStr + "\") <= " +
 						"f.dateOfDeparture <= date(\"" + díaFinStr + "\") " +
 						"CALL { " +
-						"WITH f, a2 " +
-						"RETURN distinct(a2.iata) AS iata, sum(f.passengers) AS p " +
-						"UNION " +
-						"WITH c1, a1, f " +
-						"MATCH (c1) " +
-						"WHERE c1.countryId = \"" + idPaís + "\" " +
-						"RETURN distinct(a1.iata) AS iata, sum(f.passengers) AS p " +
+								"WITH f, a2 " +
+								"RETURN distinct(a2.iata) AS iata, sum(f.passengers) AS p " +
+								"UNION " +
+								"WITH c1, a1, f " +
+								"MATCH (c1) " +
+								"WHERE c1.countryId = \"" + idPaís + "\" " +
+								"RETURN distinct(a1.iata) AS iata, sum(f.passengers) AS p " +
 						"} " +
 						"RETURN distinct(iata), sum(p)";
 			}
@@ -542,13 +551,13 @@ public class Consultas {
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 *
 	 * @param díaInicio Primer día a tener en cuenta
-	 * @param díaFin    Último día a tener en cuenta
-	 * @param idPaís    Solo se tendrán en cuenta los vuelos que tienen este país como destino. Si se deja en blanco,
-	 *                  la restricción no se aplica.
+	 * @param díaFin Último día a tener en cuenta
+	 * @param idPaís Solo se tendrán en cuenta los vuelos que tienen este país como destino. Si se deja en blanco,
+	 *               la restricción no se aplica.
 	 * @return Lista con los identificadores de todas las líneas (formados por el código IATA del aeropuerto de
 	 * origen, un guión y el código IATA del aeropuerto de destino)
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
 	public List<String> getLíneas(LocalDate díaInicio, LocalDate díaFin, String idPaís) {
 		String díaInicioStr = díaInicio.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -600,20 +609,19 @@ public class Consultas {
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 *
 	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR.
-	 * @return Lista con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al inicio del vuelo.
+	 * @return Clase con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al inicio del vuelo.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 *                                       {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
+	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public List<Double> getSIRInicialPorVuelo(Number idVuelo) {
-		// Propiedades props = new Propiedades(db);
-		List<Double> ret = new ArrayList<>();
+	public SIR getSIRInicialPorVuelo(Number idVuelo) {
+		SIR ret = null;
 
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
 					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
-							"WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
-							"(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
-							"RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
+					   "WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
+					   "(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
+					   "RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
 			)) {
 				List<String> columnas = res.columns();
 				while (res.hasNext()) {
@@ -631,16 +639,44 @@ public class Consultas {
 					double s0 = flightOccupancy * susceptible / population;
 					double i0 = flightOccupancy * confirmed / population;
 					double r0 = flightOccupancy * recovered / population;
-					ret.add(s0);
-					ret.add(i0);
-					ret.add(r0);
+					ret = new SIR(s0, i0, r0);
 				}
 			  }
 		}
 		return ret;
 	}
 
+	/**
+	 * Calcula y añade al vuelo con identificador <<idVuelo>>> los valores referentes al SIR (Susceptibles,
+	 * Infectados, Recuperados) al inicio y al final del vuelo.
+	 * Requiere que se haya ejecutado la operación ETL que añade las relaciones faltantes entre aeropuerto y país.
+	 * @param idVuelo Hace referencia al identificador del vuelo del que calcular el SIR.
+	 * @param resultadoRiesgo Es el valor del índice de recuperación de la enfermedad.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la  operación
+	 * ETL {@link Añadir#añadirConexionesAeropuertoPaís()}.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void añadirRiesgoVuelo(@Name("idVuelo") Number idVuelo,
+								  @Name("resultadoRiesgo") Map<String,Double> resultadoRiesgo){
 
+		Propiedades propiedades = new Propiedades(db);
+		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_inicial") + ", f.flightI0 = " +
+				resultadoRiesgo.get("I_inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_final") +
+				", f.flightIfinal = " + resultadoRiesgo.get("I_final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_final") +
+				", f.alphaValue = " + resultadoRiesgo.get("Alpha_recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_transmision");
+
+		if(propiedades.getBool(Propiedad.ETL_AEROPUERTO_PAÍS)){
+			try(Transaction tx = db.beginTx()) {
+				// Query para guardar los valores SIR del vuelo calculados en la base de datos
+				tx.execute(consulta);
+
+				tx.commit();
+			}
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación ETL " +
+					"que añade conexiones faltantes entre aeropuertos y países antes de ejecutarla.");
+		}
+	}
 
 	/**
 	 * Devuelve una lista con los cálculos del SIR finales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
@@ -651,39 +687,39 @@ public class Consultas {
 	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR final.
 	 * @param alphaValue Valor referente al índice de recuperación del virus, alpha.
 	 * @param betaValue Valor referente al índice de transmisión del virus, beta.
-	 * @return Lista con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al final del vuelo.
+	 * @return Clase que contiene todos los valores usados para el cálculo SIR y el riesgo final del vuelo.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL.
-	 * @throws Exception si el vuelo no existe.
+	 * @throws IllegalOperationException si el vuelo no existe.
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public TreeMap<String, Double> getRiesgoVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult) throws Exception {
+	public SIRVuelo getRiesgoVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult){
 		double alpha = (Double) alphaValue;
 		double beta = (Double) betaValue;
-		// Propiedades props = new Propiedades(db);
-		TreeMap<String, Double> ret = new TreeMap<>();
-		List<Double> initial = getSIRInicialPorVuelo(idVuelo);
+		SIRVuelo ret;
+		SIR initial = getSIRInicialPorVuelo(idVuelo);
 
 		try(Transaction tx = db.beginTx()){
 			try (Result res = tx.execute(
 					"MATCH(f:FLIGHT{flightId:" + idVuelo + "}) RETURN duration.between(datetime(f.instantOfDeparture)," +
-							"datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
+					   "datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
 			)) {
-				List<String> columnas = res.columns();
-				Map<String, Object> row = res.next();
-				double durationInSeconds = (Long) row.get(columnas.get(0));
-				double occupancyPercentage = (Double) row.get(columnas.get(1));
-				double seatsCapacity = (Long) row.get(columnas.get(2));
-				double flightOccupancy = seatsCapacity * (occupancyPercentage / 100);
+				if(res.hasNext()) {
+					List<String> columnas = res.columns();
+					Map<String, Object> row = res.next();
+					double durationInSeconds = (Long) row.get(columnas.get(0));
+					double occupancyPercentage = (Double) row.get(columnas.get(1));
+					double seatsCapacity = (Long) row.get(columnas.get(2));
 
-				//Llamada a función para calcular el SIR
-				ret = CalculoSIR.calcularRiesgoVuelo(initial.get(0), initial.get(1), initial.get(2), durationInSeconds, flightOccupancy, alpha, beta);
-			} catch(Exception e){
-				throw new Exception("El vuelo con identificador " + idVuelo + " no existe");
+					//Llamada a función para calcular el SIR
+					ret = CalculoSIR.calcularRiesgoVuelo(initial.getSusceptibles(), initial.getInfectados(), initial.getRecuperados(), durationInSeconds, seatsCapacity, occupancyPercentage, alpha, beta);
+				}
+				else {
+					throw new IllegalOperationException("El vuelo con identificador " + idVuelo + " no existe");
+				}
 			}
 		}
 		if(saveResult){
-			Añadir add = new Añadir(db);
-			add.añadirRiesgoVuelo(idVuelo,ret);
+			añadirRiesgoVuelo(idVuelo,ret.getValoresSIRVuelo());
 		}
 		return ret;
 	}
@@ -694,15 +730,15 @@ public class Consultas {
 	 * la operación ETL que convierte las fechas de los vuelos a tipo date.
 	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
 	 * @param fecha Fecha del día del que recuperar el riesgo.
-	 * @return Valor decimal representativo del riesgo del aeropuerto.
+	 * @return Clase con el riesgo de todos los vuelos y el riesgo total del aeropuerto en el dia marcado.
 	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL.
-	 * @throws Exception si el aeropuerto o vuelo de la query no existe.
+	 * @throws IllegalOperationException si el aeropuerto o vuelo de la query no existe.
 	 * {@link Añadir#añadirConexionesAeropuertoPaís()} o la operación ETL {@link Modificar#convertirFechasVuelos()}.
 	 */
-	public TreeMap<String,Double> getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult) throws Exception {
+	public SIRAeropuerto getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
 		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		Propiedades propiedades = new Propiedades(db);
-		TreeMap<String ,Double> ret = new TreeMap<>();
+		SIRAeropuerto ret = null;
 		double accumulatedRisk = 0;
 		List<Long> idVuelos = new ArrayList<>();
 
@@ -711,61 +747,46 @@ public class Consultas {
 				try(Result res = tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay)" +
 						"<-[]-(f:FLIGHT) WHERE f.dateOfDeparture=date(\"" + fechaStr + "\") RETURN f.flightId")){
 					List<String> columnas = res.columns();
-					while (res.hasNext()) {
-						idVuelos.add((Long) res.next().get(columnas.get(0)));
+					if(res.hasNext()){
+						while (res.hasNext()) {
+							idVuelos.add((Long) res.next().get(columnas.get(0)));
+						}
+					} else {
+						throw new IllegalOperationException("El aeropuerto con identificador " + idAeropuerto + " no existe");
 					}
-				} catch (Exception e){
-					throw new Exception("El aeropuerto con identificador " + idAeropuerto + " no existe");
 				}
 				for(Long idVuelo : idVuelos){
 					try(Result r = tx.execute("MATCH (f:FLIGHT{flightId:" + idVuelo + "}) RETURN f.flightSinicial, f.flightIinicial, " +
-							"f.flightRinicial, f.flightSfinal, f.flightIfinal, f.flightRfinal, f.alphaValue, f.betaValue")){
-						if(r != null) { // SIR already calculated
-							List<String> columnas = r.columns();
-							while(r.hasNext()){
+							"f.flightRinicial, f.flightSfinal, f.flightIfinal, f.flightRfinal, f.alphaValue, f.betaValue")) {
+						if (r.hasNext()) {
+							if (r != null) { // SIR already calculated
+								List<String> columnas = r.columns();
 								Map<String, Object> row = r.next();
-								ret.put(Long.toString(idVuelo), (Double) row.get(columnas.get(4)));
+								ret.añadirRiesgoVuelo(Long.toString(idVuelo), (Double) row.get(columnas.get(4)));
 								accumulatedRisk += (Double) row.get(columnas.get(4));
+							} else { // Call to SIR calculating function
+								SIRVuelo calculatedSIR = getRiesgoVuelo(idVuelo, -1.0, -1.0, false);
+								ret.añadirRiesgoVuelo(Long.toString(idVuelo), calculatedSIR.getInfectadosFinales());
+								accumulatedRisk += calculatedSIR.getInfectadosFinales();
 							}
-						} else { // Call to SIR calculating function
-							Map<String,Double> calculatedSIR = getRiesgoVuelo(idVuelo, -1.0, -1.0, false);
-							ret.put(Long.toString(idVuelo), calculatedSIR.get("I_final"));
-							accumulatedRisk += calculatedSIR.get("I_final");
+							if (saveResult) {
+								tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay{key:\"" +
+										idAeropuerto + "@" + fechaStr + "\"}) SET aod.totalImportedRisk = " + accumulatedRisk);
+							}
 						}
-						if(saveResult){
-							tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay{key:\"" +
-									idAeropuerto + "@" + fechaStr + "\"}) SET aod.totalImportedRisk = " + accumulatedRisk);
+						else {
+							throw new IllegalOperationException("El vuelo con identificador " + idVuelo + " no existe");
 						}
-					} catch (Exception e){
-						throw new Exception("El vuelo con identificador " + idVuelo + " no existe");
 					}
 				}
 				tx.commit();
 			}
-			ret.put("TOTAL AIRPORT RISK", accumulatedRisk);
+			assert ret != null;
+			ret.setRiesgoTotal(accumulatedRisk);
 			return ret;
 		} else  {
 			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
 					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
 		}
 	}
-
-	/**
-	 * Devuelve el valor del índice de recuperación del virus (alpha) que se está usando por defecto en
-	 * el momento de la llamada a la función.
-	 * @return Valor decimal representativo del índice de recuperación del virus.
-	 */
-	public double getIndiceRecuperacionActual(){
-		return Globales.default_alpha;
-	}
-
-	/**
-	 * Devuelve el valor del índice de transmisión del virus (beta) que se está usando por defecto en
-	 * el momento de la llamada a la función.
-	 * @return Valor decimal representativo del índice de transmisión del virus.
-	 */
-	public double getIndiceTransmisionActual(){
-		return Globales.default_beta;
-	}
-
 }

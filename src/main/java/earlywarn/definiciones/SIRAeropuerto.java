@@ -1,0 +1,28 @@
+package earlywarn.definiciones;
+
+import java.util.TreeMap;
+
+public class SIRAeropuerto {
+
+    static double riesgoTotalAeropuerto;
+    static TreeMap<String,Double> riesgoVuelos;
+
+    public SIRAeropuerto(){
+        riesgoTotalAeropuerto = 0;
+    }
+
+    public TreeMap<String,Double> getRiesgoTotalAeropuerto(){
+        TreeMap<String,Double> ret = new TreeMap<>(riesgoVuelos);
+        ret.put("RIESGO TOTAL AEROPUERTO", riesgoTotalAeropuerto);
+
+        return ret;
+    }
+
+    public void añadirRiesgoVuelo(String idVuelo, Double riesgo) {
+        riesgoVuelos.put(idVuelo, riesgo);
+    }
+
+    public void setRiesgoTotal(double riesgoTotal) {
+        riesgoTotalAeropuerto = riesgoTotal;
+    }
+}
