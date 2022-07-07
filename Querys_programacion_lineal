@@ -63,5 +63,5 @@ MATCH (salida:Airport)-[]-(:AirportOperationDay)-[]->(vuelosSalientes:FLIGHT)
     MATCH (salida)-[]-(:AirportOperationDay)-[]->(vuelosEntrantes:FLIGHT)-[]->(:AirportOperationDay)-[]-(llegada:Airport)-[]-(c:Country)
     WHERE date('2020-09-24') <= date(vuelosEntrantes.dateOfDeparture) <= date('2020-09-24')
     AND c.countryName = 'Spain'
-    RETURN llegada.airportName, salida.airportName, COUNT(vuelosEntrantes) AS totalVuelosEntrantes, totalVuelosSalientes, conectividadSaliente 
-    ORDER BY llegada.airportName, salida.airportName
+    RETURN salida.airportName, llegada.airportName, COUNT(vuelosEntrantes) AS totalVuelosEntrantes, totalVuelosSalientes, conectividadSaliente 
+    ORDER BY salida.airportName, llegada.airportName
