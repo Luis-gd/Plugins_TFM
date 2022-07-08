@@ -1,5 +1,5 @@
 Get_aeropuertos_salidas: 
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
@@ -8,7 +8,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     RETURN DISTINCT  salida.iata, salida.airportName  ORDER BY salida.iata
     
 Get_aeropuertos_entradas:
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
@@ -17,7 +17,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     RETURN DISTINCT  entrada.iata, entrada.airportName  ORDER BY entrada.iata
 
 Get_sir:
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal = '')
@@ -28,7 +28,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     entrada.airportName, salida.airportName ORDER BY  entrada.iata, salida.iata
 
 Get_pasajeros_por_vuelo:
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '')
@@ -39,7 +39,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     salida.airportName ORDER BY  entrada.iata, salida.iata
 
 Get_pasajeros_por_vuelo_y_companyias:
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)  
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '') 
@@ -50,7 +50,7 @@ MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Ai
     entrada.airportName, salida.airportName ORDER BY  entrada.iata, salida.iata
 
 Get_companyias:    
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal = '')
@@ -75,7 +75,7 @@ MATCH (salida:Airport)-[]-(:AirportOperationDay)-[]->(vuelosSalientes:FLIGHT)
     ORDER BY llegada.iata, salida.iata
 
 Get_dinero_por_vuelo:
-MATCH (c:Country)<-[:BELONGS_TO]-(:ProvinceState)-[:INFLUENCE_ZONE]->(entrada:Airport)
+MATCH (c:Country)-[]-(entrada:Airport)
     -[]->(:AirportOperationDay)<-[]-(f:FLIGHT)<-[]-(:AirportOperationDay)<-[]-(salida:Airport)
     WHERE c.countryName= 'Spain'
     AND not (f.flightIfinal =  '')
