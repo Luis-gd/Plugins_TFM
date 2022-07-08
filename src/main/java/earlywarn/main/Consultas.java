@@ -547,10 +547,10 @@ public class Consultas {
 
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
-					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
-					   "WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
-					   "(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
-					   "RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
+				"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
+				"WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
+				"(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
+				"RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
 			)) {
 				List<String> columnas = res.columns();
 				while (res.hasNext()) {
@@ -583,9 +583,9 @@ public class Consultas {
 	 */
 	public void añadirRiesgoVuelo(Long idVuelo, Map<String,Double> resultadoRiesgo){
 		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_Inicial") + ", f.flightI0 = " +
-				resultadoRiesgo.get("I_Inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_Inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_Final") +
-				", f.flightIfinal = " + resultadoRiesgo.get("I_Final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_Final") +
-				", f.alphaValue = " + resultadoRiesgo.get("Alpha_Recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_Transmision");
+			resultadoRiesgo.get("I_Inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_Inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_Final") +
+			", f.flightIfinal = " + resultadoRiesgo.get("I_Final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_Final") +
+			", f.alphaValue = " + resultadoRiesgo.get("Alpha_Recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_Transmision");
 
 		try(Transaction tx = db.beginTx()) {
 			// Query para guardar los valores SIR del vuelo calculados en la base de datos
@@ -612,8 +612,8 @@ public class Consultas {
 
 		try(Transaction tx = db.beginTx()){
 			try (Result res = tx.execute(
-					"MATCH(f:FLIGHT{flightId:" + idVuelo + "}) RETURN duration.between(datetime(f.instantOfDeparture)," +
-					   "datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
+				"MATCH(f:FLIGHT{flightId:" + idVuelo + "}) RETURN duration.between(datetime(f.instantOfDeparture)," +
+				"datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
 			)) {
 				if(res.hasNext()) {
 					List<String> columnas = res.columns();
@@ -638,13 +638,10 @@ public class Consultas {
 
 	/**
 	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador "idAeropuerto" en la fecha indicada.
-	 * Requiere que se haya ejecutado la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * Requiere que se hayan ejecutado ciertas operaciones ETL.
 	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
 	 * @param fecha Fecha del día del que recuperar el riesgo.
 	 * @return Clase con el riesgo de todos los vuelos y el riesgo total del aeropuerto en el dia marcado.
-	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
-	 * {@link Modificar#convertirFechasVuelos()}.
-	 * @throws IllegalOperationException si el aeropuerto o vuelo de la query no existe.
 	 */
 	public SIRAeropuerto getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
 		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -689,8 +686,8 @@ public class Consultas {
 			ret.setRiesgoTotal(accumulatedRisk);
 			return ret;
 		} else {
-			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
-					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
+			throw new ETLOperationRequiredException("No se ha ejecutado una operación ETL requerida para realizar " +
+				"este cálculo.");
 		}
 	}
 }
