@@ -67,6 +67,22 @@ public class Modificar {
 	}
 
 	/**
+	 * Borra de la base de datos todos los aeropuertos que no tengan código IATA, así como los vuelos asociados
+	 * a los mismos.
+	 * Fija la propiedad {@link Propiedad#ETL_BORRAR_AEROPUERTOS_SIN_IATA} a true en la BD.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void borrarAeropuertosSinIATA() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (a:Airport) WHERE a.iata = \"\" OPTIONAL MATCH (a)-[]-(aod:AirportOperationDay) " +
+				"OPTIONAL MATCH (aod)-[]-(f:FLIGHT) DETACH DELETE a,aod,f");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_BORRAR_AEROPUERTOS_SIN_IATA, true);
+		}
+	}
+
+	/**
 	 * Convierte las fechas de llegada y salida de los vuelos a tipo date.
 	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_VUELOS} a true en la BD.
 	 */
