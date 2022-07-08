@@ -28,7 +28,7 @@ public class Main {
 	 */
 	private static final int ITERACIONES_ACEPTACIÓN_INICIAL = 1000;
 
-	private static final String RUTA_CONFIG = "import/config_vnsrs.xml";
+	public static final String RUTA_CONFIG = "import/config_vnsrs.xml";
 	private static final String RUTA_RESULTADO = "export/resultado_vnsrs.txt";
 	private static final String RUTA_ESTADÍSTICAS = "export/stats_vnsrs.csv";
 

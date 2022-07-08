@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
+/**
  * Clase que almacena diversas estadísticas durante la ejecución de la metaheurística
  */
 public class Estadísticas {

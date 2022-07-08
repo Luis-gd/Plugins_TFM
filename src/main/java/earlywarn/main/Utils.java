@@ -182,25 +182,30 @@ public class Utils {
 	}
 
 	/**
-	 * Devuelve una string que incluye el ID de todas las líneas en la lista de líneas indicada. Cada ID se separa
-	 * con una coma.
-	 * @param líneas Lista de líneas a convertir
+	 * Devuelve una string que incluye todos los elementos de la lista especificada convertidos a string y separados
+	 * por comas. Opcionalmente se pueden incluir corchetes al inicio y al final de la lista.
+	 * @param lista Lista de elementos a convertir
 	 * @param corchetes Si es true, la string que representa la lista se encerrará entre corchetes
+	 * @param espacios Si es true, se insertará un espacio después de cada coma.
 	 * @return String que incluye todas las líneas en la lista
 	 */
-	public static String listaLíneasAString(List<String> líneas, boolean corchetes) {
+	public static String listaToString(List<?> lista, boolean corchetes, boolean espacios) {
 		StringBuilder sb = new StringBuilder();
 		if (corchetes) {
 			sb.append("[");
 		}
-		boolean primera = true;
-		for (String línea : líneas) {
-			if (primera) {
-				primera = false;
+		boolean primero = true;
+		for (Object elemento : lista) {
+			if (primero) {
+				primero = false;
 			} else {
-				sb.append(", ");
+				if (espacios) {
+					sb.append(", ");
+				} else {
+					sb.append(",");
+				}
 			}
-			sb.append(línea);
+			sb.append(elemento);
 		}
 		if (corchetes) {
 			sb.append("]");

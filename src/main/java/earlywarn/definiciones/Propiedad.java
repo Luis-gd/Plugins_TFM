@@ -14,6 +14,8 @@ public enum Propiedad {
 	ETL_RELACIONES_AOD,
 	// True si se ha realizado la operación ETL que elimina vuelos que no tengan datos SIR
 	ETL_BORRAR_VUELOS_SIN_SIR,
+	// True si se ha realizado la operación ETL que elimina aeropuertos que no tengan código IATA
+	ETL_BORRAR_AEROPUERTOS_SIN_IATA,
 	// True si se han convertido las fechas de vuelos a tipo date
 	ETL_CONVERTIR_FECHAS_VUELOS,
 

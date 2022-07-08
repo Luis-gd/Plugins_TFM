@@ -37,6 +37,7 @@ public class Main {
 		Modificar modificar = new Modificar(db);
 		modificar.convertirRelacionesAOD();
 		modificar.borrarVuelosSinSIR();
+		modificar.borrarAeropuertosSinIATA();
 		modificar.convertirFechasVuelos();
 
 		Añadir añadir = new Añadir(db);

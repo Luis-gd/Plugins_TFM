@@ -52,4 +52,14 @@ public class FitnessPorPesos implements ICálculoFitness {
 	public void setPesoCriterio(IDCriterio criterio, float valor) {
 		pesos.put(criterio, valor);
 	}
+
+	/**
+	 * Fija el peso de múltiples criterios a la vez
+	 * @param pesos Mapa que contiene el nuevo peso para cada criterio
+	 */
+	public void setPesoCriterios(Map<IDCriterio, Float> pesos) {
+		for (Map.Entry<IDCriterio, Float> entrada : pesos.entrySet()) {
+			setPesoCriterio(entrada.getKey(), entrada.getValue());
+		}
+	}
 }
