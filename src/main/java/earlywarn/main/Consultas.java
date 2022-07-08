@@ -1,10 +1,11 @@
 package earlywarn.main;
 
-import earlywarn.definiciones.ETLOperationRequiredException;
-import earlywarn.definiciones.Propiedad;
-import earlywarn.definiciones.SentidoVuelo;
+import earlywarn.definiciones.*;
 import earlywarn.etl.Añadir;
 import earlywarn.etl.Modificar;
+import earlywarn.main.modelo.SIR;
+import earlywarn.main.modelo.SIRAeropuerto;
+import earlywarn.main.modelo.SIRVuelo;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -571,5 +572,163 @@ public class Consultas {
 		}
 
 		return ret;
+	}
+
+	/**
+	 * Devuelve una lista con los cálculos del SIR iniciales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
+	 * en este mismo orden.
+	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR.
+	 * @return Clase con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al inicio del vuelo.
+	 */
+	public SIR getSIRInicialPorVuelo(Number idVuelo) {
+		SIR ret = null;
+
+		try (Transaction tx = db.beginTx()) {
+			try (Result res = tx.execute(
+					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
+					   "WHERE date(r.releaseDate)=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
+					   "(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
+					   "RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
+			)) {
+				List<String> columnas = res.columns();
+				while (res.hasNext()) {
+					Map<String, Object> row = res.next();
+					double occupancyPercentage = (Double) row.get(columnas.get(0));
+					double seatsCapacity = (Long) row.get(columnas.get(1));
+					double population = (Long) row.get(columnas.get(2));
+					double confirmed = (Long) row.get(columnas.get(3));
+					double deaths = (Long) row.get(columnas.get(4));
+					double recovered = (Long) row.get(columnas.get(5)) + deaths;
+
+					//Cálculo del SIR
+					double flightOccupancy = seatsCapacity * (occupancyPercentage / 100);
+					double susceptible = population - (confirmed - recovered);
+					double s0 = flightOccupancy * susceptible / population;
+					double i0 = flightOccupancy * confirmed / population;
+					double r0 = flightOccupancy * recovered / population;
+					ret = new SIR(s0, i0, r0);
+				}
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Calcula y añade al vuelo con identificador "idVuelo" los valores referentes al SIR (Susceptibles,
+	 * Infectados, Recuperados) al inicio y al final del vuelo.
+	 * @param idVuelo Hace referencia al identificador del vuelo del que calcular el SIR.
+	 * @param resultadoRiesgo Es el valor del índice de recuperación de la enfermedad.
+	 */
+	public void añadirRiesgoVuelo(Long idVuelo, Map<String,Double> resultadoRiesgo){
+		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_Inicial") + ", f.flightI0 = " +
+				resultadoRiesgo.get("I_Inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_Inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_Final") +
+				", f.flightIfinal = " + resultadoRiesgo.get("I_Final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_Final") +
+				", f.alphaValue = " + resultadoRiesgo.get("Alpha_Recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_Transmision");
+
+		try(Transaction tx = db.beginTx()) {
+			// Query para guardar los valores SIR del vuelo calculados en la base de datos
+			tx.execute(consulta);
+			tx.commit();
+		}
+	}
+
+	/**
+	 * Devuelve una lista con los cálculos del SIR finales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
+	 * en este mismo orden, haciendo el número de infectados referencia al RIESGO del vuelo, usando los valores de índice
+	 * de transmisión y recuperación especificados.
+	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR final.
+	 * @param alphaValue Valor referente al índice de recuperación del virus, alpha.
+	 * @param betaValue Valor referente al índice de transmisión del virus, beta.
+	 * @return Clase que contiene todos los valores usados para el cálculo SIR y el riesgo final del vuelo.
+	 * @throws IllegalOperationException si el vuelo no existe.
+	 */
+	public SIRVuelo getRiesgoVuelo(Number idVuelo, Number alphaValue, Number betaValue, Boolean saveResult){
+		double alpha = (Double) alphaValue;
+		double beta = (Double) betaValue;
+		SIRVuelo ret;
+		SIR initial = getSIRInicialPorVuelo(idVuelo);
+
+		try(Transaction tx = db.beginTx()){
+			try (Result res = tx.execute(
+					"MATCH(f:FLIGHT{flightId:" + idVuelo + "}) RETURN duration.between(datetime(f.instantOfDeparture)," +
+					   "datetime(f.instantOfArrival)).seconds, f.occupancyPercentage, f.seatsCapacity"
+			)) {
+				if(res.hasNext()) {
+					List<String> columnas = res.columns();
+					Map<String, Object> row = res.next();
+					double durationInSeconds = (Long) row.get(columnas.get(0));
+					double occupancyPercentage = (Double) row.get(columnas.get(1));
+					double seatsCapacity = (Long) row.get(columnas.get(2));
+
+					//Llamada a función para calcular el SIR
+					ret = CalculoSIR.calcularRiesgoVuelo(initial.getSusceptibles(), initial.getInfectados(), initial.getRecuperados(), durationInSeconds, seatsCapacity, occupancyPercentage, alpha, beta);
+				}
+				else {
+					throw new IllegalOperationException("El vuelo con identificador " + idVuelo + " no existe");
+				}
+			}
+		}
+		if(saveResult){
+			añadirRiesgoVuelo((Long) idVuelo,ret.getValoresSIRVuelo());
+		}
+		return ret;
+	}
+
+	/**
+	 * Devuelve el valor del riesgo acumulado del aeropuerto con el identificador "idAeropuerto" en la fecha indicada.
+	 * Requiere que se haya ejecutado la operación ETL que convierte las fechas de los vuelos a tipo date.
+	 * @param idAeropuerto Identificador del aeropuerto del que se desea obtener el riesgo.
+	 * @param fecha Fecha del día del que recuperar el riesgo.
+	 * @return Clase con el riesgo de todos los vuelos y el riesgo total del aeropuerto en el dia marcado.
+	 * @throws ETLOperationRequiredException Si no se ha ejecutado la operación ETL
+	 * {@link Modificar#convertirFechasVuelos()}.
+	 * @throws IllegalOperationException si el aeropuerto o vuelo de la query no existe.
+	 */
+	public SIRAeropuerto getRiesgoAeropuerto(String idAeropuerto, LocalDate fecha, Boolean saveResult){
+		String fechaStr = fecha.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		Propiedades propiedades = new Propiedades(db);
+		SIRAeropuerto ret = new SIRAeropuerto();
+		double accumulatedRisk = 0;
+		List<Long> idVuelos = new ArrayList<>();
+
+		if(propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS)){
+			try(Transaction tx = db.beginTx()) {
+				try(Result res = tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay)" +
+						"<-[]-(f:FLIGHT) WHERE f.dateOfDeparture=date(\"" + fechaStr + "\") RETURN f.flightId")){
+					List<String> columnas = res.columns();
+					if(res.hasNext()){
+						while (res.hasNext()) {
+							idVuelos.add((Long) res.next().get(columnas.get(0)));
+						}
+					} else {
+						throw new IllegalOperationException("El aeropuerto con identificador " + idAeropuerto + " no existe");
+					}
+				}
+				for(Long idVuelo : idVuelos){
+					try(Result r = tx.execute("MATCH (f:FLIGHT{flightId:" + idVuelo + "}) RETURN f.flightSinicial, f.flightIinicial, " +
+							"f.flightRinicial, f.flightSfinal, f.flightIfinal, f.flightRfinal, f.alphaValue, f.betaValue")) {
+						if (r.hasNext()) {
+							// SIR already calculated
+							List<String> columnas = r.columns();
+							Map<String, Object> row = r.next();
+							ret.añadirRiesgoVuelo(Long.toString(idVuelo), (Double) row.get(columnas.get(4)));
+							accumulatedRisk += (Double) row.get(columnas.get(4));
+							if (saveResult) {
+								tx.execute("MATCH (a:Airport{airportId:\"" + idAeropuerto + "\"})-[]->(aod:AirportOperationDay{key:\"" +
+										idAeropuerto + "@" + fechaStr + "\"}) SET aod.totalImportedRisk = " + accumulatedRisk);
+							}
+						} else {
+							throw new IllegalOperationException("El vuelo con identificador " + idVuelo + " no existe");
+						}
+					}
+				}
+				tx.commit();
+			}
+			ret.setRiesgoTotal(accumulatedRisk);
+			return ret;
+		} else {
+			throw new ETLOperationRequiredException("Esta operación requiere que se haya ejecutado la operación " +
+					"ETL que convierte las fechas de vuelos a tipo date antes de ejecutarla.");
+		}
 	}
 }
