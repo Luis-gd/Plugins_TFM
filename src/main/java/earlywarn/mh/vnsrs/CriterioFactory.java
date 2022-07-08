@@ -56,14 +56,8 @@ public class CriterioFactory {
 					consultas.getPasajerosPorAeropuerto(config.díaInicio, config.díaFin, config.país), config.país,
 					registroAeropuertos);
 			case CONECTIVIDAD:
-				/*
-				 * Esto tarda 30s en ejecutar, así que de momento fijo el valor de conectividad para España entre
-				 * el 24/9/2020 y el 30/9/2020 (33837)
-				 * TODO: Restaurar código original
-				 */
-				return new Conectividad(33837, registroAeropuertos);
-				/*return new Conectividad(
-					consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos);*/
+				return new Conectividad(
+					consultas.getConectividadPaís(config.díaInicio, config.díaFin, config.país), registroAeropuertos);
 			default:
 				throw new IllegalStateException("El ID de criterio " + id + " no se ha asociado con " +
 					"ninguna subclase de Criterio");
