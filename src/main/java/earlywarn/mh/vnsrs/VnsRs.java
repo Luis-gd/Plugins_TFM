@@ -221,7 +221,7 @@ public class VnsRs implements IRecocidoSimulado {
 
 		// Registrar estadísticas del estado inicial
 		estadísticas.registrarIteración(new EstadísticasIteración(-1, gLíneas.getNumAbiertas(),
-			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución, 1));
+			new EntornoVNS(gEntornos.getEntorno()), rs.temperatura, fitnessActual, fitnessMejorSolución, null));
 
 		while (continuar()) {
 			EntornoVNS entorno = gEntornos.getEntorno();
@@ -257,13 +257,17 @@ public class VnsRs implements IRecocidoSimulado {
 				solucionesPeores++;
 			}
 			// Comprobar si aceptamos esta nueva solución o si nos quedamos con la anterior
-			double probAceptación;
+			Double probAceptación;
 			boolean considerarSolución;
 			if (!factible && !config.permitirInfactibles) {
-				probAceptación = 0;
+				probAceptación = null;
 				considerarSolución = false;
 			} else {
-				probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
+				if (esPeorSolución) {
+					probAceptación = rs.probabilidadAceptación(fitnessActual, nuevoFitness);
+				} else {
+					probAceptación = null;
+				}
 				considerarSolución = rs.considerarSolución(fitnessActual, nuevoFitness);
 			}
 

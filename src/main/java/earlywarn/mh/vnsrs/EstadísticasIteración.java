@@ -12,7 +12,7 @@ public class EstadísticasIteración {
 	public double temperatura;
 	public double fitnessActual;
 	public double fitnessMejor;
-	public double probAceptación;
+	public Double probAceptación;
 
 	/**
 	 * Crea una instancia que representa las estadísticas de una sola iteración
@@ -23,18 +23,18 @@ public class EstadísticasIteración {
 	 * @param fitnessActual Fitness de la solución considerada en esta iteración
 	 * @param fitnessMejor Finess de la mejor solución encontrada hasta el fin de esta iteración
 	 * @param probAceptación Probabilidad de aceptar la solución considerada en la iteración actual. Se capa a 1 si
-	 *                       es mayor.
+	 *                       es mayor. Null para no inclur este dato en esta iteración.
 	 */
 	public EstadísticasIteración(int numIter, int numLíneasAbiertas, EntornoVNS entorno, double temperatura,
-								 double fitnessActual, double fitnessMejor, double probAceptación) {
+								 double fitnessActual, double fitnessMejor, Double probAceptación) {
 		this.numIter = numIter;
 		this.numLíneasAbiertas = numLíneasAbiertas;
 		this.entorno = entorno;
 		this.temperatura = temperatura;
 		this.fitnessActual = fitnessActual;
 		this.fitnessMejor = fitnessMejor;
-		if (probAceptación > 1) {
-			probAceptación = 1;
+		if (probAceptación != null && probAceptación > 1) {
+			probAceptación = 1.0;
 		}
 		this.probAceptación = probAceptación;
 	}
@@ -47,7 +47,7 @@ public class EstadísticasIteración {
 	@Override
 	public String toString() {
 		return numIter + "," + numLíneasAbiertas + "," + entorno.getNumLíneasConSigno() + "," + temperatura + "," +
-			fitnessActual + "," + fitnessMejor + "," + probAceptación;
+			fitnessActual + "," + fitnessMejor + "," + (probAceptación == null ? "" : probAceptación);
 	}
 
 	/**
