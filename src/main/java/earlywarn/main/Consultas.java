@@ -550,10 +550,16 @@ public class Consultas {
 		if (propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_INFORMES)) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
-					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
-						"WHERE r.releaseDate=f.dateOfDeparture AND (iz.countryName IS NOT null AND r.country=iz.countryName) OR " +
-						"(iz.regionName IS NOT null AND r.region=iz.regionName) OR (iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName) " +
-						"RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
+					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})" +
+					"WITH f, f.dateOfDeparture AS dateOfDeparture " +
+					"MATCH(f)<-[]-(aod:AirportOperationDay)-[]-(a:Airport)-[:INFLUENCE_ZONE]-(iz)-[]-(r:Report) " +
+					"WHERE r.releaseDate = dateOfDeparture " +
+					"AND (" +
+						"iz.countryName IS NOT null AND r.country=iz.countryName OR " +
+						"iz.regionName IS NOT null AND r.region=iz.regionName OR " +
+						"iz.proviceStateName IS NOT null AND r.provinceState=iz.proviceStateName " +
+					")" +
+					"RETURN f.occupancyPercentage, f.seatsCapacity, iz.population, r.confirmed, r.deaths, r.recovered"
 				)) {
 					List<String> columnas = res.columns();
 					while (res.hasNext()) {
