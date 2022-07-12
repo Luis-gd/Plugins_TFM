@@ -51,6 +51,8 @@ public class Main {
 		añadir.añadirRelaciónProvinciaEstadoPaís();
 		añadir.añadirReportesPaís();
 
+		modificar.convertirFechasInformes();
+
 		Índices índices = new Índices(db);
 		índices.indexarIataAeropuertos();
 	}

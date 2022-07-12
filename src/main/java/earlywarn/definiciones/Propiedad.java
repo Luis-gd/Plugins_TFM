@@ -18,6 +18,8 @@ public enum Propiedad {
 	ETL_BORRAR_AEROPUERTOS_SIN_IATA,
 	// True si se han convertido las fechas de vuelos a tipo date
 	ETL_CONVERTIR_FECHAS_VUELOS,
+	// True si se han convertido las fechas de informes a tipo date
+	ETL_CONVERTIR_FECHAS_INFORMES,
 
 	// True si se ha calculado el número de pasajeros de cada avión
 	ETL_PASAJEROS,

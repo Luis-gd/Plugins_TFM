@@ -83,7 +83,8 @@ public class Modificar {
 	}
 
 	/**
-	 * Convierte las fechas de llegada y salida de los vuelos a tipo date.
+	 * Convierte las fechas de llegada y salida de los vuelos a tipo date. También convierte los instantes de
+	 * llegada y salida a tipo datetime.
 	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_VUELOS} a true en la BD.
 	 */
 	@Procedure(mode = Mode.WRITE)
@@ -92,9 +93,26 @@ public class Modificar {
 			tx.execute(
 				"MATCH (f:FLIGHT) " +
 				"SET f.dateOfDeparture = date(f.dateOfDeparture) " +
-				"SET f.dateOfArrival = date(f.dateOfArrival)");
+				"SET f.dateOfArrival = date(f.dateOfArrival)" +
+				"SET f.instantOfDeparture = datetime(f.instantOfDeparture)" +
+				"SET f.instantOfArrival = datetime(f.instantOfArrival)");
 			tx.commit();
 			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_VUELOS, true);
+		}
+	}
+
+	/**
+	 * Convierte la fecha de publicación de los informes de casos a tipo date.
+	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_INFORMES} a true en la BD.
+	 */
+	@Procedure(mode = Mode.WRITE)
+	public void convertirFechasInformes() {
+		try (Transaction tx = db.beginTx()) {
+			tx.execute(
+				"MATCH (r:Report) " +
+				"SET r.releaseDate = date(r.releaseDate)");
+			tx.commit();
+			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_INFORMES, true);
 		}
 	}
 }
