@@ -548,6 +548,11 @@ public class Consultas {
 
 		if (propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_REPORTES)) {
 			try (Transaction tx = db.beginTx()) {
+				/*
+				 * Nota: Esta consulta tarda 300ms en ejecutarse para un solo vuelo. Si en el futuro se quiere
+				 * calcular el SIR de todos los vuelos de la BD o ir calcuándolo para cada vuelo según se necesita
+				 * acceder al valor, probablemente haya que optimizar esto aún más.
+				 */
 				try (Result res = tx.execute(
 					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})" +
 					"WITH f, f.dateOfDeparture AS dateOfDeparture " +
