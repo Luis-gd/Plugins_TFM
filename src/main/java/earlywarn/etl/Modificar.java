@@ -102,17 +102,17 @@ public class Modificar {
 	}
 
 	/**
-	 * Convierte la fecha de publicación de los informes de casos a tipo date.
-	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_INFORMES} a true en la BD.
+	 * Convierte la fecha de publicación de los reportes de casos a tipo date.
+	 * Fija la propiedad {@link Propiedad#ETL_CONVERTIR_FECHAS_REPORTES} a true en la BD.
 	 */
 	@Procedure(mode = Mode.WRITE)
-	public void convertirFechasInformes() {
+	public void convertirFechasReportes() {
 		try (Transaction tx = db.beginTx()) {
 			tx.execute(
 				"MATCH (r:Report) " +
 				"SET r.releaseDate = date(r.releaseDate)");
 			tx.commit();
-			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_INFORMES, true);
+			new Propiedades(db).setBool(Propiedad.ETL_CONVERTIR_FECHAS_REPORTES, true);
 		}
 	}
 }

@@ -546,7 +546,7 @@ public class Consultas {
 		SIR ret = null;
 		Propiedades propiedades = new Propiedades(db);
 
-		if (propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_INFORMES)) {
+		if (propiedades.getBool(Propiedad.ETL_CONVERTIR_FECHAS_REPORTES)) {
 			try (Transaction tx = db.beginTx()) {
 				try (Result res = tx.execute(
 					"MATCH(f:FLIGHT{flightId:" + idVuelo + "})" +
