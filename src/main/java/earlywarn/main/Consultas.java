@@ -537,8 +537,7 @@ public class Consultas {
 	}
 
 	/**
-	 * Devuelve una lista con los cálculos del SIR iniciales de un vuelo, siendo estos los Susceptibles, Infectados y Recuperados,
-	 * en este mismo orden.
+	 * Devuelve los valores del SIR (susceptibles, infectados y recuperados) iniciales de un vuelo.
 	 * Requiere que se hayan ejecutado ciertas operaciones ETL.
 	 * @param idVuelo Identificador del vuelo del que se desea calcular el SIR.
 	 * @return Clase con los valores referentes a los Susceptibles, Infectados y Recuperados (SIR) al inicio del vuelo.
@@ -564,20 +563,16 @@ public class Consultas {
 					List<String> columnas = res.columns();
 					while (res.hasNext()) {
 						Map<String, Object> row = res.next();
-						double occupancyPercentage = (Double) row.get(columnas.get(0));
-						double seatsCapacity = (Long) row.get(columnas.get(1));
-						double population = (Long) row.get(columnas.get(2));
-						double confirmed = (Long) row.get(columnas.get(3));
-						double deaths = (Long) row.get(columnas.get(4));
-						double recovered = (Long) row.get(columnas.get(5)) + deaths;
+						double occupancyPercentage = Utils.resultadoADouble(row.get(columnas.get(0)));
+						long seatsCapacity = (Long) row.get(columnas.get(1));
+						long population = (Long) row.get(columnas.get(2));
+						long confirmed = (Long) row.get(columnas.get(3));
+						long deaths = (Long) row.get(columnas.get(4));
+						long recovered = (Long) row.get(columnas.get(5)) + deaths;
 
 						//Cálculo del SIR
-						double flightOccupancy = seatsCapacity * (occupancyPercentage / 100);
-						double susceptible = population - (confirmed - recovered);
-						double s0 = flightOccupancy * susceptible / population;
-						double i0 = flightOccupancy * confirmed / population;
-						double r0 = flightOccupancy * recovered / population;
-						ret = new SIR(s0, i0, r0);
+						ret = CalculoSIR.calcularSirInicialVuelo(occupancyPercentage, seatsCapacity, population, confirmed,
+							recovered);
 					}
 				}
 			}
@@ -592,13 +587,13 @@ public class Consultas {
 	 * Calcula y añade al vuelo con identificador "idVuelo" los valores referentes al SIR (Susceptibles,
 	 * Infectados, Recuperados) al inicio y al final del vuelo.
 	 * @param idVuelo Hace referencia al identificador del vuelo del que calcular el SIR.
-	 * @param resultadoRiesgo Es el valor del índice de recuperación de la enfermedad.
+	 * @param sirVuelo Valor de riesgo calculado para el vuelo.
 	 */
-	public void añadirRiesgoVuelo(Long idVuelo, Map<String,Double> resultadoRiesgo){
-		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + resultadoRiesgo.get("S_Inicial") + ", f.flightI0 = " +
-			resultadoRiesgo.get("I_Inicial") + ", f.flightR0 = " + resultadoRiesgo.get("R_Inicial") + ", f.flightSfinal = " + resultadoRiesgo.get("S_Final") +
-			", f.flightIfinal = " + resultadoRiesgo.get("I_Final") + ", f.flightRfinal = " + resultadoRiesgo.get("R_Final") +
-			", f.alphaValue = " + resultadoRiesgo.get("Alpha_Recuperacion") + ", f.betaValue = " + resultadoRiesgo.get("Beta_Transmision");
+	public void añadirRiesgoVuelo(Long idVuelo, SIRVuelo sirVuelo){
+		String consulta = "MATCH(f:FLIGHT{flightId:" + idVuelo + "}) SET f.flightS0 = " + sirVuelo.sInicial +
+			", f.flightI0 = " + sirVuelo.iInicial + ", f.flightR0 = " + sirVuelo.rInicial + ", f.flightSfinal = " +
+			sirVuelo.sFinal + ", f.flightIfinal = " + sirVuelo.iFinal + ", f.flightRfinal = " + sirVuelo.rFinal +
+			", f.alphaValue = " + sirVuelo.alpha + ", f.betaValue = " + sirVuelo.beta;
 
 		try(Transaction tx = db.beginTx()) {
 			// Query para guardar los valores SIR del vuelo calculados en la base de datos
@@ -638,15 +633,16 @@ public class Consultas {
 						double occupancyPercentage = (Double) row.get(columnas.get(1));
 						double seatsCapacity = (Long) row.get(columnas.get(2));
 
-						//Llamada a función para calcular el SIR
-						ret = CalculoSIR.calcularRiesgoVuelo(initial.getSusceptibles(), initial.getInfectados(), initial.getRecuperados(), durationInSeconds, seatsCapacity, occupancyPercentage, alpha, beta);
+						// Llamada a función para calcular el SIR
+						ret = CalculoSIR.calcularRiesgoVuelo(initial, durationInSeconds, seatsCapacity,
+							occupancyPercentage, alpha, beta);
 					} else {
 						throw new IllegalOperationException("El vuelo con identificador " + idVuelo + " no existe");
 					}
 				}
 			}
 			if (saveResult) {
-				añadirRiesgoVuelo((Long) idVuelo, ret.getValoresSIRVuelo());
+				añadirRiesgoVuelo((Long) idVuelo, ret);
 			}
 		} else {
 			throw new ETLOperationRequiredException("No se ha ejecutado una operación ETL requerida para realizar " +
