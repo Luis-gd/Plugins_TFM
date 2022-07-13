@@ -38,7 +38,7 @@ public class Queries {
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
 					"MATCH (n:Country) - [:REPORTS] - (r:Report)\n" +
-					"RETURN min(date(r.releaseDate)) AS minDate")) {
+					"RETURN min(r.releaseDate) AS minDate")) {
 				Map<String, Object> row = res.next();
 				// Doesn't need formatter because is already ISO_LOCAL_DATE
 				return (LocalDate) row.get("minDate");
@@ -56,7 +56,7 @@ public class Queries {
 		try (Transaction tx = db.beginTx()) {
 			try (Result res = tx.execute(
 					"MATCH (n:Country) - [:REPORTS] - (r:Report)\n" +
-					"RETURN max(date(r.releaseDate)) AS maxDate")) {
+					"RETURN max(r.releaseDate) AS maxDate")) {
 				Map<String, Object> row = res.next();
 				return (LocalDate) row.get("maxDate");
 			}
@@ -76,11 +76,11 @@ public class Queries {
 			try (Result res = tx.execute(
 					"MATCH (c:Country{iso2: '" + countryIso2 + "'}) - [:REPORTS] - (r:Report) \n" +
 						"WHERE \n" +
-							"date(r.releaseDate) >= date({year:" + startDate.getYear() + ", month:" +
+							"r.releaseDate >= date({year:" + startDate.getYear() + ", month:" +
 								startDate.getMonthValue() + ", day:" + startDate.getDayOfMonth() + "}) AND\n" +
-							"date(r.releaseDate) <= date({year:" + endDate.getYear() + ", month:" +
+							"r.releaseDate <= date({year:" + endDate.getYear() + ", month:" +
 								endDate.getMonthValue() + ", day:" + endDate.getDayOfMonth() + "})\n" +
-					"RETURN r.confirmed AS confirmed ORDER BY date(r.releaseDate)")) {
+					"RETURN r.confirmed AS confirmed ORDER BY r.releaseDate")) {
 				List<Long> confirmed = new ArrayList<>();
 				while (res.hasNext()) {
 					Map<String, Object> row = res.next();
