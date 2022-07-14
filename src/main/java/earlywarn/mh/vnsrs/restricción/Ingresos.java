@@ -4,7 +4,6 @@ import earlywarn.definiciones.IDCriterio;
 import earlywarn.main.modelo.criterio.Criterio;
 import earlywarn.main.modelo.criterio.IngresosTurísticos;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

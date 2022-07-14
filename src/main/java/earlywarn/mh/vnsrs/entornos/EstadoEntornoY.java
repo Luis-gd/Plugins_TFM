@@ -5,7 +5,7 @@ package earlywarn.mh.vnsrs.entornos;
  */
 public class EstadoEntornoY {
 	// Indica si cada línea está abierta o cerrada
-	public boolean[] líneas;
+	public final boolean[] líneas;
 	// Distancia de Hamming entre esta entrada y el estado actual
 	public int distancia;
 
