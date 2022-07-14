@@ -6,13 +6,13 @@ import earlywarn.mh.vnsrs.entornos.EntornoVNS;
  * Almacena las estadísticas de una sola iteración
  */
 public class EstadísticasIteración {
-	public int numIter;
-	public int numLíneasAbiertas;
-	public EntornoVNS entorno;
-	public double temperatura;
-	public double fitnessActual;
-	public double fitnessMejor;
-	public Double probAceptación;
+	public final int numIter;
+	public final int numLíneasAbiertas;
+	public final EntornoVNS entorno;
+	public final double temperatura;
+	public final double fitnessActual;
+	public final double fitnessMejor;
+	public final Double probAceptación;
 
 	/**
 	 * Crea una instancia que representa las estadísticas de una sola iteración

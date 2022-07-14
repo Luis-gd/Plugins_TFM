@@ -9,10 +9,8 @@ import earlywarn.mh.vnsrs.config.Config;
 import earlywarn.mh.vnsrs.ConversorLíneas;
 import earlywarn.mh.vnsrs.CriterioFactory;
 import earlywarn.mh.vnsrs.restricción.Restricción;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 
-import java.time.LocalDate;
 import java.util.List;
 
 /**

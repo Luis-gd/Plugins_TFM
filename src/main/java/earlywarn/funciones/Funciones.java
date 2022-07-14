@@ -1,4 +1,4 @@
-package earlywarn.ejemplos;
+package earlywarn.funciones;
 
 import java.util.List;
 
@@ -15,29 +15,12 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.lang3.ArrayUtils;
-
-public class Prueba {
+/**
+ * Contiene las funciones y procedimientos ejecutables desde Neo4J
+ */
+public class Funciones {
 	@Context
 	public GraphDatabaseService db;
-
-	// -- Ejemplos genéricos --
-
-	@UserFunction
-	@Description("Ejemplo que suma 2 valores")
-	public Long suma(@Name("a") Long a, @Name("b") Long b) {
-		return a + b;
-	}
-
-	@UserFunction
-	@Description("Perason Coefficient Correlation entre dos listas de numeros")
-	public Double pcc(@Name("var1") List<Double> var1, @Name("var2") List<Double> var2) {
-		PearsonsCorrelation pcc = new PearsonsCorrelation();
-		Double[] var1Array = var1.toArray(new Double[0]);
-		Double[] var2Array = var2.toArray(new Double[0]);
-		return pcc.correlation(ArrayUtils.toPrimitive(var1Array), ArrayUtils.toPrimitive(var2Array));
-	}
 
 	// -- Consultas --
 
