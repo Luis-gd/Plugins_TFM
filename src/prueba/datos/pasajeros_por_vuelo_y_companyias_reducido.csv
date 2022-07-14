@@ -1,0 +1,5 @@
+﻿round(f.occupancyPercentage * f.seatsCapacity/100),f.operator,entrada.airportName,salida.airportName
+103.0,AEA,Adolfo Suárez Madrid–Barajas Airport,A Coruña Airport
+96.0,IBE,Adolfo Suárez Madrid–Barajas Airport,A Coruña Airport
+96.0,IBE,Adolfo Suárez Madrid–Barajas Airport,A Coruña Airport
+168.0,ETD,Adolfo Suárez Madrid–Barajas Airport,Abu Dhabi International Airport
