@@ -1,4 +1,6 @@
-package earlywarn.mh;
+package earlywarn.mh.nguyen2021;
+
+import earlywarn.mh.Criterios;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +40,21 @@ public class PSOEngine {
      * @param particles The set of particles to initialize
      */
     public void initParticles(List<Particle> particles) {
+        Double probAbierto = 0.0;
+        Double incrementoProb = 1 / Double.valueOf(particles.size()-1);
         //For each particle
-        for (int i=0; i<particles.size();i++) {
+        for (int i=0; i<particles.size(); i++) {
             List<Boolean> positions = new ArrayList<>();
             List<Double> stickiness = new ArrayList<>();
-            for (int j=0; j<numDimensions; j++) {
-                positions.add(generadorAleatorio.nextBoolean());
+            for (int j=0; j<particles.get(i).position.size(); j++) {
+                if(Math.random()<probAbierto){
+                    positions.add(true);
+                }else{
+                    positions.add(false);
+                }
                 stickiness.add(1.0);
             }
+            probAbierto += incrementoProb;
             //Create the particle
             particles.set(i,new Particle(positions, stickiness));
             //Set particles personal best to initialized values
@@ -121,7 +130,7 @@ public class PSOEngine {
      */
     public List<Boolean> findBest(List<Particle> particles) {
         List<Boolean> best = new ArrayList<>();
-        double bestFitness = Double.MAX_VALUE;
+        /*double bestFitness = Double.MAX_VALUE;
         for(int i=0; i<numParticles; i++) {
             Particle actual = particles.get(i);
             if (Criterios.evaluateFitness(actual.personalBest)<= bestFitness) {
@@ -130,7 +139,7 @@ public class PSOEngine {
                     best.set(j,actual.personalBest.get(j));
                 }
             }
-        }
+        }*/
         return best;
     }
 }

@@ -1,4 +1,6 @@
-package earlywarn.mh;
+package earlywarn.mh.nguyen2021;
+
+import earlywarn.mh.Criterios;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,7 @@ public class PSOImplementation {
         //PSO loop
         int numIter = 0;
         int i;
-        while (numIter<maxIterations) {
+        /*while (numIter<maxIterations) {
             // Evaluate fitness of each particle
             for (i=0; i<numParticles; i++) {
                 particles.get(i).fitness = Criterios.evaluateFitness(particles.get(i).position);
@@ -58,7 +60,7 @@ public class PSOImplementation {
         }
         //Print the best solution
         print((best));
-        System.out.println(Criterios.evaluateFitness(best));
+        System.out.println(Criterios.evaluateFitness(best));*/
     }
 
 
@@ -75,8 +77,8 @@ public class PSOImplementation {
 
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         //PSOImplementation p = new PSOImplementation();
         Criterios.initCriterios();
-    }
+    }*/
 }
