@@ -13,7 +13,6 @@ public class PSOEngine {
 
     int numParticles; //Number of particles in swarm
     int numConexiones; //Numero de conexiones entre aeropuertos, equivale al tamaño de las soluciones
-    int maxIterations; //Max number of iterations
     int numCriterios; //Numero de criterios (multiobjetivo)
     public final int tamanoArchive; //Número de soluciones dentro del archive
     double c1; //Coeficiente
@@ -22,26 +21,28 @@ public class PSOEngine {
     //Al introducir estos valores en la función sigmoide el resultado redondeado es -1 y 1
     double maxVelocity = 6.0;
     double minVelocity = -6.0;
+    double refPointHypervolume = 1; //Número que utilizamos como referencia para calcular el hipervolumen que se
+    //corresponde con el peor caso posible, al estar minimizando porcentajes le damos de valor 1
+    Criterios evaluador;
 
     /**
      * Constructor del motor Binary particle swarm optimization
      * @param numParticles Número de partículas que se utilizaran
      * @param numConexiones Número de conexiones entre aeropuertos
-     * @param maxIterations Número máximo de iteraciones
      * @param c1 Coeficiente
      * @param c2 Coeficiente
      * @param w Coeficiente
      */
-    public PSOEngine (int numParticles, int numConexiones, int maxIterations, double c1, double c2, double w,
-                      int numCriterios, int tamanoArchive) {
+    public PSOEngine (int numParticles, int numConexiones, double c1, double c2, double w,
+                      int numCriterios, int tamanoArchive, Criterios evaluador) {
         this.numParticles = numParticles;
         this.numConexiones = numConexiones;
-        this.maxIterations = maxIterations;
         this.c1 = c1;
         this.c2 = c2;
         this.w = w;
         this.numCriterios = numCriterios;
         this.tamanoArchive = tamanoArchive;
+        this.evaluador = evaluador;
     }
 
     /**
@@ -89,6 +90,7 @@ public class PSOEngine {
 
         double difference1 = 0.0;
         double difference2 = 0.0;
+        double valor;
 
         //Update particles velocity at all dimensions
         for (int i=0; i<numConexiones; i++) {
@@ -115,13 +117,15 @@ public class PSOEngine {
                 System.out.println("Error al calcular la diferencia de posición actual y la mejor posición anterior");
             }
 
-            particle.velocity.set(i,
-                    //Valor de la inercia
-                    w*particle.velocity.get(i)+
-                            //valor cognitivo
-                            c1*r1.get(i)*difference1+
-                            //valor social
-                            c2*r2.get(i)*difference2);
+            valor = w*particle.velocity.get(i) + c1*r1.get(i)*difference1 + c2*r2.get(i)*difference2;
+
+            if(valor < minVelocity){
+                valor = minVelocity;
+            }else if(valor > maxVelocity){
+                valor = maxVelocity;
+            }
+
+            particle.velocity.set(i,valor);
         }
     }
 
@@ -137,9 +141,9 @@ public class PSOEngine {
         //TODO: Mejorar eficiencia del cálculo de la función sigmoide
         double numAleatorio = rnd.nextDouble();
         for (int i=0; i<numConexiones; i++) {
-            if(particle.velocity.get(i) < -10){
+            if(particle.velocity.get(i) == minVelocity){
                 particle.position.set(i,false);
-            }else if(particle.velocity.get(i) > 10){
+            }else if(particle.velocity.get(i) == maxVelocity){
                 particle.position.set(i,true);
             }else if(numAleatorio <= simgoid(particle.velocity.get(i))){
                 particle.position.set(i,true);
@@ -149,7 +153,56 @@ public class PSOEngine {
         }
     }
 
-    public void crossover(List<Particle> particles, Criterios evaluador, Random rnd){
+    public double calculateHypervolumeWFG(List<Particle> archiveSet){
+        double sum=0.0;
+        for(int i=0;i<archiveSet.size();i++){
+            sum=sum+exclusiveHypervolume(archiveSet,i);
+        }
+        return sum;
+    }
+
+    public double exclusiveHypervolume(List<Particle> archiveSet, int indexParticula){
+        return inclusiveHypervolume(archiveSet.get(indexParticula)) - calculateHypervolumeWFG(
+                limitSet(archiveSet,indexParticula));
+    }
+
+    public double inclusiveHypervolume(Particle particula){
+        double resultado = 1;
+        for(double coordenada:particula.fitness){
+            resultado = resultado * (coordenada - refPointHypervolume) * -1;
+        }
+        return resultado;
+    }
+
+    public List<Particle> limitSet(List<Particle> archiveSet, int indexParticula){
+        List<Particle> archiveAux = new ArrayList<>();
+        for(int i=1;i<archiveSet.size()-indexParticula;i++){
+            Particle auxParticula = new Particle();
+            for(int j=0;j<archiveSet.get(0).fitness.size();j++){
+                if(archiveSet.get(indexParticula).fitness.get(j)>archiveSet.get(indexParticula+i).fitness.get(j)){
+                    auxParticula.fitness.add(archiveSet.get(indexParticula).fitness.get(j));
+                }else{
+                    auxParticula.fitness.add(archiveSet.get(indexParticula+i).fitness.get(j));
+                }
+            }
+            archiveAux.add(auxParticula);
+        }
+        Set<Integer> indexAQuitar = new HashSet<>();
+        for(int i=0;i<archiveAux.size();i++){
+            for(int j=0;j<archiveAux.size();j++){
+                if(evaluador.isDominated(archiveAux.get(i).fitness,archiveAux.get(j).fitness)){
+                    indexAQuitar.add(i);
+                }
+            }
+        }
+        Iterator<Integer> bucle = indexAQuitar.iterator();
+        while(bucle.hasNext()){
+            archiveAux.remove(bucle.next());
+        }
+        return archiveAux;
+    }
+
+    public void crossover(List<Particle> particles, Random rnd){
         int i, indexParticula, indexAux, tamano = particles.size(), tamano2 = particles.size()-1, contador;
         double porcentajeAMezclar = 0.05, valor;
         List<Integer> listIndex = new ArrayList<>(), indexMezcla = new ArrayList<>();
@@ -189,7 +242,8 @@ public class PSOEngine {
 
             for(int j=0;j<particles.get(indexMezcla.get(0)).position.size();j++){
 
-                if(!particles.get(indexMezcla.get(2)).position.get(j).equals(particles.get(indexMezcla.get(3)).position.get(j))){
+                if(!particles.get(indexMezcla.get(2)).position.get(j).equals(particles.get(indexMezcla.get(3)).
+                        position.get(j))){
                     valor = rnd.nextDouble();
                 }else{
                     valor = 0.0;
@@ -225,7 +279,7 @@ public class PSOEngine {
      * Función que aplica mutación en la solución mejor encontrada hasta ahora, si esta nueva solución es mejor que la
      * anterior la sustituimos
      */
-    public void mutation(List<Particle> particles, Criterios evaluador, Random rnd){
+    public void mutation(List<Particle> particles, Random rnd){
         int indexParticula, contador, i, tamano = particles.size();
         double valor, rand, parte1, parte2, strategyParameter, valorObtenido, porcentajeAMezclar = 0.05;
         Random rnd2 = new Random();
@@ -300,9 +354,8 @@ public class PSOEngine {
      * particula es mayor
      * @param particles El listado de particulas
      * @param archive El archive set
-     * @param evaluador El evaluador de las funciones objetivo
      */
-    public void addSolutionsToArchive(List<Particle> particles, List<Particle> archive, Criterios evaluador){
+    public void addSolutionsToArchive(List<Particle> particles, List<Particle> archive){
         int j;
         boolean anyadir = true;
         boolean domina = false;

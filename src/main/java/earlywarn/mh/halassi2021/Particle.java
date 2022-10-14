@@ -33,6 +33,10 @@ public class Particle {
         mutationStrategyParameter = rnd.nextDouble();
     }
 
+    public Particle(){
+        
+    }
+
     public Particle(double crowdingDistance, List<Boolean> position, List<Double> fitness, List<Double> velocity,
                     List<Boolean> personalBest){
         List<Boolean> positionNuevo = new ArrayList<>(position);

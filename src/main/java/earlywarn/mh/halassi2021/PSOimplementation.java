@@ -15,17 +15,11 @@ import java.util.Collections;
  */
 public class PSOimplementation {
 
-	//Valor del peso asociado los objetivos epidemiológicos, en el caso de que no se usen como restricción
-	final static double pesosEpidemiologicos = 0.6;
-	//Valor del peso asociado los objetivos económicos, en el caso de que no se usen como restricción, este valor se
-	//reparte entre los distintos objetivos
-	final static double pesosEconomicos = 0.2;
-	//Valor del peso asociado los objetivos sociales, en el caso de que no se usen como restricción
-	final static double pesosSociales = 0.2;
-	public final int numParticles = 500; //Number of particles in swarm
-	public final int maxIterations = 20000; //Max number of iterations
+	public final int numParticles = 250; //Number of particles in swarm
+	public final int maxIterations = 100000; //Max number of iterations
 	public final int numCriterios = 3; //Numero de criterios (multiobjetivo)
 	public final int tamanoArchive = 25; //Número de soluciones dentro del archive
+	// c1>c2 more beneficial to multimodal problems
 	public final double c1 = 1.496180; //Cognitive coefficient
 	public final double c2 = 1.496180; //Social coefficient
 	public final double w = 0.729844; //Inertia coefficient
@@ -33,6 +27,7 @@ public class PSOimplementation {
 	public List<Double> r2;  //Random vector 2
 	public List<Particle> archive = new ArrayList<>();
 	List<Particle> particles; //Array to hold all particles
+	long startReferencia, endReferencia;
 	int seed = 1;
 	Random rnd = new Random(seed);
 	
@@ -40,9 +35,9 @@ public class PSOimplementation {
 		//PSO algorithm
 		int i;
 		particles = new ArrayList<>();
-		Criterios evaluador = new Criterios(pesosEpidemiologicos, pesosEconomicos, pesosSociales);
+		Criterios evaluador = new Criterios();
 		int numConexiones = evaluador.getNumConexiones();
-		PSOEngine PSO = new PSOEngine(numParticles, numConexiones, maxIterations, c1, c2, w, numCriterios, tamanoArchive);
+		PSOEngine PSO = new PSOEngine(numParticles, numConexiones, c1, c2, w, numCriterios,tamanoArchive,evaluador);
 
 		//Initialize particles
 		PSO.initParticles(particles, rnd);
@@ -52,7 +47,11 @@ public class PSOimplementation {
 		try {
 			FileWriter myWriter = new FileWriter("resultadosPrueba.txt");
 			while (numIter<maxIterations) {
-				System.out.println("Iteracion: "+(numIter+1));
+				numIter++;
+				System.out.println("Iteracion: "+(numIter));
+
+				startReferencia = System.nanoTime();
+
 				// Evaluate fitness of each particle
 				for (i=0; i<numParticles; i++) {
 					Collections.copy(particles.get(i).fitness,evaluador.evaluateFitness(particles.get(i).position));
@@ -65,7 +64,9 @@ public class PSOimplementation {
 				}
 
 				//Añade en el archive las soluciones no dominadas
-				PSO.addSolutionsToArchive(particles, archive, evaluador);
+				PSO.addSolutionsToArchive(particles, archive);
+
+				System.out.println("Hipervolumen archive: "+PSO.calculateHypervolumeWFG(archive));
 
 				//TODO: Poner una condición de parada mejor
 				/*if(evaluador.evaluateFitness(best)<=0.229){
@@ -73,7 +74,7 @@ public class PSOimplementation {
 				}*/
 
 				//Aplicamos mutación
-				PSO.mutation(particles, evaluador, rnd);
+				PSO.mutation(particles, rnd);
 
 				//Initialize the random vectors for updates
 				r1 = new ArrayList<>();
@@ -92,10 +93,13 @@ public class PSOimplementation {
 				}
 
 				//Aplicamos crossover
-				PSO.crossover(particles, evaluador, rnd);
+				PSO.crossover(particles, rnd);
 
-				numIter++;
-				if(numIter%5000==1){
+				endReferencia = System.nanoTime();
+				//System.out.println("Tiempo de ejecución: "+(double)(endReferencia - startReferencia) /
+				//		1_000_000_000.0);
+
+				if(numIter%20000==1){
 					for(Particle particula:archive){
 						myWriter.write("Valores: [");
 						for(int j=0;j<particula.fitness.size();j++){
@@ -147,7 +151,31 @@ public class PSOimplementation {
 	}
 	
 	public static void main(String[] args) {
-		new PSOimplementation();
-	}
 
+		new PSOimplementation();
+
+		/*Criterios evaluador = new Criterios();
+		PSOEngine PSO = new PSOEngine(3, 5, 1.0, 1.0, 1.0, 2,5,evaluador);
+		List<Particle> particles = new ArrayList<>();
+		//For each particle
+		for (int i=0; i<3; i++) {
+			List<Boolean> positions = new ArrayList<>();
+			List<Double> velocities = new ArrayList<>();
+			//Create the particle
+			particles.add(new Particle(positions, velocities));
+		}
+		particles.get(0).fitness.add(0.3);
+		particles.get(0).fitness.add(0.1);
+		particles.get(1).fitness.add(0.2);
+		particles.get(1).fitness.add(0.2);
+		particles.get(2).fitness.add(0.1);
+		particles.get(2).fitness.add(0.3);
+		for (int i=0; i<3; i++) {
+			for(int j=0;j<particles.get(0).fitness.size();j++){
+				System.out.println(particles.get(i).fitness.get(j));
+			}
+		}
+		Double resultado = PSO.calculateHypervolumeWFG(particles);
+		System.out.println(resultado);*/
+	}
 }

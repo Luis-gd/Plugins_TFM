@@ -20,15 +20,15 @@ public class Criterios{
     //Valor que se añade a la función objetivo cuando una solución no cumple una restricción
     final int penalizacionRestriccion=1000000;
     //Valor del peso asociado los objetivos epidemiológicos, en el caso de que no se usen como restricción
-    final double pesosEpidemiologicos;
+    final static double pesosEpidemiologicos = 0.6;
     //Valor del peso asociado los objetivos económicos, en el caso de que no se usen como restricción, este valor se
     //reparte entre los distintos objetivos
-    final double pesosEconomicos;
+    final static double pesosEconomicos = 0.2;
+    //Valor del peso asociado los objetivos sociales, en el caso de que no se usen como restricción
+    final static double pesosSociales = 0.2;
     //Número de criterios económicos, se utiliza para repartir el peso económico entre los distintos criterios de manera
     //equitativa
     final int numCriteriosEconomicos = 4;
-    //Valor del peso asociado los objetivos sociales, en el caso de que no se usen como restricción
-    final double pesosSociales;
     //La solución con la que trabajamos (Si es 1 la conexión está abierta, si es 0 cerrada), se modifica en evaluate fitness
     List<Boolean> solucion = new ArrayList<>();
     //Contiene el nombre de los aeropuertos de entrada no repetidos, en principio serán los de España
@@ -57,10 +57,7 @@ public class Criterios{
     /**
      * Constructor de la clase, desde aquí se cargarán todos los datos
      */
-    public Criterios(double pesosEpidemiologicos, double pesosEconomicos, double pesosSociales){
-        this.pesosEpidemiologicos = pesosEpidemiologicos;
-        this.pesosEconomicos = pesosEconomicos;
-        this.pesosSociales = pesosSociales;
+    public Criterios(){
         cargaAeropuertosEntrada();
         cargaAeropuertosSalida();
         cargaCompanyias();
