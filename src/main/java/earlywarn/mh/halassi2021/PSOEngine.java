@@ -33,16 +33,16 @@ public class PSOEngine {
      * @param c2 Coeficiente
      * @param w Coeficiente
      */
-    public PSOEngine (int numParticles, int numConexiones, double c1, double c2, double w,
-                      int numCriterios, int tamanoArchive, Criterios evaluador) {
+    public PSOEngine (int numParticles, int numConexiones, double c1, double c2, double w, int numCriterios,
+                      int tamanoArchive, Criterios evaluador) {
         this.numParticles = numParticles;
         this.numConexiones = numConexiones;
-        this.c1 = c1;
-        this.c2 = c2;
-        this.w = w;
         this.numCriterios = numCriterios;
         this.tamanoArchive = tamanoArchive;
         this.evaluador = evaluador;
+        this.c1 = c1;
+        this.c2 = c2;
+        this.w = w;
     }
 
     /**
@@ -86,7 +86,8 @@ public class PSOEngine {
      * @param r1 Conjunto de números aleatorios
      * @param r2 Conjunto de números aleatorios
      */
-    public void updateVelocity(Particle particle, List<Boolean> best,List<Double> r1,List<Double> r2) {
+    public void updateVelocity(Particle particle, List<Boolean> best,List<Double> r1,List<Double> r2, double c1,
+                               double c2, double w) {
 
         double difference1 = 0.0;
         double difference2 = 0.0;
@@ -153,10 +154,27 @@ public class PSOEngine {
         }
     }
 
-    public double calculateHypervolumeWFG(List<Particle> archiveSet){
-        double sum=0.0;
+    public double calculateHypervolume(List<Particle> archiveSet){
+        List<AuxCD> valoresFuncionObjetivo1 = new ArrayList<>();
+        List<Particle> archiveSetOrdenado = new ArrayList<>();
+
         for(int i=0;i<archiveSet.size();i++){
-            sum=sum+exclusiveHypervolume(archiveSet,i);
+            valoresFuncionObjetivo1.add(new AuxCD(i,archiveSet.get(i).fitness.get(0)));
+        }
+
+        quickSort(valoresFuncionObjetivo1,0,valoresFuncionObjetivo1.size()-1);
+
+        for(int i=0;i<valoresFuncionObjetivo1.size();i++){
+            archiveSetOrdenado.add(archiveSet.get(valoresFuncionObjetivo1.get(i).position));
+        }
+
+        return calculateHypervolumeWFG(archiveSetOrdenado);
+    }
+
+    public double calculateHypervolumeWFG(List<Particle> archiveSetOrdenado){
+        double sum=0.0;
+        for(int i=0;i<archiveSetOrdenado.size();i++){
+            sum=sum+exclusiveHypervolume(archiveSetOrdenado,i);
         }
         return sum;
     }

@@ -37,6 +37,12 @@ public class Particle {
         
     }
 
+    public Particle(double fitness1, double fitness2, double fitness3){
+        fitness.add(fitness1);
+        fitness.add(fitness2);
+        fitness.add(fitness3);
+    }
+
     public Particle(double crowdingDistance, List<Boolean> position, List<Double> fitness, List<Double> velocity,
                     List<Boolean> personalBest){
         List<Boolean> positionNuevo = new ArrayList<>(position);
